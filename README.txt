@@ -1,16 +1,12 @@
-TOPDJS CRM v11.1 - BLACK NEON UI
+TOPDJS CRM v11.2 - HEADER CON LOGO
 
 Nuevo:
-- Rediseño visual del CRM para alinearlo con la nueva imagen de TopDJs.
-- Fondo negro puro.
-- Letras blancas.
-- Bordes azul eléctrico.
-- Paneles negro/azul oscuro.
-- Botones conservan color por función:
-  azul = acciones generales
-  amarillo = editar
-  verde = PDF/archivos
-  rojo = borrar
+- Logo TopDJs en el encabezado, opción A:
+  [LOGO] TOPDJS CRM v11.2
+         Audio • Iluminación • Video • DJ
+- Mantiene la interfaz Black Neon:
+  fondo negro, letras blancas y bordes azul eléctrico.
+- Incluye archivo topdjs-logo.png.
 
 Mantiene:
 - Supabase.
@@ -21,7 +17,14 @@ Mantiene:
 - Última actualización por evento.
 
 Instalación:
-1. Subir estos 6 archivos a GitHub reemplazando los actuales.
-2. Commit: TopDJs CRM v11.1 - Black Neon UI
+1. Subir estos 7 archivos a GitHub reemplazando los actuales:
+   index.html
+   app.js
+   style.css
+   manifest.json
+   sw.js
+   README.txt
+   topdjs-logo.png
+2. Commit: TopDJs CRM v11.2 - Header Logo
 3. Esperar Vercel Ready.
 4. Recarga fuerte: Option + Command + R.
