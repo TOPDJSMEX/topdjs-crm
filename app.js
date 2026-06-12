@@ -1,5 +1,5 @@
-const STORE="topdjs_v10_4_edit_robusto";
-const OLD_STORES=["topdjs_v10_3_edit_from_cloud","topdjs_v10_2_edit_events","topdjs_v10_1_event_files","topdjs_v10_event_files","topdjs_v9_2_delete_fix","topdjs_v9_1_supabase_fix","topdjs_v9_hibrida","topdjs_v8_evento_iconos","topdjs_v7_pax"];
+const STORE="topdjs_v10_5_edit_delete_fix";
+const OLD_STORES=["topdjs_v10_4_edit_robusto","topdjs_v10_3_edit_from_cloud","topdjs_v10_2_edit_events","topdjs_v10_1_event_files","topdjs_v10_event_files","topdjs_v9_2_delete_fix","topdjs_v9_1_supabase_fix","topdjs_v9_hibrida","topdjs_v8_evento_iconos","topdjs_v7_pax"];
 let db=JSON.parse(localStorage.getItem(STORE)||"null");
 if(!db){
   db={records:[],contacts:[],eventFiles:[]};
@@ -113,34 +113,46 @@ function parseMaybeJson(v){
   if(typeof v==="object") return v;
   try{return JSON.parse(v)}catch(e){return v}
 }
+function isUuidLike(v){
+  return typeof v==="string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
+}
+function findLocalRecordFlexible(key){
+  return records.find(r=>r.local_id===key || r.id===key) || null;
+}
 function mergeRecordForEdit(local, remote){
   local=normalizeRecord(local||{});
   remote=normalizeRecord(remote||{});
   const out={...local};
-  const keys=[
-    "local_id","type","date","client","company","phone","email","instagram",
-    "event_type","project","venue","pax","service_hours","setup_type",
-    "setup_hours","setup_time","start_time","end_time","amount","paid",
-    "status","notes","quote_catalog","updated_at"
-  ];
-  keys.forEach(k=>{
+  ["id","local_id","type","date","client","company","phone","email","instagram","event_type","project","venue","pax","service_hours","setup_type","setup_hours","setup_time","start_time","end_time","amount","paid","status","notes","quote_catalog","updated_at"].forEach(k=>{
     out[k]=firstValue(remote[k], local[k]);
   });
   out.quote_catalog=parseMaybeJson(firstValue(remote.quote_catalog, local.quote_catalog));
   return normalizeRecord(out);
 }
-async function getRemoteRecord(local_id){
+async function getRemoteRecordFlexible(record){
   try{
     if(!navigator.onLine)return null;
-    const arr=await api(`topdjs_records?select=*&local_id=eq.${encodeURIComponent(local_id)}&limit=1`,{method:"GET"});
-    return Array.isArray(arr)&&arr.length?arr[0]:null;
+    const tries=[];
+    if(record?.local_id) tries.push(["local_id",record.local_id]);
+    if(record?.id) tries.push(["id",record.id]);
+    if(isUuidLike(record?.local_id)) tries.push(["id",record.local_id]);
+    for(const [field,value] of tries){
+      const arr=await api(`topdjs_records?select=*&${field}=eq.${encodeURIComponent(value)}&limit=1`,{method:"GET"});
+      if(Array.isArray(arr)&&arr.length)return arr[0];
+    }
+    return null;
   }catch(e){
     console.warn("No se pudo cargar evento desde Supabase",e);
+    showError("AVISO: No pude cargar Supabase. Usaré copia local.\n"+e.message);
     return null;
   }
 }
 function fillEditForm(r){
   r=normalizeRecord(r);
+  if(!r.client && !r.date && !r.amount && !r.project){
+    showError("NO SE ENCONTRARON DATOS PARA EDITAR ESTE EVENTO.\nPresiona SINCRONIZAR y vuelve a intentar.");
+    return false;
+  }
   setInput("quoteClient",r.client);
   setInput("quoteCompany",r.company);
   setInput("quotePhone",r.phone);
@@ -167,21 +179,22 @@ function fillEditForm(r){
   $("cancelEditBtn").classList.remove("hidden");
   $("editNotice").classList.remove("hidden");
   $("quoteFormTitle").textContent="✏️ EDITAR EVENTO";
+  return true;
 }
-async function editRecord(local_id){
+async function editRecord(key){
   showError("");
-  const local=records.find(x=>x.local_id===local_id)||{};
-  let remote=await getRemoteRecord(local_id);
-  let r=mergeRecordForEdit(local, remote);
-  if(!r || !r.local_id)return alert("No encontré este evento para editar.");
-  const i=records.findIndex(x=>x.local_id===local_id);
-  if(i>=0)records[i]={...records[i],...r,_dirty:false};
-  else records.push({...r,_dirty:false});
+  const local=findLocalRecordFlexible(key)||{local_id:key,id:key};
+  const remote=await getRemoteRecordFlexible(local);
+  const r=mergeRecordForEdit(local, remote);
+  const stableKey=r.local_id || local.local_id || key;
+  const i=records.findIndex(x=>x.local_id===stableKey || x.id===r.id || x.local_id===key || x.id===key);
+  if(i>=0)records[i]={...records[i],...r,local_id:stableKey,_dirty:false};
+  else records.push({...r,local_id:stableKey,_dirty:false});
   save();
-  editingRecordId=local_id;
+  editingRecordId=stableKey;
   document.querySelector('[data-tab="quote"]').click();
-  fillEditForm(r);
-  window.scrollTo({top:0,behavior:"smooth"});
+  const ok=fillEditForm(r);
+  if(ok)window.scrollTo({top:0,behavior:"smooth"});
 }
 
 function renderRecords(){
@@ -198,16 +211,26 @@ function renderRecords(){
   $("sumBalance").textContent=money(records.filter(r=>!r._deleted).reduce((s,r)=>s+bal(r),0));
   renderSyncStatus()
 }
-async function delRecord(local_id){
+async function delRecord(key){
+  const r=findLocalRecordFlexible(key)||{local_id:key,id:key};
+  const local_id=r.local_id||key;
   if(!confirm("¿BORRAR ESTE EVENTO Y TODOS SUS ARCHIVOS?"))return;
   showError("");
-  const backup=[...records], backupFiles=[...eventFiles];
-  records=records.filter(x=>x.local_id!==local_id);eventFiles=eventFiles.filter(f=>f.record_local_id!==local_id);
-  save();renderAll();
+  const backup=[...records],backupFiles=[...eventFiles];
   try{
-    if(navigator.onLine){await deleteRemote("topdjs_records",local_id);await deleteEventFilesByRecord(local_id);await syncAll()}
-    else{showError("Estás offline. Para borrar globalmente evento y archivos necesitas internet.")}
-  }catch(e){records=backup;eventFiles=backupFiles;save();renderAll();showError("ERROR AL BORRAR EVENTO:\n"+e.message)}
+    if(!navigator.onLine){showError("Estás offline. Para borrar globalmente evento y archivos necesitas internet.");return}
+    await deleteEventFilesByRecord(local_id);
+    await deleteRemote("topdjs_records",local_id);
+    if(r.id){try{await api(`topdjs_records?id=eq.${encodeURIComponent(r.id)}`,{method:"DELETE",headers:{"Prefer":"return=minimal"}})}catch(e){}}
+    records=records.filter(x=>x.local_id!==local_id && x.id!==r.id && x.local_id!==key && x.id!==key);
+    eventFiles=eventFiles.filter(f=>f.record_local_id!==local_id && f.record_local_id!==key);
+    save();
+    await syncAll();
+    renderAll();
+  }catch(e){
+    records=backup;eventFiles=backupFiles;save();renderAll();
+    showError("ERROR AL BORRAR EVENTO Y ARCHIVOS:\n"+e.message);
+  }
 }
 async function markPaid(local_id){const r=records.find(x=>x.local_id===local_id);if(r){r.paid=r.amount;r.status="PAGADO";markDirty(r);save();renderAll();syncAll()}}
 function catalogHtml(qc){
@@ -375,18 +398,25 @@ async function deleteEventFile(id,encodedFileUrl){
 }
 async function deleteEventFilesByRecord(local_id){
   try{
-    const list=eventFiles.filter(f=>f.record_local_id===local_id);
+    let list=[];
+    try{
+      const remote=await api(`event_files?select=*&record_local_id=eq.${encodeURIComponent(local_id)}`,{method:"GET"});
+      if(Array.isArray(remote))list=remote;
+    }catch(e){
+      list=eventFiles.filter(f=>f.record_local_id===local_id);
+    }
     for(const f of list){
-      await api(`event_files?id=eq.${f.id}`,{method:"DELETE",headers:{"Prefer":"return=minimal"}});
       const marker="/event-files/";
       const idx=(f.file_url||"").indexOf(marker);
       if(idx>=0){
         const path=decodeURIComponent(f.file_url.slice(idx+marker.length));
-        try{await deleteStorageObject(path)}catch(e){}
+        try{await deleteStorageObject(path)}catch(e){console.warn("storage delete failed",e)}
       }
+      try{await api(`event_files?id=eq.${f.id}`,{method:"DELETE",headers:{"Prefer":"return=minimal"}})}catch(e){console.warn("event_files delete failed",e)}
     }
-    eventFiles=eventFiles.filter(f=>f.record_local_id!==local_id)
-  }catch(e){console.warn("delete event files",e)}
+    try{await api(`event_files?record_local_id=eq.${encodeURIComponent(local_id)}`,{method:"DELETE",headers:{"Prefer":"return=minimal"}})}catch(e){}
+    eventFiles=eventFiles.filter(f=>f.record_local_id!==local_id);
+  }catch(e){console.warn("delete event files",e);throw e}
 }
 
 $("exportBtn").onclick=()=>{
