@@ -1,14 +1,23 @@
-TOPDJS CRM v10 - ARCHIVOS DEL EVENTO
+TOPDJS CRM v10.1 - ARCHIVOS DEL EVENTO FIX
 
 Nuevo:
-- Botón + AGREGAR ARCHIVO dentro de VER evento.
-- Sube archivos a Supabase Storage bucket event-files.
-- Registra archivos en tabla event_files.
-- Permite VER / DESCARGAR.
-- Permite ELIMINAR archivos.
-- Si borras un evento, intenta borrar también sus archivos asociados.
+- Sección visible dentro del botón VER:
+  📎 ARCHIVOS DEL EVENTO
+  + AGREGAR ARCHIVO
+  VER / DESCARGAR
+  ELIMINAR
 
-Requisitos ya configurados:
-- Bucket público: event-files
-- Tabla: public.event_files
-  id, record_local_id, file_name, file_url, created_at
+- Sube a Supabase Storage bucket: event-files
+- Guarda relación en tabla: event_files
+- Contador 📎 en la tabla de registros
+- Si borras evento, intenta borrar también:
+  1. topdjs_records
+  2. event_files
+  3. archivos físicos del bucket event-files
+
+Instalación:
+1. Subir estos 6 archivos a GitHub reemplazando los existentes.
+2. Commit: TopDJs CRM v10.1 - Event Files Fix
+3. Esperar Vercel Ready.
+4. Abrir https://topdjs-crm.vercel.app
+5. Forzar actualización con Cmd + Shift + R.
