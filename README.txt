@@ -1,16 +1,14 @@
-TOPDJS CRM v9.2 - DELETE FIX
+TOPDJS CRM v10 - ARCHIVOS DEL EVENTO
 
-Corrección:
-- El botón BORRAR ahora elimina directamente de Supabase usando local_id.
-- Al sincronizar, si un registro ya no existe en Supabase, se quita también de la app local.
-- BORRAR funciona para cotizaciones/eventos y contactos.
-- Si no hay internet, avisa que el borrado no puede completarse globalmente.
+Nuevo:
+- Botón + AGREGAR ARCHIVO dentro de VER evento.
+- Sube archivos a Supabase Storage bucket event-files.
+- Registra archivos en tabla event_files.
+- Permite VER / DESCARGAR.
+- Permite ELIMINAR archivos.
+- Si borras un evento, intenta borrar también sus archivos asociados.
 
-Cómo probar:
-1. Abrir con servidor local:
-   python3 -m http.server 3000
-2. Entrar a:
-   http://localhost:3000
-3. Borrar un registro.
-4. En otra computadora presionar SINCRONIZAR.
-5. Debe desaparecer.
+Requisitos ya configurados:
+- Bucket público: event-files
+- Tabla: public.event_files
+  id, record_local_id, file_name, file_url, created_at

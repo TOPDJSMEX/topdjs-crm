@@ -6,13 +6,13 @@
 <meta name="theme-color" content="#0f172a">
 <link rel="manifest" href="manifest.json">
 <link rel="stylesheet" href="style.css">
-<title>TOPDJS CRM v9.2</title>
+<title>TOPDJS CRM v10</title>
 </head>
 <body>
 <header>
   <div>
-    <h1>✈️ TOPDJS CRM v9.2</h1>
-    <p>Offline + Supabase. Corrección de borrado sincronizado.</p>
+    <h1>✈️ TOPDJS CRM v10</h1>
+    <p>Offline + Supabase + archivos por evento.</p>
   </div>
   <div class="topActions">
     <span id="syncStatus" class="status offline">CARGANDO...</span>
@@ -42,6 +42,7 @@
       <label>📧 EMAIL</label><input id="quoteEmail">
       <label>📸 INSTAGRAM</label><input id="quoteInstagram">
     </section>
+
     <section class="card">
       <h2>📋 INFORMACIÓN DEL EVENTO</h2>
       <label>🎯 TIPO DE EVENTO</label>
@@ -67,6 +68,7 @@
         <div><label>🏁 HORA TÉRMINO</label><input id="quoteEndTime" type="time"></div>
       </div>
     </section>
+
     <section class="card">
       <h2>💰 TOTALES</h2>
       <label>💰 TOTAL COTIZADO</label><input id="quoteTotal" type="number" placeholder="85000">
@@ -75,11 +77,13 @@
       <button id="saveQuoteBtn">GUARDAR COMO COTIZACIÓN</button>
       <button id="clearQuoteBtn" class="secondary">LIMPIAR COTIZADOR</button>
     </section>
+
     <section class="card wide">
       <h2>📦 CATÁLOGO</h2>
       <p class="hint">Marca el equipo y captura cantidad.</p>
       <div id="catalog"></div>
     </section>
+
     <section class="card wide">
       <h2>📝 OBSERVACIONES GENERALES</h2>
       <textarea id="quoteNotes" rows="5" placeholder="Montaje, acceso, energía, condiciones, pagos, etc."></textarea>
@@ -128,6 +132,8 @@
   </div>
 </section>
 </main>
+
+<input id="eventFileInput" type="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.heic,.webp">
 
 <div id="modal" class="modal hidden"><div class="modalBox"><button id="closeModal" class="close">×</button><h2 id="modalTitle"></h2><div id="modalBody"></div></div></div>
 
