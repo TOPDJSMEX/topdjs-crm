@@ -1,5 +1,5 @@
-const STORE="topdjs_v10_8_pedido_bodega_pdf";
-const OLD_STORES=["topdjs_v10_7_restore_catalog_edit","topdjs_v10_6_setinput_fix","topdjs_v10_5_edit_delete_fix","topdjs_v10_4_edit_robusto","topdjs_v10_3_edit_from_cloud","topdjs_v10_2_edit_events","topdjs_v10_1_event_files","topdjs_v10_event_files","topdjs_v9_2_delete_fix","topdjs_v9_1_supabase_fix","topdjs_v9_hibrida","topdjs_v8_evento_iconos","topdjs_v7_pax"];
+const STORE="topdjs_v10_9_historial_clientes";
+const OLD_STORES=["topdjs_v10_8_pedido_bodega_pdf","topdjs_v10_7_restore_catalog_edit","topdjs_v10_6_setinput_fix","topdjs_v10_5_edit_delete_fix","topdjs_v10_4_edit_robusto","topdjs_v10_3_edit_from_cloud","topdjs_v10_2_edit_events","topdjs_v10_1_event_files","topdjs_v10_event_files","topdjs_v9_2_delete_fix","topdjs_v9_1_supabase_fix","topdjs_v9_hibrida","topdjs_v8_evento_iconos","topdjs_v7_pax"];
 let db=JSON.parse(localStorage.getItem(STORE)||"null");
 if(!db){
   db={records:[],contacts:[],eventFiles:[]};
@@ -610,6 +610,105 @@ $("importFile").onchange=()=>{
   rd.onload=()=>{try{db=JSON.parse(rd.result);records=(db.records||[]).map(normalizeRecord);contacts=db.contacts||[];eventFiles=db.eventFiles||[];records.forEach(markDirty);contacts.forEach(markDirty);save();renderAll();syncAll();alert("RESPALDO IMPORTADO")}catch(e){alert("ERROR AL IMPORTAR")}};
   rd.readAsText(f)
 };
-function renderAll(){renderRecords();renderCalendar();renderContacts();updateQuoteBalance()}
+
+function clientKey(r){
+  return normalizeCatalogKey(r.client || r.company || r.phone || r.instagram || "SIN NOMBRE");
+}
+function clientDisplayName(r){
+  return r.client || r.company || r.instagram || r.phone || "SIN NOMBRE";
+}
+function clientMatches(r,q){
+  q=normalizeCatalogKey(q);
+  if(!q)return true;
+  const hay=[r.client,r.company,r.phone,r.email,r.instagram,r.project,r.venue,r.event_type].map(normalizeCatalogKey).join(" ");
+  return hay.includes(q);
+}
+function groupClientRecords(list){
+  const groups={};
+  list.filter(r=>!r._deleted).forEach(r=>{
+    r=normalizeRecord(r);
+    const key=clientKey(r);
+    if(!groups[key])groups[key]={key,name:clientDisplayName(r),phone:r.phone||"",email:r.email||"",instagram:r.instagram||"",records:[],total:0,paid:0,balance:0,lastDate:""};
+    groups[key].records.push(r);
+    groups[key].total+=Number(r.amount||0);
+    groups[key].paid+=Number(r.paid||0);
+    groups[key].balance+=bal(r);
+    if(String(r.date||"")>String(groups[key].lastDate||""))groups[key].lastDate=r.date;
+    if(!groups[key].phone&&r.phone)groups[key].phone=r.phone;
+    if(!groups[key].email&&r.email)groups[key].email=r.email;
+    if(!groups[key].instagram&&r.instagram)groups[key].instagram=r.instagram;
+  });
+  Object.values(groups).forEach(g=>g.records.sort((a,b)=>String(b.date).localeCompare(String(a.date))));
+  return Object.values(groups).sort((a,b)=>String(b.lastDate).localeCompare(String(a.lastDate)));
+}
+function recurrentBadge(g){
+  return (g.records.length>=2 || g.total>=50000) ? '<span class="clientBadge">⭐ CLIENTE RECURRENTE</span>' : '<span class="clientBadge normal">CLIENTE NORMAL</span>';
+}
+function renderClientHistory(){
+  const q=$("clientSearch")?.value||"";
+  const filtered=records.filter(r=>!r._deleted&&clientMatches(r,q));
+  const groups=groupClientRecords(filtered);
+  const recurring=groupClientRecords(records).filter(g=>g.records.length>=2 || g.total>=50000);
+  const recRoot=$("recurringClients");
+  if(recRoot){
+    recRoot.innerHTML=recurring.length?recurring.map(g=>`
+      <div class="clientMini" onclick="setClientSearch('${esc(g.name).replace(/'/g,"\\'")}')">
+        <strong>${esc(g.name)}</strong><br>
+        <small>${g.records.length} evento(s) · ${money(g.total)} · Último: ${esc(g.lastDate||"")}</small>
+      </div>
+    `).join(""):'<p class="hint">Aún no hay clientes recurrentes.</p>';
+  }
+  const root=$("clientHistory");
+  if(!root)return;
+  if(!groups.length){
+    root.innerHTML='<p class="hint">No encontré eventos para esa búsqueda.</p>';
+    return;
+  }
+  root.innerHTML=groups.map(g=>{
+    const events=g.records.map(r=>`
+      <tr>
+        <td>${esc(r.date||"")}</td>
+        <td>${esc(r.project||r.event_type||"")}</td>
+        <td>${esc(r.venue||"")}</td>
+        <td>${esc(r.status||"")}</td>
+        <td>${money(r.amount)}</td>
+        <td>${money(r.paid)}</td>
+        <td>${money(bal(r))}</td>
+        <td><button onclick="showRecord('${r.local_id}')">VER</button> <button class="editBtn" onclick="editRecord('${r.local_id}')">EDITAR</button></td>
+      </tr>
+    `).join("");
+    return `
+      <div class="clientCard">
+        <div class="clientHeader">
+          <div>
+            <h3>${esc(g.name)}</h3>
+            ${recurrentBadge(g)}
+            <p>${g.phone?`📱 ${esc(g.phone)} `:""} ${g.email?` · 📧 ${esc(g.email)} `:""} ${g.instagram?` · 📸 ${esc(g.instagram)}`:""}</p>
+          </div>
+          <div class="clientStats">
+            <strong>${g.records.length}</strong><span>EVENTO(S)</span>
+            <strong>${money(g.total)}</strong><span>TOTAL HISTÓRICO</span>
+            <strong>${money(g.balance)}</strong><span>SALDO PENDIENTE</span>
+          </div>
+        </div>
+        <table>
+          <thead><tr><th>FECHA</th><th>EVENTO</th><th>VENUE</th><th>ESTATUS</th><th>TOTAL</th><th>PAGADO</th><th>SALDO</th><th>ACCIÓN</th></tr></thead>
+          <tbody>${events}</tbody>
+        </table>
+      </div>
+    `;
+  }).join("");
+}
+function setClientSearch(name){
+  const el=$("clientSearch");
+  if(el){el.value=name;renderClientHistory();}
+  document.querySelector('[data-tab="clients"]').click();
+}
+
+function renderAll(){renderRecords();renderCalendar();renderContacts();renderClientHistory();updateQuoteBalance()}
+
+if($("clientSearch"))$("clientSearch").oninput=()=>renderClientHistory();
+if($("clearClientSearch"))$("clearClientSearch").onclick=()=>{$("clientSearch").value="";renderClientHistory()};
+
 renderCatalog();save();renderAll();syncAll();setInterval(syncAll,30000);
 if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js").catch(()=>{})}
