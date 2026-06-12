@@ -1,5 +1,5 @@
-const STORE="topdjs_v10_5_edit_delete_fix";
-const OLD_STORES=["topdjs_v10_4_edit_robusto","topdjs_v10_3_edit_from_cloud","topdjs_v10_2_edit_events","topdjs_v10_1_event_files","topdjs_v10_event_files","topdjs_v9_2_delete_fix","topdjs_v9_1_supabase_fix","topdjs_v9_hibrida","topdjs_v8_evento_iconos","topdjs_v7_pax"];
+const STORE="topdjs_v10_6_setinput_fix";
+const OLD_STORES=["topdjs_v10_5_edit_delete_fix","topdjs_v10_4_edit_robusto","topdjs_v10_3_edit_from_cloud","topdjs_v10_2_edit_events","topdjs_v10_1_event_files","topdjs_v10_event_files","topdjs_v9_2_delete_fix","topdjs_v9_1_supabase_fix","topdjs_v9_hibrida","topdjs_v8_evento_iconos","topdjs_v7_pax"];
 let db=JSON.parse(localStorage.getItem(STORE)||"null");
 if(!db){
   db={records:[],contacts:[],eventFiles:[]};
@@ -20,6 +20,15 @@ const cleanPhone=s=>String(s||"").replace(/\D/g,"");
 const wa=(phone,msg="")=>{let p=cleanPhone(phone);if(!p)return"#";if(p.length===10)p="52"+p;return`https://wa.me/${p}${msg?`?text=${encodeURIComponent(msg)}`:""}`};
 const tel=p=>cleanPhone(p)?`tel:${cleanPhone(p)}`:"#";
 const bal=r=>Math.max(Number(r.amount||0)-Number(r.paid||0),0);
+
+function setInput(id,value){
+  const el=$(id);
+  if(!el)return;
+  el.value=value ?? "";
+  try{ el.dispatchEvent(new Event("input",{bubbles:true})); }catch(e){}
+  try{ el.dispatchEvent(new Event("change",{bubbles:true})); }catch(e){}
+}
+
 function save(){db.records=records;db.contacts=contacts;db.eventFiles=eventFiles;localStorage.setItem(STORE,JSON.stringify(db));renderSyncStatus();}
 function showError(msg){const e=$("errorBox");if(!msg){e.classList.add("hidden");e.textContent="";return}e.textContent=msg;e.classList.remove("hidden");}
 function markDirty(obj){obj._dirty=true;obj.updated_at=new Date().toISOString();}
