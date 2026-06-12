@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0f172a">
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="style.css">
+<title>TOPDJS CRM v9.2</title>
+</head>
+<body>
+<header>
+  <div>
+    <h1>✈️ TOPDJS CRM v9.2</h1>
+    <p>Offline + Supabase. Corrección de borrado sincronizado.</p>
+  </div>
+  <div class="topActions">
+    <span id="syncStatus" class="status offline">CARGANDO...</span>
+    <button id="syncBtn">SINCRONIZAR</button>
+    <button id="exportBtn">EXPORTAR</button>
+    <label class="importLabel">IMPORTAR<input id="importFile" type="file" accept=".json"></label>
+  </div>
+</header>
+
+<div id="errorBox" class="errorBox hidden"></div>
+
+<nav>
+  <button class="tab active" data-tab="quote">🧾 COTIZADOR</button>
+  <button class="tab" data-tab="records">📋 COTIZACIONES / EVENTOS</button>
+  <button class="tab" data-tab="calendar">📅 CALENDARIO</button>
+  <button class="tab" data-tab="crm">📸 CRM INSTAGRAM</button>
+</nav>
+
+<main>
+<section id="quote" class="panel active">
+  <div class="grid">
+    <section class="card">
+      <h2>👤 DATOS DEL CLIENTE</h2>
+      <label>👤 CLIENTE</label><input id="quoteClient">
+      <label>🏢 EMPRESA</label><input id="quoteCompany">
+      <label>📱 TELÉFONO / WHATSAPP</label><input id="quotePhone">
+      <label>📧 EMAIL</label><input id="quoteEmail">
+      <label>📸 INSTAGRAM</label><input id="quoteInstagram">
+    </section>
+    <section class="card">
+      <h2>📋 INFORMACIÓN DEL EVENTO</h2>
+      <label>🎯 TIPO DE EVENTO</label>
+      <select id="quoteEventType">
+        <option>BODA</option><option>CORPORATIVO</option><option>MARCA DE LUJO</option><option>DJ RENTAL</option>
+        <option>FIESTA PRIVADA</option><option>CONFERENCIA</option><option>FESTIVAL</option><option>OTRO</option>
+      </select>
+      <label>🎉 PROYECTO / EVENTO</label><input id="quoteProject">
+      <label>📅 FECHA DEL EVENTO</label><input id="quoteDate" type="date">
+      <label>📍 LUGAR / VENUE</label><input id="quoteVenue">
+      <div class="twoCols">
+        <div><label>👥 PAX</label><input id="quotePax" type="number" min="0" placeholder="250"></div>
+        <div><label>⏰ HORAS DE SERVICIO</label><input id="quoteServiceHours" type="number" min="0" step="0.5" placeholder="8"></div>
+      </div>
+      <label>🔧 MONTAJE</label>
+      <select id="quoteSetupType"><option>MISMO DÍA</option><option>DÍA ANTERIOR</option></select>
+      <div class="twoCols">
+        <div><label>🕒 HORAS DE MONTAJE</label><input id="quoteSetupHours" type="number" min="0" step="0.5" placeholder="6"></div>
+        <div><label>🚚 HORA DE MONTAJE</label><input id="quoteSetupTime" type="time"></div>
+      </div>
+      <div class="twoCols">
+        <div><label>🎬 HORA INICIO EVENTO</label><input id="quoteStartTime" type="time"></div>
+        <div><label>🏁 HORA TÉRMINO</label><input id="quoteEndTime" type="time"></div>
+      </div>
+    </section>
+    <section class="card">
+      <h2>💰 TOTALES</h2>
+      <label>💰 TOTAL COTIZADO</label><input id="quoteTotal" type="number" placeholder="85000">
+      <label>💵 ANTICIPO / PAGADO</label><input id="quotePaid" type="number" value="0">
+      <p class="big"><strong>💸 SALDO:</strong> <span id="quoteBalance">$0</span></p>
+      <button id="saveQuoteBtn">GUARDAR COMO COTIZACIÓN</button>
+      <button id="clearQuoteBtn" class="secondary">LIMPIAR COTIZADOR</button>
+    </section>
+    <section class="card wide">
+      <h2>📦 CATÁLOGO</h2>
+      <p class="hint">Marca el equipo y captura cantidad.</p>
+      <div id="catalog"></div>
+    </section>
+    <section class="card wide">
+      <h2>📝 OBSERVACIONES GENERALES</h2>
+      <textarea id="quoteNotes" rows="5" placeholder="Montaje, acceso, energía, condiciones, pagos, etc."></textarea>
+    </section>
+  </div>
+</section>
+
+<section id="records" class="panel">
+  <div class="card">
+    <h2>📊 RESUMEN</h2>
+    <p><strong>TOTAL COTIZADO:</strong> <span id="sumQuoted">$0</span></p>
+    <p><strong>TOTAL PAGADO:</strong> <span id="sumPaid">$0</span></p>
+    <p><strong>TOTAL PENDIENTE POR COBRAR:</strong> <span id="sumBalance">$0</span></p>
+  </div>
+  <div class="card">
+    <h2>📋 REGISTROS</h2>
+    <table>
+      <thead><tr><th>FECHA</th><th>CLIENTE</th><th>PROYECTO</th><th>PAX</th><th>HRS</th><th>MONTAJE</th><th>MONTO</th><th>SALDO</th><th>SYNC</th><th>ACCIÓN</th></tr></thead>
+      <tbody id="recordsTable"></tbody>
+    </table>
+  </div>
+</section>
+
+<section id="calendar" class="panel">
+  <div class="calendarTop"><button id="prevMonth">← MES ANTERIOR</button><h2 id="monthTitle"></h2><button id="nextMonth">MES SIGUIENTE →</button></div>
+  <div id="calendarGrid" class="calendar"></div>
+</section>
+
+<section id="crm" class="panel">
+  <div class="grid">
+    <section class="card">
+      <h2>📸 AGREGAR PROSPECTO</h2>
+      <label>📸 USUARIO IG</label><input id="igUser">
+      <label>👤 NOMBRE / EMPRESA</label><input id="contactName">
+      <label>📱 WHATSAPP</label><input id="contactPhone">
+      <label>📧 EMAIL</label><input id="contactEmail">
+      <label>🎯 SEGMENTO</label>
+      <select id="contactSegment"><option>DJS PARA RENTA</option><option>WEDDING PLANNERS</option><option>CASAS PRODUCTORAS</option><option>CORPORATIVO</option></select>
+      <label>📝 NOTAS</label><textarea id="contactNotes"></textarea>
+      <button id="addContactBtn">GUARDAR PROSPECTO</button>
+    </section>
+    <section class="card wide">
+      <h2>👥 PROSPECTOS</h2>
+      <table><thead><tr><th>IG</th><th>NOMBRE</th><th>WHATSAPP</th><th>SEGMENTO</th><th>SYNC</th><th>ACCIÓN</th></tr></thead><tbody id="contactsTable"></tbody></table>
+    </section>
+  </div>
+</section>
+</main>
+
+<div id="modal" class="modal hidden"><div class="modalBox"><button id="closeModal" class="close">×</button><h2 id="modalTitle"></h2><div id="modalBody"></div></div></div>
+
+<script>
+window.TOPDJS_CATALOG={"🔊 AUDIO": ["MARTIN TORUS T1215", "MARTIN TORUS T1230", "MARTIN SUB SXP218", "MARTIN FLEXPOINT FP8", "AXIOM TOP AX12C", "AXIOM TOP AX6C", "AXIOM SUB SW2100A", "BOSE L1 PRO 8", "HK ELEMENTS", "HK CT108", "CONSOLA YAMAHA DM3", "CONSOLA MIDAS M32", "CONSOLA SOUND MASTER 12CH", "MICRÓFONO INALÁMBRICO", "MICRÓFONO DIADEMA", "MICRÓFONO LAVALIER"], "🎧 CABINA Y DJ": ["DJ", "CONTROLADOR PIONEER XDJ-AZ", "MONITOR HK LUCAS PERFORMER", "MONITOR LD DAVE", "DJ BOOTH"], "💡 ILUMINACIÓN": ["ADJ FOCUS BEAM LED", "MARTIN SPOT MH5", "RUBIK WASH", "ALEDA B-EYE K10 WASH", "DAZE RGB", "ADJ BLINDER", "ADJ IKON PROFILE", "EZ-BAR", "SUNSTAR COLOR SIX", "PIXEL PANEL 5", "SUNSTAR ORACLE LASER RGB", "FOG HAZE MAGMATIC", "CONSOLA MA COMMAND WING", "INTERFASE MA DOT2", "CONSOLA ADJ WOLFMIX"], "📺 VIDEO": ["PANTALLA LED PITCH 3.9 5X3", "PANTALLA LED PITCH 3.9 4X3", "PANTALLA LED PITCH 3.9 3X2", "MÓDULOS LED PITCH 3.9 96 X 96", "PROCESADOR NOVA STAR", "PROCESADOR TAURUS", "SWITCHER ROLAND", "VJ ARENA", "PANTALLA LG 70”"], "⚡ ADICIONALES": ["PLANTA DE LUZ", "TRUSS MK", "STAGE SET SOPORTE", "BAZOOKA CO2"], "👷 STAFF": ["ING. AUDIO", "ING ILUMINACION", "STAGE HANDS"], "🚚 TRANSPORTE": ["CDMX", "FORANEO"]};
+window.SUPABASE_URL="https://xbrsnmbmkbvxyhrtiywy.supabase.co";
+window.SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhicnNubWJta2J2eHlocnRpeXd5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEyMTUwMzYsImV4cCI6MjA5Njc5MTAzNn0.ULJh4UYoaNLsirKnRQ4TmIbv-L5kzWwWWEFwIsFI02Y";
+</script>
+<script src="app.js"></script>
+</body>
+</html>
