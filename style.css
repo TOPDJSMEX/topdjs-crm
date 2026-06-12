@@ -14,3 +14,164 @@
 .auditBox h3{margin:0 0 8px}
 .historyItem{border-top:1px solid var(--border);padding:10px 0}
 .historyItem pre{white-space:pre-wrap;font-family:inherit;background:#111827;border:1px solid var(--border);border-radius:10px;padding:10px;color:var(--text)}
+
+
+/* TOPDJS CRM v11.1 - BLACK NEON UI */
+:root{
+  --bg:#000000;
+  --bg2:#02040a;
+  --card:#030814;
+  --card2:#050b18;
+  --field:#00030a;
+  --text:#ffffff;
+  --muted:#b8c7d9;
+  --border:#008ee6;
+  --accent:#00b8ff;
+  --green:#2cff9a;
+  --yellow:#ffe66d;
+  --red:#ff5f7c;
+}
+
+*{box-sizing:border-box}
+
+html,body{
+  background:#000 !important;
+  color:#fff !important;
+}
+
+body{
+  background:
+    radial-gradient(circle at 10% 0%, rgba(0,184,255,.12), transparent 28%),
+    radial-gradient(circle at 95% 10%, rgba(0,80,255,.10), transparent 24%),
+    #000 !important;
+}
+
+header,.app-header,.topbar{
+  background:#000 !important;
+  border-bottom:1px solid rgba(0,184,255,.45) !important;
+  box-shadow:0 0 22px rgba(0,184,255,.15) !important;
+}
+
+h1,h2,h3,h4,label,th{
+  color:#fff !important;
+  letter-spacing:.02em;
+}
+
+p,td,li,small,.hint{
+  color:#b8c7d9 !important;
+}
+
+.card,.panel,.modal-content,dialog,section,.grid > section{
+  background:linear-gradient(180deg, rgba(5,11,24,.96), rgba(0,0,0,.98)) !important;
+  border:1px solid rgba(0,184,255,.65) !important;
+  box-shadow:0 0 18px rgba(0,184,255,.20), inset 0 0 12px rgba(0,184,255,.05) !important;
+}
+
+input,textarea,select{
+  background:#00030a !important;
+  color:#fff !important;
+  border:1px solid rgba(0,184,255,.55) !important;
+  box-shadow:inset 0 0 10px rgba(0,184,255,.07) !important;
+}
+
+input:focus,textarea:focus,select:focus{
+  outline:none !important;
+  border-color:#35d7ff !important;
+  box-shadow:0 0 0 2px rgba(0,184,255,.18), 0 0 16px rgba(0,184,255,.28) !important;
+}
+
+input::placeholder,textarea::placeholder{color:#6f8197 !important}
+
+button,.btn{
+  border:1px solid rgba(0,184,255,.65) !important;
+  background:linear-gradient(180deg,#1fd0ff,#008ee6) !important;
+  color:#00111d !important;
+  font-weight:900 !important;
+  box-shadow:0 0 14px rgba(0,184,255,.28) !important;
+}
+
+button:hover,.btn:hover{
+  filter:brightness(1.12);
+  box-shadow:0 0 24px rgba(0,184,255,.45) !important;
+}
+
+button.secondary,.secondary{
+  background:linear-gradient(180deg,#071325,#02060d) !important;
+  color:#fff !important;
+  border-color:rgba(0,184,255,.55) !important;
+}
+
+button.danger,.deleteBtn,button[onclick*="delete"],button[onclick*="borrar"],button[onclick*="deleteRecord"]{
+  background:linear-gradient(180deg,#ff7890,#ff3b62) !important;
+  color:#250008 !important;
+  border-color:#ff8ca0 !important;
+}
+
+button.editBtn,.editBtn{
+  background:linear-gradient(180deg,#ffe878,#ffc73a) !important;
+  color:#171100 !important;
+  border-color:#ffe98a !important;
+}
+
+button.fileBtn,.fileBtn,button[onclick*="Pdf"],button[onclick*="PDF"],button[onclick*="generateWarehouse"]{
+  background:linear-gradient(180deg,#9fffd0,#28d98b) !important;
+  color:#00180b !important;
+  border-color:#9fffd0 !important;
+}
+
+.tab{
+  background:#050b18 !important;
+  color:#cfefff !important;
+  border:1px solid rgba(0,184,255,.35) !important;
+}
+
+.tab.active,.tab:hover{
+  background:linear-gradient(180deg,#1fd0ff,#008ee6) !important;
+  color:#00111d !important;
+  border-color:#35d7ff !important;
+}
+
+table{
+  background:#000 !important;
+  border-color:rgba(0,184,255,.55) !important;
+}
+
+thead,tr,td,th{border-color:rgba(0,184,255,.30) !important}
+th{background:#050b18 !important;color:#fff !important}
+tr:hover td{background:rgba(0,184,255,.06) !important}
+
+.badge,.status,.sync,.clientBadge{
+  border:1px solid rgba(0,184,255,.60) !important;
+  box-shadow:0 0 10px rgba(0,184,255,.15) !important;
+}
+
+.auditBox,.clientCard,.clientMini,.historyItem pre{
+  background:#00030a !important;
+  border:1px solid rgba(0,184,255,.55) !important;
+  box-shadow:0 0 18px rgba(0,184,255,.18) !important;
+}
+
+#modal,.modal,.overlay{
+  background:rgba(0,0,0,.82) !important;
+  backdrop-filter:blur(8px);
+}
+
+#modal .modal-content,.modal-content{
+  max-width:min(1000px,94vw);
+  background:linear-gradient(180deg,#050b18,#000) !important;
+}
+
+.close,button.close{
+  background:linear-gradient(180deg,#ff7890,#ff3b62) !important;
+  color:#1b0006 !important;
+  border-radius:14px !important;
+}
+
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-track{background:#000}
+::-webkit-scrollbar-thumb{background:#008ee6;border-radius:20px}
+::-webkit-scrollbar-thumb:hover{background:#35d7ff}
+
+.card h2,.panel h2{
+  text-shadow:0 0 10px rgba(0,184,255,.22);
+}
