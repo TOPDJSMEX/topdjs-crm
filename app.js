@@ -1,5 +1,5 @@
-const STORE="topdjs_v10_9_historial_clientes";
-const OLD_STORES=["topdjs_v10_8_pedido_bodega_pdf","topdjs_v10_7_restore_catalog_edit","topdjs_v10_6_setinput_fix","topdjs_v10_5_edit_delete_fix","topdjs_v10_4_edit_robusto","topdjs_v10_3_edit_from_cloud","topdjs_v10_2_edit_events","topdjs_v10_1_event_files","topdjs_v10_event_files","topdjs_v9_2_delete_fix","topdjs_v9_1_supabase_fix","topdjs_v9_hibrida","topdjs_v8_evento_iconos","topdjs_v7_pax"];
+const STORE="topdjs_v11_0_auditoria_bitacora";
+const OLD_STORES=["topdjs_v10_9_historial_clientes","topdjs_v10_8_pedido_bodega_pdf","topdjs_v10_7_restore_catalog_edit","topdjs_v10_6_setinput_fix","topdjs_v10_5_edit_delete_fix","topdjs_v10_4_edit_robusto","topdjs_v10_3_edit_from_cloud","topdjs_v10_2_edit_events","topdjs_v10_1_event_files","topdjs_v10_event_files","topdjs_v9_2_delete_fix","topdjs_v9_1_supabase_fix","topdjs_v9_hibrida","topdjs_v8_evento_iconos","topdjs_v7_pax"];
 let db=JSON.parse(localStorage.getItem(STORE)||"null");
 if(!db){
   db={records:[],contacts:[],eventFiles:[]};
@@ -168,7 +168,32 @@ $("clearQuoteBtn").onclick=()=>{
   $("quotePaid").value=0;$("quoteSetupType").value="MISMO DÍA";clearCatalog();updateQuoteBalance()
 };
 function collectQuoteData(local_id=null){const amount=Number($("quoteTotal").value||0),paid=Number($("quotePaid").value||0);return{local_id:local_id||uid(),type:"COTIZACIÓN ENVIADA",date:$("quoteDate").value,client:$("quoteClient").value,company:$("quoteCompany").value,phone:$("quotePhone").value,email:$("quoteEmail").value,instagram:$("quoteInstagram").value,event_type:$("quoteEventType").value,project:$("quoteProject").value,venue:$("quoteVenue").value,pax:Number($("quotePax").value||0),service_hours:Number($("quoteServiceHours").value||0),setup_type:$("quoteSetupType").value,setup_hours:Number($("quoteSetupHours").value||0),setup_time:$("quoteSetupTime").value,start_time:$("quoteStartTime").value,end_time:$("quoteEndTime").value,amount,paid,status:paid>=amount&&amount>0?"PAGADO":paid>0?"ANTICIPO RECIBIDO":"EN SEGUIMIENTO",notes:$("quoteNotes").value,quote_catalog:getCatalogSelection(),updated_at:new Date().toISOString(),_dirty:true}}
-$("saveQuoteBtn").onclick=()=>{const amount=Number($("quoteTotal").value||0);if(!$("quoteClient").value||!$("quoteDate").value)return alert("AGREGA CLIENTE Y FECHA.");if(!amount)return alert("AGREGA TOTAL COTIZADO.");if(editingRecordId){const i=records.findIndex(r=>r.local_id===editingRecordId);if(i>=0){records[i]={...records[i],...collectQuoteData(editingRecordId)};save();renderAll();syncAll();alert("CAMBIOS GUARDADOS.");clearQuoteForm();document.querySelector('[data-tab="records"]').click();return}}const rec=collectQuoteData();records.push(rec);save();renderAll();syncAll();alert("COTIZACIÓN GUARDADA.")};
+$("saveQuoteBtn").onclick=async()=>{
+  const amount=Number($("quoteTotal").value||0);
+  if(!$("quoteClient").value||!$("quoteDate").value)return alert("AGREGA CLIENTE Y FECHA.");
+  if(!amount)return alert("AGREGA TOTAL COTIZADO.");
+  const actor=askActor(editingRecordId?"actualizar evento":"crear evento");
+  if(!actor)return;
+  const oldRecord=editingRecordId?(records.find(r=>r.local_id===editingRecordId)||{}):null;
+  if(editingRecordId){
+    const i=records.findIndex(r=>r.local_id===editingRecordId);
+    if(i>=0){
+      const rec={...records[i],...collectQuoteData(editingRecordId),updated_by:actor,updated_at:new Date().toISOString(),_dirty:true};
+      records[i]=rec;save();renderAll();
+      await syncAll();await updateRecordAudit(rec.local_id,actor);
+      await insertHistory(rec.local_id,"UPDATE",diffRecords(oldRecord,rec).join("\n\n"),actor);
+      await syncAll();
+      alert("CAMBIOS GUARDADOS.");
+      clearQuoteForm();document.querySelector('[data-tab="records"]').click();return
+    }
+  }
+  const rec={...collectQuoteData(),updated_by:actor,updated_at:new Date().toISOString(),_dirty:true};
+  records.push(rec);save();renderAll();
+  await syncAll();await updateRecordAudit(rec.local_id,actor);
+  await insertHistory(rec.local_id,"CREATE","Creó evento",actor);
+  await syncAll();
+  alert("COTIZACIÓN GUARDADA.");
+};
 function firstValue(...vals){
   for(const v of vals){
     if(v!==undefined && v!==null && String(v)!=="") return v;
@@ -190,7 +215,7 @@ function mergeRecordForEdit(local, remote){
   local=normalizeRecord(local||{});
   remote=normalizeRecord(remote||{});
   const out={...local};
-  ["id","local_id","type","date","client","company","phone","email","instagram","event_type","project","venue","pax","service_hours","setup_type","setup_hours","setup_time","start_time","end_time","amount","paid","status","notes","quote_catalog","updated_at"].forEach(k=>{
+  ["id","local_id","type","date","client","company","phone","email","instagram","event_type","project","venue","pax","service_hours","setup_type","setup_hours","setup_time","start_time","end_time","amount","paid","status","notes","quote_catalog","updated_by","updated_at"].forEach(k=>{
     out[k]=firstValue(remote[k], local[k]);
   });
   out.quote_catalog=parseMaybeJson(firstValue(remote.quote_catalog, local.quote_catalog));
@@ -378,6 +403,70 @@ ${rowsHtml}
   w.document.close();
 }
 
+
+function askActor(action="guardar"){
+  const who=prompt(`¿Quién realiza esta acción?\n\n1 = Carlos\n2 = Vane\n\nAcción: ${action}`);
+  if(who===null)return null;
+  const clean=String(who).trim().toLowerCase();
+  if(clean==="1"||clean==="carlos"||clean==="charly")return "Carlos";
+  if(clean==="2"||clean==="vane"||clean==="vanessa")return "Vane";
+  alert("Debes seleccionar Carlos o Vane.");
+  return askActor(action);
+}
+function fmtAuditDate(dt){
+  if(!dt)return "";
+  try{const d=new Date(dt);return d.toLocaleDateString("es-MX",{day:"2-digit",month:"short",year:"numeric"})+" "+d.toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit"})}catch(e){return dt}
+}
+function catalogFlat(qc){
+  const out={};
+  try{
+    const sections=getSelectedCatalogSections(parseMaybeJson(qc));
+    sections.forEach(sec=>sec.items.forEach(i=>{out[normalizeCatalogKey(sec.rub+" "+i.item)]=`${i.qty} ${i.item}`}));
+  }catch(e){}
+  return out;
+}
+function diffRecords(oldR,newR){
+  oldR=normalizeRecord(oldR||{});newR=normalizeRecord(newR||{});
+  const labels={client:"cliente",company:"empresa",phone:"teléfono",email:"email",instagram:"Instagram",event_type:"tipo de evento",project:"proyecto",date:"fecha",venue:"venue",pax:"PAX",service_hours:"horas de servicio",setup_type:"montaje",setup_hours:"horas de montaje",setup_time:"hora de montaje",start_time:"hora inicio",end_time:"hora término",amount:"monto",paid:"anticipo",status:"estatus",notes:"observaciones"};
+  const changes=[];
+  Object.entries(labels).forEach(([k,label])=>{
+    const a=String(oldR[k]??"").trim(),b=String(newR[k]??"").trim();
+    if(a!==b){const isMoney=["amount","paid"].includes(k);changes.push(`Cambió ${label}:\n${isMoney?money(a||0):a||"—"} → ${isMoney?money(b||0):b||"—"}`)}
+  });
+  const oldCat=catalogFlat(oldR.quote_catalog),newCat=catalogFlat(newR.quote_catalog);
+  Object.keys(newCat).forEach(k=>{if(!oldCat[k])changes.push(`Agregó:\n${newCat[k]}`);else if(oldCat[k]!==newCat[k])changes.push(`Cambió equipo:\n${oldCat[k]} → ${newCat[k]}`)});
+  Object.keys(oldCat).forEach(k=>{if(!newCat[k])changes.push(`Eliminó:\n${oldCat[k]}`)});
+  return changes.length?changes:["Actualizó evento"];
+}
+async function insertHistory(record_local_id,action,details,updated_by){
+  try{
+    if(!navigator.onLine)return;
+    await api("event_history",{method:"POST",headers:{"Content-Type":"application/json","Prefer":"return=minimal"},body:JSON.stringify({record_local_id,action,details,updated_by})});
+  }catch(e){console.warn("No se pudo registrar bitácora",e)}
+}
+async function fetchHistory(record_local_id){
+  try{
+    if(!navigator.onLine)return [];
+    const arr=await api(`event_history?select=*&record_local_id=eq.${encodeURIComponent(record_local_id)}&order=created_at.desc`,{method:"GET"});
+    return Array.isArray(arr)?arr:[];
+  }catch(e){console.warn("No se pudo cargar bitácora",e);return []}
+}
+async function updateRecordAudit(local_id,updated_by){
+  try{
+    if(!navigator.onLine)return;
+    await api(`topdjs_records?local_id=eq.${encodeURIComponent(local_id)}`,{method:"PATCH",headers:{"Content-Type":"application/json","Prefer":"return=minimal"},body:JSON.stringify({updated_by,updated_at:new Date().toISOString()})});
+  }catch(e){console.warn("No se pudo actualizar auditoría",e)}
+}
+function auditHtml(r){
+  return `<div class="auditBox"><h3>🕒 ÚLTIMA ACTUALIZACIÓN</h3><p><strong>👤 ${esc(r.updated_by||"Sin registro")}</strong></p><p>📅 ${esc(fmtAuditDate(r.updated_at||""))}</p><button onclick="loadHistoryIntoModal('${r.local_id}')">📋 VER BITÁCORA</button><div id="historyBox"></div></div>`;
+}
+async function loadHistoryIntoModal(local_id){
+  const box=$("historyBox");if(!box)return;
+  box.innerHTML="<p class='hint'>Cargando bitácora...</p>";
+  const hist=await fetchHistory(local_id);
+  box.innerHTML=hist.length?hist.map(h=>`<div class="historyItem"><strong>${esc(fmtAuditDate(h.created_at))}</strong><br><span>👤 ${esc(h.updated_by||"")}</span><br><b>${esc(h.action||"")}</b><pre>${esc(h.details||"")}</pre></div>`).join(""):"<p class='hint'>Sin bitácora registrada todavía.</p>";
+}
+
 function renderRecords(){
   const tb=$("recordsTable");tb.innerHTML="";
   records.filter(r=>!r._deleted).sort((a,b)=>String(a.date).localeCompare(String(b.date))).forEach(r=>{
@@ -396,6 +485,9 @@ async function delRecord(key){
   const r=findLocalRecordFlexible(key)||{local_id:key,id:key};
   const local_id=r.local_id||key;
   if(!confirm("¿BORRAR ESTE EVENTO Y TODOS SUS ARCHIVOS?"))return;
+  const actor=askActor("eliminar evento");
+  if(!actor)return;
+  await insertHistory(local_id,"DELETE","Eliminó evento",actor);
   showError("");
   const backup=[...records],backupFiles=[...eventFiles];
   try{
