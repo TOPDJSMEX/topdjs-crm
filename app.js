@@ -1,5 +1,5 @@
-const STORE="topdjs_v10_7_restore_catalog_edit";
-const OLD_STORES=["topdjs_v10_6_setinput_fix","topdjs_v10_5_edit_delete_fix","topdjs_v10_4_edit_robusto","topdjs_v10_3_edit_from_cloud","topdjs_v10_2_edit_events","topdjs_v10_1_event_files","topdjs_v10_event_files","topdjs_v9_2_delete_fix","topdjs_v9_1_supabase_fix","topdjs_v9_hibrida","topdjs_v8_evento_iconos","topdjs_v7_pax"];
+const STORE="topdjs_v10_8_pedido_bodega_pdf";
+const OLD_STORES=["topdjs_v10_7_restore_catalog_edit","topdjs_v10_6_setinput_fix","topdjs_v10_5_edit_delete_fix","topdjs_v10_4_edit_robusto","topdjs_v10_3_edit_from_cloud","topdjs_v10_2_edit_events","topdjs_v10_1_event_files","topdjs_v10_event_files","topdjs_v9_2_delete_fix","topdjs_v9_1_supabase_fix","topdjs_v9_hibrida","topdjs_v8_evento_iconos","topdjs_v7_pax"];
 let db=JSON.parse(localStorage.getItem(STORE)||"null");
 if(!db){
   db={records:[],contacts:[],eventFiles:[]};
@@ -264,13 +264,127 @@ async function editRecord(key){
   if(ok)window.scrollTo({top:0,behavior:"smooth"});
 }
 
+
+function formatDateEs(dateStr){
+  if(!dateStr)return "";
+  try{
+    const d=new Date(dateStr+"T12:00:00");
+    return d.toLocaleDateString("es-MX",{day:"2-digit",month:"long",year:"numeric"});
+  }catch(e){return dateStr}
+}
+function getSelectedCatalogSections(qc){
+  if(!qc)return [];
+  if(typeof qc==="string"){try{qc=JSON.parse(qc)}catch(e){return []}}
+  const sections=[];
+  Object.entries(CATALOG).forEach(([rub])=>{
+    const data=getCatalogDataForRubro(qc,rub);
+    const selected=normalizeSelectedList(data);
+    const items=selected.map(x=>({
+      item:String(x.item||x.name||x.equipo||x.label||"").trim(),
+      qty:Number(x.qty ?? x.cantidad ?? x.quantity ?? x.cant ?? 1)||1
+    })).filter(x=>x.item);
+    const notes=(data&&typeof data==="object")?(data.notes||data.observations||data.observaciones||""):"";
+    if(items.length||notes)sections.push({rub,items,notes});
+  });
+  return sections;
+}
+function generateWarehouseOrderPdf(key){
+  const r=normalizeRecord(findLocalRecordFlexible(key)||records.find(x=>x.local_id===key)||{});
+  if(!r.local_id && !r.client)return alert("No encontré este evento para generar pedido de bodega.");
+  const sections=getSelectedCatalogSections(parseMaybeJson(r.quote_catalog));
+  const today=new Date().toLocaleDateString("es-MX",{day:"2-digit",month:"long",year:"numeric"});
+  const title=(r.project||r.client||"EVENTO").toUpperCase();
+  const rowsHtml=sections.length?sections.map(sec=>`
+    <section class="section">
+      <h2>${esc(sec.rub)}</h2>
+      ${sec.items.length?`<table><thead><tr><th>CANT.</th><th>EQUIPO / SERVICIO</th><th>CHECK</th></tr></thead><tbody>${sec.items.map(i=>`<tr><td class="qty">${esc(i.qty)}</td><td>${esc(i.item)}</td><td class="check">☐</td></tr>`).join("")}</tbody></table>`:""}
+      ${sec.notes?`<div class="notes"><strong>OBSERVACIONES ${esc(sec.rub)}:</strong><br>${esc(sec.notes)}</div>`:""}
+    </section>
+  `).join(""):`<p class="empty">No hay equipo seleccionado en este evento.</p>`;
+  const html=`<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Pedido Bodega - ${esc(title)}</title>
+<style>
+  @page{size:A4;margin:16mm}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;color:#111827;margin:0;background:white}
+  .header{border-bottom:3px solid #0f172a;padding-bottom:14px;margin-bottom:18px;display:flex;justify-content:space-between;gap:20px}
+  .brand h1{margin:0;font-size:28px;letter-spacing:.08em;color:#0f172a}
+  .brand p{margin:4px 0 0;color:#475569;font-size:13px}
+  .docTitle{text-align:right}
+  .docTitle h2{margin:0;font-size:20px;color:#0f172a}
+  .docTitle p{margin:4px 0;color:#475569;font-size:12px}
+  .info{display:grid;grid-template-columns:1fr 1fr;gap:10px 22px;margin-bottom:18px;border:1px solid #cbd5e1;border-radius:12px;padding:14px;background:#f8fafc}
+  .info div{font-size:13px}
+  .label{font-weight:800;color:#334155;display:block;font-size:11px;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px}
+  .section{page-break-inside:avoid;margin:18px 0}
+  .section h2{background:#0f172a;color:white;font-size:15px;padding:8px 10px;border-radius:8px;margin:0 0 8px;text-transform:uppercase}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{background:#e2e8f0;text-align:left;padding:7px;border:1px solid #cbd5e1;font-size:11px;text-transform:uppercase;color:#334155}
+  td{padding:8px;border:1px solid #cbd5e1;vertical-align:middle}
+  .qty{width:70px;text-align:center;font-weight:800}
+  .check{width:70px;text-align:center;font-size:20px}
+  .notes{border-left:4px solid #0f172a;background:#f8fafc;padding:10px;margin-top:8px;font-size:12px;white-space:pre-wrap}
+  .observations{margin-top:18px;border:1px solid #cbd5e1;border-radius:12px;padding:14px;background:#f8fafc;page-break-inside:avoid}
+  .observations h2{margin:0 0 8px;font-size:15px;color:#0f172a}
+  .signatures{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-top:40px}
+  .sig{border-top:1px solid #111827;text-align:center;padding-top:8px;font-size:12px;color:#334155}
+  .footer{margin-top:20px;font-size:10px;color:#64748b;text-align:center}
+  .noPrint{position:fixed;top:12px;right:12px}
+  .noPrint button{padding:10px 14px;border:0;border-radius:8px;background:#0f172a;color:white;font-weight:800;cursor:pointer}
+  @media print{.noPrint{display:none}.section{break-inside:avoid}}
+</style>
+</head>
+<body>
+<div class="noPrint"><button onclick="window.print()">IMPRIMIR / GUARDAR PDF</button></div>
+<div class="header">
+  <div class="brand">
+    <h1>TOPDJS</h1>
+    <p>Audio · Iluminación · Video · DJ</p>
+  </div>
+  <div class="docTitle">
+    <h2>PEDIDO DE BODEGA</h2>
+    <p>Generado: ${esc(today)}</p>
+  </div>
+</div>
+<div class="info">
+  <div><span class="label">Evento / Proyecto</span>${esc(r.project||r.client||"")}</div>
+  <div><span class="label">Cliente</span>${esc(r.client||"")}</div>
+  <div><span class="label">Fecha</span>${esc(formatDateEs(r.date))}</div>
+  <div><span class="label">Venue</span>${esc(r.venue||"")}</div>
+  <div><span class="label">PAX</span>${esc(r.pax||"")}</div>
+  <div><span class="label">Horas de servicio</span>${esc(r.service_hours||"")}</div>
+  <div><span class="label">Montaje</span>${esc(r.setup_type||"")} ${r.setup_time?("· "+esc(r.setup_time)):""} ${r.setup_hours?("· "+esc(r.setup_hours)+" hrs"):""}</div>
+  <div><span class="label">Horario evento</span>${esc(r.start_time||"")} ${r.end_time?(" - "+esc(r.end_time)):""}</div>
+</div>
+${rowsHtml}
+<div class="observations">
+  <h2>OBSERVACIONES GENERALES</h2>
+  <div>${esc(r.notes||"Sin observaciones.")}</div>
+</div>
+<div class="signatures">
+  <div class="sig">ENTREGA BODEGA / GEORGE</div>
+  <div class="sig">RECIBE OPERACIÓN TOPDJS</div>
+</div>
+<div class="footer">Documento operativo interno. No incluye precios ni costos.</div>
+<script>setTimeout(()=>window.print(),500)</script>
+</body>
+</html>`;
+  const w=window.open("","_blank");
+  if(!w)return alert("Safari bloqueó la ventana emergente. Permite pop-ups para generar el PDF.");
+  w.document.open();
+  w.document.write(html);
+  w.document.close();
+}
+
 function renderRecords(){
   const tb=$("recordsTable");tb.innerHTML="";
   records.filter(r=>!r._deleted).sort((a,b)=>String(a.date).localeCompare(String(b.date))).forEach(r=>{
     r=normalizeRecord(r);
     const fileCount=eventFiles.filter(f=>f.record_local_id===r.local_id).length;
     let tr=document.createElement("tr");
-    tr.innerHTML=`<td>${esc(r.date)}</td><td>${esc(r.client)}<br><small>${esc(r.company)}</small></td><td>${esc(r.project)}</td><td>${esc(r.pax||"")}</td><td>${esc(r.service_hours||"")}</td><td>${esc(r.setup_type||"")}</td><td>${money(r.amount)}</td><td>${money(bal(r))}</td><td>${r._dirty?"PENDIENTE":"OK"}${fileCount?`<br>📎 ${fileCount}`:""}</td><td><button onclick="showRecord('${r.local_id}')">VER</button> <button class="editBtn" onclick="editRecord('${r.local_id}')">EDITAR</button> <button onclick="markPaid('${r.local_id}')">PAGADO</button> <button class="delete" onclick="delRecord('${r.local_id}')">BORRAR</button></td>`;
+    tr.innerHTML=`<td>${esc(r.date)}</td><td>${esc(r.client)}<br><small>${esc(r.company)}</small></td><td>${esc(r.project)}</td><td>${esc(r.pax||"")}</td><td>${esc(r.service_hours||"")}</td><td>${esc(r.setup_type||"")}</td><td>${money(r.amount)}</td><td>${money(bal(r))}</td><td>${r._dirty?"PENDIENTE":"OK"}${fileCount?`<br>📎 ${fileCount}`:""}</td><td><button onclick="showRecord('${r.local_id}')">VER</button> <button class="editBtn" onclick="editRecord('${r.local_id}')">EDITAR</button> <button class="fileBtn" onclick="generateWarehouseOrderPdf('${r.local_id}')">PEDIDO BODEGA</button> <button onclick="markPaid('${r.local_id}')">PAGADO</button> <button class="delete" onclick="delRecord('${r.local_id}')">BORRAR</button></td>`;
     tb.appendChild(tr)
   });
   $("sumQuoted").textContent=money(records.filter(r=>!r._deleted).reduce((s,r)=>s+Number(r.amount||0),0));
@@ -317,7 +431,7 @@ function showRecord(local_id){
   const r=normalizeRecord(records.find(x=>x.local_id===local_id));if(!r)return;
   currentFileRecordId=local_id;
   $("modalTitle").textContent=r.client;
-  $("modalBody").innerHTML=`<h3>📋 INFORMACIÓN DEL EVENTO</h3><p><strong>📅 FECHA:</strong> ${esc(r.date)}</p><p><strong>🎉 PROYECTO:</strong> ${esc(r.project)}</p><p><strong>🎯 TIPO:</strong> ${esc(r.event_type)}</p><p><strong>📍 LUGAR:</strong> ${esc(r.venue)}</p><p><strong>👥 PAX:</strong> ${esc(r.pax||"")}</p><p><strong>⏰ HORAS DE SERVICIO:</strong> ${esc(r.service_hours||"")}</p><p><strong>🔧 MONTAJE:</strong> ${esc(r.setup_type||"")} · ${esc(r.setup_hours||"")} HRS · ${esc(r.setup_time||"")}</p><p><strong>🎬 INICIO:</strong> ${esc(r.start_time||"")} · <strong>🏁 TÉRMINO:</strong> ${esc(r.end_time||"")}</p><p><strong>💰 MONTO:</strong> ${money(r.amount)} | <strong>💸 SALDO:</strong> ${money(bal(r))}</p><p>${r.phone?`<a class="button whatsapp" href="${wa(r.phone,"Hola, te contacto de TopDJs sobre "+(r.project||"tu evento"))}" target="_blank">WHATSAPP</a> <a class="button call" href="${tel(r.phone)}">LLAMAR</a>`:""} <button class="editBtn" onclick="$('modal').classList.add('hidden');editRecord('${r.local_id}')">EDITAR EVENTO</button></p>${catalogHtml(r.quote_catalog)}<h3>📝 OBSERVACIONES GENERALES</h3><p>${esc(r.notes)}</p>${filesHtml(local_id)}`;
+  $("modalBody").innerHTML=`<h3>📋 INFORMACIÓN DEL EVENTO</h3><p><strong>📅 FECHA:</strong> ${esc(r.date)}</p><p><strong>🎉 PROYECTO:</strong> ${esc(r.project)}</p><p><strong>🎯 TIPO:</strong> ${esc(r.event_type)}</p><p><strong>📍 LUGAR:</strong> ${esc(r.venue)}</p><p><strong>👥 PAX:</strong> ${esc(r.pax||"")}</p><p><strong>⏰ HORAS DE SERVICIO:</strong> ${esc(r.service_hours||"")}</p><p><strong>🔧 MONTAJE:</strong> ${esc(r.setup_type||"")} · ${esc(r.setup_hours||"")} HRS · ${esc(r.setup_time||"")}</p><p><strong>🎬 INICIO:</strong> ${esc(r.start_time||"")} · <strong>🏁 TÉRMINO:</strong> ${esc(r.end_time||"")}</p><p><strong>💰 MONTO:</strong> ${money(r.amount)} | <strong>💸 SALDO:</strong> ${money(bal(r))}</p><p>${r.phone?`<a class="button whatsapp" href="${wa(r.phone,"Hola, te contacto de TopDJs sobre "+(r.project||"tu evento"))}" target="_blank">WHATSAPP</a> <a class="button call" href="${tel(r.phone)}">LLAMAR</a>`:""} <button class="editBtn" onclick="$('modal').classList.add('hidden');editRecord('${r.local_id}')">EDITAR EVENTO</button> <button class="fileBtn" onclick="generateWarehouseOrderPdf('${r.local_id}')">PEDIDO BODEGA PDF</button></p>${catalogHtml(r.quote_catalog)}<h3>📝 OBSERVACIONES GENERALES</h3><p>${esc(r.notes)}</p>${filesHtml(local_id)}`;
   $("modal").classList.remove("hidden")
 }
 $("closeModal").onclick=()=>$("modal").classList.add("hidden");
