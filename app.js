@@ -1,5 +1,5 @@
-const STORE="topdjs_v10_6_setinput_fix";
-const OLD_STORES=["topdjs_v10_5_edit_delete_fix","topdjs_v10_4_edit_robusto","topdjs_v10_3_edit_from_cloud","topdjs_v10_2_edit_events","topdjs_v10_1_event_files","topdjs_v10_event_files","topdjs_v9_2_delete_fix","topdjs_v9_1_supabase_fix","topdjs_v9_hibrida","topdjs_v8_evento_iconos","topdjs_v7_pax"];
+const STORE="topdjs_v10_7_restore_catalog_edit";
+const OLD_STORES=["topdjs_v10_6_setinput_fix","topdjs_v10_5_edit_delete_fix","topdjs_v10_4_edit_robusto","topdjs_v10_3_edit_from_cloud","topdjs_v10_2_edit_events","topdjs_v10_1_event_files","topdjs_v10_event_files","topdjs_v9_2_delete_fix","topdjs_v9_1_supabase_fix","topdjs_v9_hibrida","topdjs_v8_evento_iconos","topdjs_v7_pax"];
 let db=JSON.parse(localStorage.getItem(STORE)||"null");
 if(!db){
   db={records:[],contacts:[],eventFiles:[]};
@@ -102,6 +102,64 @@ function clearCatalog(){
     const n=$("notes_"+safeId(rub));if(n)n.value=""
   })
 }
+
+function normalizeCatalogKey(s){
+  return String(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^\w\s]/g,"").replace(/\s+/g," ").trim().toUpperCase();
+}
+function getCatalogDataForRubro(qc,rub){
+  if(!qc)return null;
+  if(typeof qc==="string"){try{qc=JSON.parse(qc)}catch(e){return null}}
+  if(!qc || typeof qc!=="object")return null;
+  if(qc[rub])return qc[rub];
+  const target=normalizeCatalogKey(rub);
+  const foundKey=Object.keys(qc).find(k=>{
+    const nk=normalizeCatalogKey(k);
+    return nk===target || nk.includes(target) || target.includes(nk);
+  });
+  return foundKey?qc[foundKey]:null;
+}
+function normalizeSelectedList(data){
+  if(!data)return [];
+  if(Array.isArray(data))return data;
+  if(Array.isArray(data.selected))return data.selected;
+  if(Array.isArray(data.items))return data.items;
+  if(Array.isArray(data.equipment))return data.equipment;
+  if(typeof data==="object"){
+    return Object.entries(data).filter(([k,v])=>!["notes","observations","observaciones"].includes(k)&&v).map(([k,v])=>{
+      if(typeof v==="object")return {item:v.item||v.name||v.equipo||k,qty:v.qty||v.cantidad||v.quantity||v.cant||1};
+      return {item:k,qty:v===true?1:v};
+    });
+  }
+  return [];
+}
+function setCatalogSelection(qc){
+  clearCatalog();
+  if(!qc)return;
+  if(typeof qc==="string"){try{qc=JSON.parse(qc)}catch(e){console.warn("quote_catalog no es JSON válido",e);return}}
+  Object.entries(CATALOG).forEach(([rub,items])=>{
+    const data=getCatalogDataForRubro(qc,rub);
+    const selected=normalizeSelectedList(data);
+    selected.forEach(x=>{
+      const savedName=normalizeCatalogKey(x.item||x.name||x.equipo||x.label||"");
+      if(!savedName)return;
+      const catalogItem=items.find(item=>{
+        const a=normalizeCatalogKey(item);
+        return a===savedName || a.includes(savedName) || savedName.includes(a);
+      });
+      if(!catalogItem)return;
+      const id=safeId(rub+"__"+catalogItem);
+      const chk=$("chk_"+id), qty=$("qty_"+id);
+      if(chk&&qty){
+        chk.checked=true;
+        qty.disabled=false;
+        qty.value=Number(x.qty ?? x.cantidad ?? x.quantity ?? x.cant ?? 1)||1;
+      }
+    });
+    const n=$("notes_"+safeId(rub));
+    if(n&&data&&typeof data==="object")n.value=data.notes||data.observations||data.observaciones||"";
+  });
+}
+
 function updateQuoteBalance(){$("quoteBalance").textContent=money(Math.max(Number($("quoteTotal").value||0)-Number($("quotePaid").value||0),0))}
 $("quoteTotal").oninput=updateQuoteBalance;$("quotePaid").oninput=updateQuoteBalance;
 $("clearQuoteBtn").onclick=()=>{
