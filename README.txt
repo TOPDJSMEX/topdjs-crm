@@ -1,19 +1,14 @@
-TOPDJS CRM v10.3 - EDITAR DESDE SUPABASE
+TOPDJS CRM v10.4 - EDITAR EVENTOS ROBUSTO
 
-Corrección:
-- Al presionar EDITAR, la app primero busca el evento actualizado en Supabase.
-- Luego precarga el formulario con la versión más reciente.
-- Si no hay internet o Supabase no responde, usa la copia local como respaldo.
-- Evita que Carlos y Vane editen datos incompletos o viejos.
-
-Mantiene:
-- Archivos por evento.
-- Ver / descargar / eliminar archivos.
-- Sincronización multiusuario.
-- Botón EDITAR en la tabla y dentro del modal VER.
+Corrección principal:
+- El botón EDITAR ya no deja el formulario vacío.
+- Toma los datos locales del evento y los combina con Supabase.
+- Si Supabase trae campos vacíos, conserva los datos locales visibles.
+- Soporta quote_catalog como objeto o texto JSON.
+- Mantiene archivos por evento.
 
 Instalación:
-1. Subir estos 6 archivos a GitHub reemplazando los existentes.
-2. Commit: TopDJs CRM v10.3 - Edit From Cloud
-3. Esperar Vercel Ready.
-4. Abrir app y forzar recarga con Cmd + Shift + R.
+1. Sube estos 6 archivos a GitHub reemplazando los existentes.
+2. Commit: TopDJs CRM v10.4 - Edit Robust Fix
+3. Espera Vercel Ready.
+4. Abre la app y fuerza recarga con Option + Command + R o Command + Shift + R.

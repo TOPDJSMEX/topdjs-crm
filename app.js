@@ -1,5 +1,5 @@
-const STORE="topdjs_v10_3_edit_from_cloud";
-const OLD_STORES=["topdjs_v10_2_edit_events","topdjs_v10_1_event_files","topdjs_v10_event_files","topdjs_v9_2_delete_fix","topdjs_v9_1_supabase_fix","topdjs_v9_hibrida","topdjs_v8_evento_iconos","topdjs_v7_pax"];
+const STORE="topdjs_v10_4_edit_robusto";
+const OLD_STORES=["topdjs_v10_3_edit_from_cloud","topdjs_v10_2_edit_events","topdjs_v10_1_event_files","topdjs_v10_event_files","topdjs_v9_2_delete_fix","topdjs_v9_1_supabase_fix","topdjs_v9_hibrida","topdjs_v8_evento_iconos","topdjs_v7_pax"];
 let db=JSON.parse(localStorage.getItem(STORE)||"null");
 if(!db){
   db={records:[],contacts:[],eventFiles:[]};
@@ -102,6 +102,33 @@ $("clearQuoteBtn").onclick=()=>{
 };
 function collectQuoteData(local_id=null){const amount=Number($("quoteTotal").value||0),paid=Number($("quotePaid").value||0);return{local_id:local_id||uid(),type:"COTIZACIÓN ENVIADA",date:$("quoteDate").value,client:$("quoteClient").value,company:$("quoteCompany").value,phone:$("quotePhone").value,email:$("quoteEmail").value,instagram:$("quoteInstagram").value,event_type:$("quoteEventType").value,project:$("quoteProject").value,venue:$("quoteVenue").value,pax:Number($("quotePax").value||0),service_hours:Number($("quoteServiceHours").value||0),setup_type:$("quoteSetupType").value,setup_hours:Number($("quoteSetupHours").value||0),setup_time:$("quoteSetupTime").value,start_time:$("quoteStartTime").value,end_time:$("quoteEndTime").value,amount,paid,status:paid>=amount&&amount>0?"PAGADO":paid>0?"ANTICIPO RECIBIDO":"EN SEGUIMIENTO",notes:$("quoteNotes").value,quote_catalog:getCatalogSelection(),updated_at:new Date().toISOString(),_dirty:true}}
 $("saveQuoteBtn").onclick=()=>{const amount=Number($("quoteTotal").value||0);if(!$("quoteClient").value||!$("quoteDate").value)return alert("AGREGA CLIENTE Y FECHA.");if(!amount)return alert("AGREGA TOTAL COTIZADO.");if(editingRecordId){const i=records.findIndex(r=>r.local_id===editingRecordId);if(i>=0){records[i]={...records[i],...collectQuoteData(editingRecordId)};save();renderAll();syncAll();alert("CAMBIOS GUARDADOS.");clearQuoteForm();document.querySelector('[data-tab="records"]').click();return}}const rec=collectQuoteData();records.push(rec);save();renderAll();syncAll();alert("COTIZACIÓN GUARDADA.")};
+function firstValue(...vals){
+  for(const v of vals){
+    if(v!==undefined && v!==null && String(v)!=="") return v;
+  }
+  return "";
+}
+function parseMaybeJson(v){
+  if(!v) return v;
+  if(typeof v==="object") return v;
+  try{return JSON.parse(v)}catch(e){return v}
+}
+function mergeRecordForEdit(local, remote){
+  local=normalizeRecord(local||{});
+  remote=normalizeRecord(remote||{});
+  const out={...local};
+  const keys=[
+    "local_id","type","date","client","company","phone","email","instagram",
+    "event_type","project","venue","pax","service_hours","setup_type",
+    "setup_hours","setup_time","start_time","end_time","amount","paid",
+    "status","notes","quote_catalog","updated_at"
+  ];
+  keys.forEach(k=>{
+    out[k]=firstValue(remote[k], local[k]);
+  });
+  out.quote_catalog=parseMaybeJson(firstValue(remote.quote_catalog, local.quote_catalog));
+  return normalizeRecord(out);
+}
 async function getRemoteRecord(local_id){
   try{
     if(!navigator.onLine)return null;
@@ -109,25 +136,11 @@ async function getRemoteRecord(local_id){
     return Array.isArray(arr)&&arr.length?arr[0]:null;
   }catch(e){
     console.warn("No se pudo cargar evento desde Supabase",e);
-    showError("AVISO: No pude cargar la versión de Supabase. Usaré la copia local.\n"+e.message);
     return null;
   }
 }
-async function editRecord(local_id){
-  showError("");
-  let r=await getRemoteRecord(local_id);
-  if(r){
-    r=normalizeRecord(r);
-    const i=records.findIndex(x=>x.local_id===local_id);
-    if(i>=0)records[i]={...records[i],...r,_dirty:false};
-    else records.push({...r,_dirty:false});
-    save();
-  }else{
-    r=normalizeRecord(records.find(x=>x.local_id===local_id));
-  }
-  if(!r)return alert("No encontré este evento para editar.");
-  editingRecordId=local_id;
-  document.querySelector('[data-tab="quote"]').click();
+function fillEditForm(r){
+  r=normalizeRecord(r);
   setInput("quoteClient",r.client);
   setInput("quoteCompany",r.company);
   setInput("quotePhone",r.phone);
@@ -148,12 +161,26 @@ async function editRecord(local_id){
   setInput("quotePaid",r.paid);
   setInput("quoteStatus",r.status||"EN SEGUIMIENTO");
   setInput("quoteNotes",r.notes);
-  setCatalogSelection(r.quote_catalog);
+  setCatalogSelection(parseMaybeJson(r.quote_catalog));
   updateQuoteBalance();
   $("saveQuoteBtn").textContent="GUARDAR CAMBIOS";
   $("cancelEditBtn").classList.remove("hidden");
   $("editNotice").classList.remove("hidden");
   $("quoteFormTitle").textContent="✏️ EDITAR EVENTO";
+}
+async function editRecord(local_id){
+  showError("");
+  const local=records.find(x=>x.local_id===local_id)||{};
+  let remote=await getRemoteRecord(local_id);
+  let r=mergeRecordForEdit(local, remote);
+  if(!r || !r.local_id)return alert("No encontré este evento para editar.");
+  const i=records.findIndex(x=>x.local_id===local_id);
+  if(i>=0)records[i]={...records[i],...r,_dirty:false};
+  else records.push({...r,_dirty:false});
+  save();
+  editingRecordId=local_id;
+  document.querySelector('[data-tab="quote"]').click();
+  fillEditForm(r);
   window.scrollTo({top:0,behavior:"smooth"});
 }
 
