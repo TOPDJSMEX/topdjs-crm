@@ -6,13 +6,13 @@
 <meta name="theme-color" content="#0f172a">
 <link rel="manifest" href="manifest.json">
 <link rel="stylesheet" href="style.css">
-<title>TOPDJS CRM v10.1</title>
+<title>TOPDJS CRM v10.2</title>
 </head>
 <body>
 <header>
   <div>
-    <h1>✈️ TOPDJS CRM v10.1</h1>
-    <p>Offline + Supabase + archivos por evento.</p>
+    <h1>✈️ TOPDJS CRM v10.2</h1>
+    <p>Offline + Supabase + archivos por evento + edición de eventos.</p>
   </div>
   <div class="topActions">
     <span id="syncStatus" class="status offline">CARGANDO...</span>
@@ -73,6 +73,7 @@
       <label>💵 ANTICIPO / PAGADO</label><input id="quotePaid" type="number" value="0">
       <p class="big"><strong>💸 SALDO:</strong> <span id="quoteBalance">$0</span></p>
       <button id="saveQuoteBtn">GUARDAR COMO COTIZACIÓN</button>
+      <button id="cancelEditBtn" class="secondary hidden">CANCELAR EDICIÓN</button>
       <button id="clearQuoteBtn" class="secondary">LIMPIAR COTIZADOR</button>
     </section>
     <section class="card wide">

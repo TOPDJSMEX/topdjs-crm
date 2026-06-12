@@ -1,5 +1,5 @@
-const STORE="topdjs_v10_1_event_files";
-const OLD_STORES=["topdjs_v10_event_files","topdjs_v9_2_delete_fix","topdjs_v9_1_supabase_fix","topdjs_v9_hibrida","topdjs_v8_evento_iconos","topdjs_v7_pax"];
+const STORE="topdjs_v10_2_edit_events";
+const OLD_STORES=["topdjs_v10_1_event_files","topdjs_v10_event_files","topdjs_v9_2_delete_fix","topdjs_v9_1_supabase_fix","topdjs_v9_hibrida","topdjs_v8_evento_iconos","topdjs_v7_pax"];
 let db=JSON.parse(localStorage.getItem(STORE)||"null");
 if(!db){
   db={records:[],contacts:[],eventFiles:[]};
@@ -10,7 +10,7 @@ if(!db){
     }catch(e){}
   }
 }
-let records=db.records||[],contacts=db.contacts||[],eventFiles=db.eventFiles||[],visibleDate=new Date(),currentFileRecordId=null;
+let records=db.records||[],contacts=db.contacts||[],eventFiles=db.eventFiles||[],visibleDate=new Date(),currentFileRecordId=null,editingRecordId=null;
 const CATALOG=window.TOPDJS_CATALOG||{},BASE=window.SUPABASE_URL,KEY=window.SUPABASE_ANON_KEY,$=id=>document.getElementById(id);
 const headers={"apikey":KEY,"Authorization":"Bearer "+KEY,"Content-Type":"application/json"};
 const money=n=>Number(n||0).toLocaleString("es-MX",{style:"currency",currency:"MXN"});
@@ -100,13 +100,9 @@ $("clearQuoteBtn").onclick=()=>{
   ["quoteClient","quoteCompany","quotePhone","quoteEmail","quoteInstagram","quoteProject","quoteDate","quoteVenue","quotePax","quoteServiceHours","quoteSetupHours","quoteSetupTime","quoteStartTime","quoteEndTime","quoteTotal","quoteNotes"].forEach(id=>$(id).value="");
   $("quotePaid").value=0;$("quoteSetupType").value="MISMO DÍA";clearCatalog();updateQuoteBalance()
 };
-$("saveQuoteBtn").onclick=()=>{
-  const amount=Number($("quoteTotal").value||0),paid=Number($("quotePaid").value||0);
-  if(!$("quoteClient").value||!$("quoteDate").value)return alert("AGREGA CLIENTE Y FECHA.");
-  if(!amount)return alert("AGREGA TOTAL COTIZADO.");
-  const rec={local_id:uid(),type:"COTIZACIÓN ENVIADA",date:$("quoteDate").value,client:$("quoteClient").value,company:$("quoteCompany").value,phone:$("quotePhone").value,email:$("quoteEmail").value,instagram:$("quoteInstagram").value,event_type:$("quoteEventType").value,project:$("quoteProject").value,venue:$("quoteVenue").value,pax:Number($("quotePax").value||0),service_hours:Number($("quoteServiceHours").value||0),setup_type:$("quoteSetupType").value,setup_hours:Number($("quoteSetupHours").value||0),setup_time:$("quoteSetupTime").value,start_time:$("quoteStartTime").value,end_time:$("quoteEndTime").value,amount,paid,status:paid>=amount?"PAGADO":paid>0?"ANTICIPO RECIBIDO":"EN SEGUIMIENTO",notes:$("quoteNotes").value,quote_catalog:getCatalogSelection(),updated_at:new Date().toISOString(),_dirty:true};
-  records.push(rec);save();renderAll();syncAll();alert("COTIZACIÓN GUARDADA.")
-};
+function collectQuoteData(local_id=null){const amount=Number($("quoteTotal").value||0),paid=Number($("quotePaid").value||0);return{local_id:local_id||uid(),type:"COTIZACIÓN ENVIADA",date:$("quoteDate").value,client:$("quoteClient").value,company:$("quoteCompany").value,phone:$("quotePhone").value,email:$("quoteEmail").value,instagram:$("quoteInstagram").value,event_type:$("quoteEventType").value,project:$("quoteProject").value,venue:$("quoteVenue").value,pax:Number($("quotePax").value||0),service_hours:Number($("quoteServiceHours").value||0),setup_type:$("quoteSetupType").value,setup_hours:Number($("quoteSetupHours").value||0),setup_time:$("quoteSetupTime").value,start_time:$("quoteStartTime").value,end_time:$("quoteEndTime").value,amount,paid,status:paid>=amount&&amount>0?"PAGADO":paid>0?"ANTICIPO RECIBIDO":"EN SEGUIMIENTO",notes:$("quoteNotes").value,quote_catalog:getCatalogSelection(),updated_at:new Date().toISOString(),_dirty:true}}
+$("saveQuoteBtn").onclick=()=>{const amount=Number($("quoteTotal").value||0);if(!$("quoteClient").value||!$("quoteDate").value)return alert("AGREGA CLIENTE Y FECHA.");if(!amount)return alert("AGREGA TOTAL COTIZADO.");if(editingRecordId){const i=records.findIndex(r=>r.local_id===editingRecordId);if(i>=0){records[i]={...records[i],...collectQuoteData(editingRecordId)};save();renderAll();syncAll();alert("CAMBIOS GUARDADOS.");clearQuoteForm();document.querySelector('[data-tab="records"]').click();return}}const rec=collectQuoteData();records.push(rec);save();renderAll();syncAll();alert("COTIZACIÓN GUARDADA.")};
+function editRecord(local_id){const r=normalizeRecord(records.find(x=>x.local_id===local_id));if(!r)return;editingRecordId=local_id;document.querySelector('[data-tab="quote"]').click();setInput("quoteClient",r.client);setInput("quoteCompany",r.company);setInput("quotePhone",r.phone);setInput("quoteEmail",r.email);setInput("quoteInstagram",r.instagram);setInput("quoteEventType",r.event_type||"OTRO");setInput("quoteProject",r.project);setInput("quoteDate",r.date);setInput("quoteVenue",r.venue);setInput("quotePax",r.pax);setInput("quoteServiceHours",r.service_hours);setInput("quoteSetupType",r.setup_type||"MISMO DÍA");setInput("quoteSetupHours",r.setup_hours);setInput("quoteSetupTime",r.setup_time);setInput("quoteStartTime",r.start_time);setInput("quoteEndTime",r.end_time);setInput("quoteTotal",r.amount);setInput("quotePaid",r.paid);setInput("quoteNotes",r.notes);setCatalogSelection(r.quote_catalog);updateQuoteBalance();$("saveQuoteBtn").textContent="GUARDAR CAMBIOS";$("cancelEditBtn").classList.remove("hidden");window.scrollTo({top:0,behavior:"smooth"})}
 
 function renderRecords(){
   const tb=$("recordsTable");tb.innerHTML="";
@@ -114,7 +110,7 @@ function renderRecords(){
     r=normalizeRecord(r);
     const fileCount=eventFiles.filter(f=>f.record_local_id===r.local_id).length;
     let tr=document.createElement("tr");
-    tr.innerHTML=`<td>${esc(r.date)}</td><td>${esc(r.client)}<br><small>${esc(r.company)}</small></td><td>${esc(r.project)}</td><td>${esc(r.pax||"")}</td><td>${esc(r.service_hours||"")}</td><td>${esc(r.setup_type||"")}</td><td>${money(r.amount)}</td><td>${money(bal(r))}</td><td>${r._dirty?"PENDIENTE":"OK"}${fileCount?`<br>📎 ${fileCount}`:""}</td><td><button onclick="showRecord('${r.local_id}')">VER</button> <button onclick="markPaid('${r.local_id}')">PAGADO</button> <button class="delete" onclick="delRecord('${r.local_id}')">BORRAR</button></td>`;
+    tr.innerHTML=`<td>${esc(r.date)}</td><td>${esc(r.client)}<br><small>${esc(r.company)}</small></td><td>${esc(r.project)}</td><td>${esc(r.pax||"")}</td><td>${esc(r.service_hours||"")}</td><td>${esc(r.setup_type||"")}</td><td>${money(r.amount)}</td><td>${money(bal(r))}</td><td>${r._dirty?"PENDIENTE":"OK"}${fileCount?`<br>📎 ${fileCount}`:""}</td><td><button onclick="showRecord('${r.local_id}')">VER</button> <button class="editBtn" onclick="editRecord('${r.local_id}')">EDITAR</button> <button onclick="markPaid('${r.local_id}')">PAGADO</button> <button class="delete" onclick="delRecord('${r.local_id}')">BORRAR</button></td>`;
     tb.appendChild(tr)
   });
   $("sumQuoted").textContent=money(records.filter(r=>!r._deleted).reduce((s,r)=>s+Number(r.amount||0),0));
@@ -151,7 +147,7 @@ function showRecord(local_id){
   const r=normalizeRecord(records.find(x=>x.local_id===local_id));if(!r)return;
   currentFileRecordId=local_id;
   $("modalTitle").textContent=r.client;
-  $("modalBody").innerHTML=`<h3>📋 INFORMACIÓN DEL EVENTO</h3><p><strong>📅 FECHA:</strong> ${esc(r.date)}</p><p><strong>🎉 PROYECTO:</strong> ${esc(r.project)}</p><p><strong>🎯 TIPO:</strong> ${esc(r.event_type)}</p><p><strong>📍 LUGAR:</strong> ${esc(r.venue)}</p><p><strong>👥 PAX:</strong> ${esc(r.pax||"")}</p><p><strong>⏰ HORAS DE SERVICIO:</strong> ${esc(r.service_hours||"")}</p><p><strong>🔧 MONTAJE:</strong> ${esc(r.setup_type||"")} · ${esc(r.setup_hours||"")} HRS · ${esc(r.setup_time||"")}</p><p><strong>🎬 INICIO:</strong> ${esc(r.start_time||"")} · <strong>🏁 TÉRMINO:</strong> ${esc(r.end_time||"")}</p><p><strong>💰 MONTO:</strong> ${money(r.amount)} | <strong>💸 SALDO:</strong> ${money(bal(r))}</p><p>${r.phone?`<a class="button whatsapp" href="${wa(r.phone,"Hola, te contacto de TopDJs sobre "+(r.project||"tu evento"))}" target="_blank">WHATSAPP</a> <a class="button call" href="${tel(r.phone)}">LLAMAR</a>`:""}</p>${catalogHtml(r.quote_catalog)}<h3>📝 OBSERVACIONES GENERALES</h3><p>${esc(r.notes)}</p>${filesHtml(local_id)}`;
+  $("modalBody").innerHTML=`<h3>📋 INFORMACIÓN DEL EVENTO</h3><p><strong>📅 FECHA:</strong> ${esc(r.date)}</p><p><strong>🎉 PROYECTO:</strong> ${esc(r.project)}</p><p><strong>🎯 TIPO:</strong> ${esc(r.event_type)}</p><p><strong>📍 LUGAR:</strong> ${esc(r.venue)}</p><p><strong>👥 PAX:</strong> ${esc(r.pax||"")}</p><p><strong>⏰ HORAS DE SERVICIO:</strong> ${esc(r.service_hours||"")}</p><p><strong>🔧 MONTAJE:</strong> ${esc(r.setup_type||"")} · ${esc(r.setup_hours||"")} HRS · ${esc(r.setup_time||"")}</p><p><strong>🎬 INICIO:</strong> ${esc(r.start_time||"")} · <strong>🏁 TÉRMINO:</strong> ${esc(r.end_time||"")}</p><p><strong>💰 MONTO:</strong> ${money(r.amount)} | <strong>💸 SALDO:</strong> ${money(bal(r))}</p><p>${r.phone?`<a class="button whatsapp" href="${wa(r.phone,"Hola, te contacto de TopDJs sobre "+(r.project||"tu evento"))}" target="_blank">WHATSAPP</a> <a class="button call" href="${tel(r.phone)}">LLAMAR</a>`:""} <button class="editBtn" onclick="$('modal').classList.add('hidden');editRecord('${r.local_id}')">EDITAR EVENTO</button></p>${catalogHtml(r.quote_catalog)}<h3>📝 OBSERVACIONES GENERALES</h3><p>${esc(r.notes)}</p>${filesHtml(local_id)}`;
   $("modal").classList.remove("hidden")
 }
 $("closeModal").onclick=()=>$("modal").classList.add("hidden");

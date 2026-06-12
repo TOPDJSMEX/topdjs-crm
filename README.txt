@@ -1,23 +1,8 @@
-TOPDJS CRM v10.1 - ARCHIVOS DEL EVENTO FIX
+TOPDJS CRM v10.2 - EDITAR EVENTOS
 
 Nuevo:
-- Sección visible dentro del botón VER:
-  📎 ARCHIVOS DEL EVENTO
-  + AGREGAR ARCHIVO
-  VER / DESCARGAR
-  ELIMINAR
-
-- Sube a Supabase Storage bucket: event-files
-- Guarda relación en tabla: event_files
-- Contador 📎 en la tabla de registros
-- Si borras evento, intenta borrar también:
-  1. topdjs_records
-  2. event_files
-  3. archivos físicos del bucket event-files
-
-Instalación:
-1. Subir estos 6 archivos a GitHub reemplazando los existentes.
-2. Commit: TopDJs CRM v10.1 - Event Files Fix
-3. Esperar Vercel Ready.
-4. Abrir https://topdjs-crm.vercel.app
-5. Forzar actualización con Cmd + Shift + R.
+- Botón EDITAR en Cotizaciones/Eventos.
+- Botón EDITAR EVENTO dentro de VER.
+- El formulario se precarga con datos del evento y equipo seleccionado.
+- GUARDAR CAMBIOS actualiza Supabase y sincroniza con Vane.
+- Mantiene archivos por evento de v10.1.
