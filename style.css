@@ -557,3 +557,36 @@ tr.eventUpcoming td{background:rgba(0,184,255,.025) !important}
 @media(max-width:900px){
   .recordActions .actionBtn{min-width:128px;font-size:13px;padding:9px 12px}
 }
+
+
+/* TOPDJS CRM v11.4.9 - Total gastos staff */
+.expenseStaffTotalBox{
+  margin:14px 0 18px;
+  padding:16px 18px;
+  border-radius:18px;
+  border:1px solid rgba(44,255,154,.85) !important;
+  background:rgba(44,255,154,.06) !important;
+  box-shadow:0 0 22px rgba(44,255,154,.22), inset 0 0 18px rgba(44,255,154,.05) !important;
+}
+.expenseStaffTotalBox span{
+  display:block;
+  color:#8dffc4 !important;
+  font-size:13px;
+  font-weight:900;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  margin-bottom:8px;
+}
+.expenseStaffTotalBox strong{
+  display:block;
+  color:#fff !important;
+  font-size:30px;
+  line-height:1.05;
+  text-shadow:0 0 12px rgba(44,255,154,.45);
+}
+.expenseStaffTotalBox small{
+  display:block;
+  margin-top:8px;
+  color:#b8c7d9 !important;
+  font-weight:800;
+}

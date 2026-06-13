@@ -1,19 +1,23 @@
-TOPDJS CRM v11.4.8 - STAFF MONTAJE
+TOPDJS CRM v11.4.9 - TOTAL GASTOS STAFF
 
-Cambio:
-- En Gastos del Evento, el campo "Personas montaje día anterior · $750.00 c/u" ahora aparece como "Staff montaje día anterior".
-- Se quitó el punto/separador.
-- Se quitó el texto "$750.00 c/u" de la etiqueta visible.
-- La lógica interna se mantiene igual: el cálculo sigue siendo cantidad x $750.
+Cambios:
+- Cambia etiqueta “Staff montaje día anterior” por “Staff montaje/desmontaje”.
+- Cambia etiqueta “Extras montaje” por “Extras montaje y desmontaje”.
+- Agrega bloque visible “Total gastos staff”.
+- Total gastos staff suma:
+  Staff automático desde cotizador
+  + staff montaje/desmontaje
+  + extras montaje y desmontaje
+  + extras staff
 
 Mantiene:
-- Acciones Neon v11.4.7
-- Botón directo de gastos
-- Gastos por evento con expenses_jsonb
-- Dashboard real de cobranza
+- Botón directo de gastos.
+- Acciones neon diferenciadas.
+- Guardado en expenses_jsonb.
+- Dashboard real de cobranza.
 
 Instalación:
 1. Subir los 7 archivos a GitHub.
-2. Commit: TopDJs CRM v11.4.8 - Staff montaje
+2. Commit: TopDJs CRM v11.4.9 - Total gastos staff
 3. Deploy to Production en Vercel.
 4. Recarga fuerte: Option + Command + R.

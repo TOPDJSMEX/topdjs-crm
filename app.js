@@ -829,6 +829,7 @@ function updateExpensePreviewTexts(calc){
   const set=(id,value)=>{const el=$(id);if(el)el.textContent=value};
   set("expensePreviousDaySetupTotal",money(calc.previousDaySetupTotal));
   set("expenseStaffTotal",money(calc.totalStaff));
+  set("expenseStaffTotalDetail",money(calc.totalStaff));
   set("expenseGeneratorTotal",money(calc.generatorExpense));
   set("expenseDjsTotal",money(calc.djsExpense));
   set("expenseMiscTotal",money(calc.miscTotal));
@@ -898,7 +899,7 @@ function expensesHtml(local_id){
     <p class="hint">Los costos de staff salen del cotizador. Los demás campos se capturan manualmente por evento.</p>
 
     <div class="expenseSummaryGrid">
-      <div class="expenseSummaryCard expenseBlue"><span>Staff</span><strong id="expenseStaffTotal">${money(calc.totalStaff)}</strong></div>
+      <div class="expenseSummaryCard expenseBlue"><span>Total gastos staff</span><strong id="expenseStaffTotal">${money(calc.totalStaff)}</strong></div>
       <div class="expenseSummaryCard expenseBlue"><span>Planta de luz</span><strong id="expenseGeneratorTotal">${money(calc.generatorExpense)}</strong></div>
       <div class="expenseSummaryCard expenseBlue"><span>DJs</span><strong id="expenseDjsTotal">${money(calc.djsExpense)}</strong></div>
       <div class="expenseSummaryCard expenseBlue"><span>Varios</span><strong id="expenseMiscTotal">${money(calc.miscTotal)}</strong></div>
@@ -918,12 +919,12 @@ function expensesHtml(local_id){
 
     <div class="expenseFormGrid">
       <div>
-        <label>Staff montaje día anterior</label>
+        <label>Staff montaje/desmontaje</label>
         <input id="expensePreviousDaySetupPeople" type="number" min="0" step="1" value="${esc(calc.expenses.previousDaySetupPeople)}" oninput="updateEventExpensesPreview('${esc(local_id)}')">
-        <small>Total montaje: <strong id="expensePreviousDaySetupTotal">${money(calc.previousDaySetupTotal)}</strong></small>
+        <small>Subtotal montaje/desmontaje: <strong id="expensePreviousDaySetupTotal">${money(calc.previousDaySetupTotal)}</strong></small>
       </div>
       <div>
-        <label>Extras montaje</label>
+        <label>Extras montaje y desmontaje</label>
         <input id="expenseSetupExtras" type="number" min="0" step="0.01" value="${esc(calc.expenses.setupExtras)}" oninput="updateEventExpensesPreview('${esc(local_id)}')">
       </div>
       <div>
@@ -938,6 +939,12 @@ function expensesHtml(local_id){
         <label>DJs</label>
         <input id="expenseDjs" type="number" min="0" step="0.01" value="${esc(calc.expenses.djsExpense)}" oninput="updateEventExpensesPreview('${esc(local_id)}')">
       </div>
+    </div>
+
+    <div class="expenseStaffTotalBox">
+      <span>Total gastos staff</span>
+      <strong id="expenseStaffTotalDetail">${money(calc.totalStaff)}</strong>
+      <small>Staff cotizador + staff montaje/desmontaje + extras montaje y desmontaje + extras staff</small>
     </div>
 
     <div class="expenseSubBox">
