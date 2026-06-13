@@ -1,4 +1,4 @@
-TOPDJS CRM v11.4.2 - COBRAR MONTO VISIBLE
+TOPDJS CRM v11.4.3 - COBRAR MONTO VISIBLE
 
 Nuevo:
 - En Eventos Operativos, si el evento ya pasó y sigue con saldo pendiente,
@@ -19,6 +19,6 @@ Requiere:
 Instalación:
 1. Subir los 7 archivos a GitHub:
    index.html, app.js, style.css, manifest.json, sw.js, README.txt, topdjs-logo.png
-2. Commit: TopDJs CRM v11.4.2 - Cobrar Monto
+2. Commit: TopDJs CRM v11.4.3 - Cobrar Monto
 3. Deploy to Production en Vercel.
 4. Recarga fuerte: Option + Command + R.

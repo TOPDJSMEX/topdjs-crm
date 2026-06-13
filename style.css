@@ -297,3 +297,10 @@ tr.eventUpcoming td{background:rgba(0,184,255,.025) !important}
   border-color:rgba(0,184,255,.65) !important;
   background:rgba(0,184,255,.06) !important;
 }
+
+
+/* v11.4.3 Dashboard Cobranza */
+.summary-quoted,.sumQuotedCard{border:1px solid #00B8FF !important;box-shadow:0 0 16px rgba(0,184,255,.25)}
+.summary-paid,.sumPaidCard{border:1px solid #2CFF9A !important;box-shadow:0 0 16px rgba(44,255,154,.25)}
+.summary-balance,.sumBalanceCard{border:1px solid #FFD93D !important;box-shadow:0 0 16px rgba(255,217,61,.25)}
+.summary-overdue,.sumOverdueCard{border:1px solid #FF5F7C !important;box-shadow:0 0 16px rgba(255,95,124,.25)}
