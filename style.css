@@ -492,3 +492,68 @@ tr.eventUpcoming td{background:rgba(0,184,255,.025) !important}
   box-shadow:0 0 18px rgba(0,184,255,.18);
 }
 .expensesOnlyHeader p{margin:6px 0}
+
+
+/* TOPDJS CRM v11.4.7 - Acciones Neon diferenciadas */
+.recordActions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  align-items:center;
+}
+.recordActions .actionBtn{
+  margin-top:0 !important;
+  min-width:146px;
+  justify-content:center;
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  font-weight:900;
+  letter-spacing:.02em;
+  border-width:1px !important;
+}
+.actionViewBtn{
+  background:linear-gradient(180deg,#8fdcff,#1f8fff) !important;
+  color:#00111d !important;
+  border-color:#a8e8ff !important;
+  box-shadow:0 0 20px rgba(31,143,255,.35) !important;
+}
+.expensesBtn{
+  background:linear-gradient(180deg,#9dfcff,#00c8ff) !important;
+  color:#00111d !important;
+  border-color:#b7ffff !important;
+  box-shadow:0 0 20px rgba(0,200,255,.35) !important;
+}
+.editBtn{
+  background:linear-gradient(180deg,#fff29b,#ffca3a) !important;
+  color:#1b1400 !important;
+  border-color:#fff2a8 !important;
+  box-shadow:0 0 20px rgba(255,202,58,.32) !important;
+}
+.warehouseBtn{
+  background:linear-gradient(180deg,#d6b8ff,#8b5cf6) !important;
+  color:#14051f !important;
+  border-color:#e6d2ff !important;
+  box-shadow:0 0 20px rgba(139,92,246,.35) !important;
+}
+.payBtn{
+  background:linear-gradient(180deg,#b9ffd7,#2cff9a) !important;
+  color:#00180b !important;
+  border-color:#caffdf !important;
+  box-shadow:0 0 20px rgba(44,255,154,.35) !important;
+}
+.liquidateBtn{
+  background:linear-gradient(180deg,#dfff9e,#9be11a) !important;
+  color:#112200 !important;
+  border-color:#ebffbf !important;
+  box-shadow:0 0 20px rgba(155,225,26,.33) !important;
+}
+.delete.actionBtn{
+  background:linear-gradient(180deg,#ffb0bf,#ff4d73) !important;
+  color:#2b0010 !important;
+  border-color:#ffc0cb !important;
+  box-shadow:0 0 20px rgba(255,77,115,.35) !important;
+}
+@media(max-width:900px){
+  .recordActions .actionBtn{min-width:128px;font-size:13px;padding:9px 12px}
+}
