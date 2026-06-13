@@ -1,5 +1,5 @@
-const STORE="topdjs_v11_4_5_gastos_evento";
-const OLD_STORES=["topdjs_v11_4_4_dashboard_real","topdjs_v11_4_3_dashboard_cobranza","topdjs_v11_4_2_cobrar_monto","topdjs_v11_4_1_anticipo_metodo","topdjs_v11_4_cobranza_eventos","topdjs_v11_2_header_logo","topdjs_v11_1_black_neon_ui","topdjs_v11_0_1_bitacora_visible","topdjs_v11_0_auditoria_bitacora","topdjs_v10_9_historial_clientes","topdjs_v10_8_pedido_bodega_pdf","topdjs_v10_7_restore_catalog_edit","topdjs_v10_6_setinput_fix","topdjs_v10_5_edit_delete_fix","topdjs_v10_4_edit_robusto","topdjs_v10_3_edit_from_cloud","topdjs_v10_2_edit_events","topdjs_v10_1_event_files","topdjs_v10_event_files","topdjs_v9_2_delete_fix","topdjs_v9_1_supabase_fix","topdjs_v9_hibrida","topdjs_v8_evento_iconos","topdjs_v7_pax"];
+const STORE="topdjs_v11_4_6_boton_gastos";
+const OLD_STORES=["topdjs_v11_4_5_gastos_evento","topdjs_v11_4_4_dashboard_real","topdjs_v11_4_3_dashboard_cobranza","topdjs_v11_4_2_cobrar_monto","topdjs_v11_4_1_anticipo_metodo","topdjs_v11_4_cobranza_eventos","topdjs_v11_2_header_logo","topdjs_v11_1_black_neon_ui","topdjs_v11_0_1_bitacora_visible","topdjs_v11_0_auditoria_bitacora","topdjs_v10_9_historial_clientes","topdjs_v10_8_pedido_bodega_pdf","topdjs_v10_7_restore_catalog_edit","topdjs_v10_6_setinput_fix","topdjs_v10_5_edit_delete_fix","topdjs_v10_4_edit_robusto","topdjs_v10_3_edit_from_cloud","topdjs_v10_2_edit_events","topdjs_v10_1_event_files","topdjs_v10_event_files","topdjs_v9_2_delete_fix","topdjs_v9_1_supabase_fix","topdjs_v9_hibrida","topdjs_v8_evento_iconos","topdjs_v7_pax"];
 let db=JSON.parse(localStorage.getItem(STORE)||"null");
 if(!db){
   db={records:[],contacts:[],eventFiles:[],eventPayments:[]};
@@ -749,7 +749,7 @@ function renderRecords(){
     const paid=paidForRecord(r);
     let tr=document.createElement("tr");
     tr.className=op.cls;
-    tr.innerHTML=`<td>${esc(r.date)}</td><td>${esc(r.client)}<br><small>${esc(r.company)}</small><br><span class="eventBadge ${op.cls}">${op.label}</span></td><td>${esc(r.project)}</td><td>${esc(r.pax||"")}</td><td>${esc(r.service_hours||"")}</td><td>${esc(r.setup_type||"")}</td><td>${money(r.amount)}<br><small>Recibido: ${money(paid)}</small></td><td>${money(bal(r))}</td><td>${r._dirty?"PENDIENTE":"OK"}${fileCount?`<br>📎 ${fileCount}`:""}</td><td>${esc(r.updated_by||"—")}<br><small>${esc(fmtAuditDate(r.updated_at||""))}</small></td><td><button onclick="showRecord('${r.local_id}')">VER</button> <button class="editBtn" onclick="editRecord('${r.local_id}')">EDITAR</button> <button class="fileBtn" onclick="generateWarehouseOrderPdf('${r.local_id}')">PEDIDO BODEGA</button> <button class="fileBtn" onclick="addPayment('${r.local_id}')">💳 REGISTRAR PAGO</button> <button onclick="markPaid('${r.local_id}')">✅ LIQUIDAR</button> <button class="delete" onclick="delRecord('${r.local_id}')">BORRAR</button></td>`;
+    tr.innerHTML=`<td>${esc(r.date)}</td><td>${esc(r.client)}<br><small>${esc(r.company)}</small><br><span class="eventBadge ${op.cls}">${op.label}</span></td><td>${esc(r.project)}</td><td>${esc(r.pax||"")}</td><td>${esc(r.service_hours||"")}</td><td>${esc(r.setup_type||"")}</td><td>${money(r.amount)}<br><small>Recibido: ${money(paid)}</small></td><td>${money(bal(r))}</td><td>${r._dirty?"PENDIENTE":"OK"}${fileCount?`<br>📎 ${fileCount}`:""}</td><td>${esc(r.updated_by||"—")}<br><small>${esc(fmtAuditDate(r.updated_at||""))}</small></td><td><button onclick="showRecord('${r.local_id}')">VER</button> <button class="fileBtn expensesBtn" onclick="showExpensesOnly('${r.local_id}')">💸 GASTOS</button> <button class="editBtn" onclick="editRecord('${r.local_id}')">EDITAR</button> <button class="fileBtn" onclick="generateWarehouseOrderPdf('${r.local_id}')">PEDIDO BODEGA</button> <button class="fileBtn" onclick="addPayment('${r.local_id}')">💳 REGISTRAR PAGO</button> <button onclick="markPaid('${r.local_id}')">✅ LIQUIDAR</button> <button class="delete" onclick="delRecord('${r.local_id}')">BORRAR</button></td>`;
     tb.appendChild(tr);
   });
   $("sumQuoted").textContent=money(visible.reduce((s,r)=>s+Number(r.amount||0),0));
@@ -951,11 +951,27 @@ function expensesHtml(local_id){
   </div>`;
 }
 
+function showExpensesOnly(local_id){
+  const r=normalizeRecord(findLocalRecordFlexible(local_id));
+  if(!r)return alert("No encontré este evento.");
+  currentFileRecordId=local_id;
+  $("modalTitle").textContent=`💸 Gastos · ${r.client||"Evento"}`;
+  $("modalBody").innerHTML=`
+    <div class="expensesOnlyHeader">
+      <p><strong>📅 FECHA:</strong> ${esc(r.date||"")} · <strong>🎉 PROYECTO:</strong> ${esc(r.project||"")}</p>
+      <p><strong>💰 COTIZADO:</strong> ${money(r.amount)} · <strong>💳 COBRADO:</strong> ${money(paidForRecord(r))} · <strong>💸 SALDO:</strong> ${money(bal(r))}</p>
+      <button class="secondary" onclick="showRecord('${esc(local_id)}')">VER EVENTO COMPLETO</button>
+    </div>
+    ${expensesHtml(local_id)}
+  `;
+  $("modal").classList.remove("hidden");
+}
+
 function showRecord(local_id){
   const r=normalizeRecord(records.find(x=>x.local_id===local_id));if(!r)return;
   currentFileRecordId=local_id;
   $("modalTitle").textContent=r.client;
-  $("modalBody").innerHTML=`<h3>📋 INFORMACIÓN DEL EVENTO</h3><p><strong>📅 FECHA:</strong> ${esc(r.date)}</p><p><strong>🎉 PROYECTO:</strong> ${esc(r.project)}</p><p><strong>🎯 TIPO:</strong> ${esc(r.event_type)}</p><p><strong>📍 LUGAR:</strong> ${esc(r.venue)}</p><p><strong>👥 PAX:</strong> ${esc(r.pax||"")}</p><p><strong>⏰ HORAS DE SERVICIO:</strong> ${esc(r.service_hours||"")}</p><p><strong>🔧 MONTAJE:</strong> ${esc(r.setup_type||"")} · ${esc(r.setup_hours||"")} HRS · ${esc(r.setup_time||"")}</p><p><strong>🎬 INICIO:</strong> ${esc(r.start_time||"")} · <strong>🏁 TÉRMINO:</strong> ${esc(r.end_time||"")}</p><p><strong>💰 MONTO:</strong> ${money(r.amount)} | <strong>💳 RECIBIDO:</strong> ${money(paidForRecord(r))} | <strong>💸 SALDO:</strong> ${money(bal(r))}</p><p>${r.phone?`<a class="button whatsapp" href="${wa(r.phone,"Hola, te contacto de TopDJs sobre "+(r.project||"tu evento"))}" target="_blank">WHATSAPP</a> <a class="button call" href="${tel(r.phone)}">LLAMAR</a>`:""} <button class="editBtn" onclick="$('modal').classList.add('hidden');editRecord('${r.local_id}')">EDITAR EVENTO</button> <button class="fileBtn" onclick="generateWarehouseOrderPdf('${r.local_id}')">PEDIDO BODEGA PDF</button></p>${paymentsHtml(local_id)}${expensesHtml(local_id)}${auditHtml(r)}${catalogHtml(r.quote_catalog)}<h3>📝 OBSERVACIONES GENERALES</h3><p>${esc(r.notes)}</p>${filesHtml(local_id)}`;
+  $("modalBody").innerHTML=`<h3>📋 INFORMACIÓN DEL EVENTO</h3><p><strong>📅 FECHA:</strong> ${esc(r.date)}</p><p><strong>🎉 PROYECTO:</strong> ${esc(r.project)}</p><p><strong>🎯 TIPO:</strong> ${esc(r.event_type)}</p><p><strong>📍 LUGAR:</strong> ${esc(r.venue)}</p><p><strong>👥 PAX:</strong> ${esc(r.pax||"")}</p><p><strong>⏰ HORAS DE SERVICIO:</strong> ${esc(r.service_hours||"")}</p><p><strong>🔧 MONTAJE:</strong> ${esc(r.setup_type||"")} · ${esc(r.setup_hours||"")} HRS · ${esc(r.setup_time||"")}</p><p><strong>🎬 INICIO:</strong> ${esc(r.start_time||"")} · <strong>🏁 TÉRMINO:</strong> ${esc(r.end_time||"")}</p><p><strong>💰 MONTO:</strong> ${money(r.amount)} | <strong>💳 RECIBIDO:</strong> ${money(paidForRecord(r))} | <strong>💸 SALDO:</strong> ${money(bal(r))}</p><p>${r.phone?`<a class="button whatsapp" href="${wa(r.phone,"Hola, te contacto de TopDJs sobre "+(r.project||"tu evento"))}" target="_blank">WHATSAPP</a> <a class="button call" href="${tel(r.phone)}">LLAMAR</a>`:""} <button class="editBtn" onclick="$('modal').classList.add('hidden');editRecord('${r.local_id}')">EDITAR EVENTO</button> <button class="fileBtn" onclick="generateWarehouseOrderPdf('${r.local_id}')">PEDIDO BODEGA PDF</button></p>${paymentsHtml(local_id)}${auditHtml(r)}${catalogHtml(r.quote_catalog)}<h3>📝 OBSERVACIONES GENERALES</h3><p>${esc(r.notes)}</p>${filesHtml(local_id)}`;
   $("modal").classList.remove("hidden");setTimeout(()=>loadHistoryIntoModal(r.local_id),300)
 }
 $("closeModal").onclick=()=>$("modal").classList.add("hidden");

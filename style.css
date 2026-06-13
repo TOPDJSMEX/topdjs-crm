@@ -475,3 +475,20 @@ tr.eventUpcoming td{background:rgba(0,184,255,.025) !important}
   .expenseMiscRow{grid-template-columns:1fr}
   .expenseRemoveBtn{width:100%}
 }
+
+
+/* TOPDJS CRM v11.4.6 - Botón directo de gastos */
+.expensesBtn{
+  background:linear-gradient(180deg,#b7f7ff,#00b8ff) !important;
+  color:#00111d !important;
+  border-color:#7ee7ff !important;
+}
+.expensesOnlyHeader{
+  border:1px solid rgba(0,184,255,.55);
+  border-radius:16px;
+  padding:14px;
+  margin-bottom:14px;
+  background:#00030a;
+  box-shadow:0 0 18px rgba(0,184,255,.18);
+}
+.expensesOnlyHeader p{margin:6px 0}
