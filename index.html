@@ -6,13 +6,13 @@
 <meta name="theme-color" content="#0f172a">
 <link rel="manifest" href="manifest.json">
 <link rel="stylesheet" href="style.css">
-<title>TOPDJS CRM v11.4.3</title>
+<title>TOPDJS CRM v11.4.4</title>
 </head>
 <body>
 <header>
   <div>
-    <div class="brandHeader"><img src="topdjs-logo.png" class="brandLogo" alt="TopDJs"><div><h1>TOPDJS CRM v11.4.3</h1><p class="brandSub">Audio • Iluminación • Video • DJ</p></div></div>
-    <p>Offline + Supabase + auditoría + cobranza visible + monto pendiente.</p>
+    <div class="brandHeader"><img src="topdjs-logo.png" class="brandLogo" alt="TopDJs"><div><h1>TOPDJS CRM v11.4.4</h1><p class="brandSub">Audio • Iluminación • Video • DJ</p></div></div>
+    <p>Offline + Supabase + auditoría + dashboard real de cobranza.</p>
   </div>
   <div class="topActions">
     <span id="syncStatus" class="status offline">CARGANDO...</span>
@@ -99,10 +99,26 @@
 
 <section id="records" class="panel">
   <div class="card">
-    <h2>📊 RESUMEN</h2>
-    <p><strong>TOTAL COTIZADO:</strong> <span id="sumQuoted">$0</span></p>
-    <p><strong>TOTAL PAGADO:</strong> <span id="sumPaid">$0</span></p>
-    <p><strong>TOTAL PENDIENTE POR COBRAR:</strong> <span id="sumBalance">$0</span></p>
+    <h2>📊 DASHBOARD DE COBRANZA</h2>
+    <div class="summaryDashboard">
+      <div class="summaryCard summaryQuoted">
+        <span>💰 COTIZADO</span>
+        <strong id="sumQuoted">$0</strong>
+      </div>
+      <div class="summaryCard summaryPaid">
+        <span>💳 COBRADO</span>
+        <strong id="sumPaid">$0</strong>
+      </div>
+      <div class="summaryCard summaryPending">
+        <span>⚠️ PENDIENTE</span>
+        <strong id="sumBalance">$0</strong>
+      </div>
+      <div class="summaryCard summaryOverdue">
+        <span>🔴 VENCIDO</span>
+        <strong id="sumOverdue">$0</strong>
+        <small id="overdueCount">0 eventos</small>
+      </div>
+    </div>
   </div>
   <div class="card">
     <h2>📋 EVENTOS OPERATIVOS</h2><p class="hint">Se muestran eventos próximos y eventos pasados con saldo pendiente. Los eventos pasados ya liquidados se archivan automáticamente y siguen visibles en Historial de Clientes.</p>

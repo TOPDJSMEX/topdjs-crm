@@ -1,5 +1,5 @@
-const STORE="topdjs_v11_4_2_cobrar_monto";
-const OLD_STORES=["topdjs_v11_4_1_anticipo_metodo","topdjs_v11_4_cobranza_eventos","topdjs_v11_2_header_logo","topdjs_v11_1_black_neon_ui","topdjs_v11_0_1_bitacora_visible","topdjs_v11_0_auditoria_bitacora","topdjs_v10_9_historial_clientes","topdjs_v10_8_pedido_bodega_pdf","topdjs_v10_7_restore_catalog_edit","topdjs_v10_6_setinput_fix","topdjs_v10_5_edit_delete_fix","topdjs_v10_4_edit_robusto","topdjs_v10_3_edit_from_cloud","topdjs_v10_2_edit_events","topdjs_v10_1_event_files","topdjs_v10_event_files","topdjs_v9_2_delete_fix","topdjs_v9_1_supabase_fix","topdjs_v9_hibrida","topdjs_v8_evento_iconos","topdjs_v7_pax"];
+const STORE="topdjs_v11_4_4_dashboard_real";
+const OLD_STORES=["topdjs_v11_4_3_dashboard_cobranza","topdjs_v11_4_2_cobrar_monto","topdjs_v11_4_1_anticipo_metodo","topdjs_v11_4_cobranza_eventos","topdjs_v11_2_header_logo","topdjs_v11_1_black_neon_ui","topdjs_v11_0_1_bitacora_visible","topdjs_v11_0_auditoria_bitacora","topdjs_v10_9_historial_clientes","topdjs_v10_8_pedido_bodega_pdf","topdjs_v10_7_restore_catalog_edit","topdjs_v10_6_setinput_fix","topdjs_v10_5_edit_delete_fix","topdjs_v10_4_edit_robusto","topdjs_v10_3_edit_from_cloud","topdjs_v10_2_edit_events","topdjs_v10_1_event_files","topdjs_v10_event_files","topdjs_v9_2_delete_fix","topdjs_v9_1_supabase_fix","topdjs_v9_hibrida","topdjs_v8_evento_iconos","topdjs_v7_pax"];
 let db=JSON.parse(localStorage.getItem(STORE)||"null");
 if(!db){
   db={records:[],contacts:[],eventFiles:[],eventPayments:[]};
@@ -628,12 +628,15 @@ function renderRecords(){
     const paid=paidForRecord(r);
     let tr=document.createElement("tr");
     tr.className=op.cls;
-    tr.innerHTML=`<td>${esc(r.date)}</td><td>${esc(r.client)}<br><small>${esc(r.company)}</small><br><span class="eventBadge ${op.cls}">${op.label}</span></td><td>${esc(r.project)}</td><td>${esc(r.pax||"")}</td><td>${esc(r.service_hours||"")}</td><td>${esc(r.setup_type||"")}</td><td>${money(r.amount)}<br><small>Recibido: ${money(paid)}</small></td><td>${money(bal(r))}</td><td>${r._dirty?"PENDIENTE":"OK"}${fileCount?`<br>📎 ${fileCount}`:""}</td><td>${esc(r.updated_by||"—")}<br><small>${esc(fmtAuditDate(r.updated_at||""))}</small></td><td><button onclick="showRecord('${r.local_id}')">VER</button> <button class="editBtn" onclick="editRecord('${r.local_id}')">EDITAR</button> <button class="fileBtn" onclick="generateWarehouseOrderPdf('${r.local_id}')">PEDIDO BODEGA</button> <button class="fileBtn" onclick="addPayment('${r.local_id}')">PAGO</button> <button onclick="markPaid('${r.local_id}')">PAGADO</button> <button class="delete" onclick="delRecord('${r.local_id}')">BORRAR</button></td>`;
+    tr.innerHTML=`<td>${esc(r.date)}</td><td>${esc(r.client)}<br><small>${esc(r.company)}</small><br><span class="eventBadge ${op.cls}">${op.label}</span></td><td>${esc(r.project)}</td><td>${esc(r.pax||"")}</td><td>${esc(r.service_hours||"")}</td><td>${esc(r.setup_type||"")}</td><td>${money(r.amount)}<br><small>Recibido: ${money(paid)}</small></td><td>${money(bal(r))}</td><td>${r._dirty?"PENDIENTE":"OK"}${fileCount?`<br>📎 ${fileCount}`:""}</td><td>${esc(r.updated_by||"—")}<br><small>${esc(fmtAuditDate(r.updated_at||""))}</small></td><td><button onclick="showRecord('${r.local_id}')">VER</button> <button class="editBtn" onclick="editRecord('${r.local_id}')">EDITAR</button> <button class="fileBtn" onclick="generateWarehouseOrderPdf('${r.local_id}')">PEDIDO BODEGA</button> <button class="fileBtn" onclick="addPayment('${r.local_id}')">💳 REGISTRAR PAGO</button> <button onclick="markPaid('${r.local_id}')">✅ LIQUIDAR</button> <button class="delete" onclick="delRecord('${r.local_id}')">BORRAR</button></td>`;
     tb.appendChild(tr);
   });
   $("sumQuoted").textContent=money(visible.reduce((s,r)=>s+Number(r.amount||0),0));
   $("sumPaid").textContent=money(visible.reduce((s,r)=>s+paidForRecord(r),0));
   $("sumBalance").textContent=money(visible.reduce((s,r)=>s+bal(r),0));
+  const overdue=visible.filter(r=>isPastEvent(r)&&!isLiquidated(r));
+  if($("sumOverdue"))$("sumOverdue").textContent=money(overdue.reduce((s,r)=>s+bal(r),0));
+  if($("overdueCount"))$("overdueCount").textContent=`${overdue.length} evento${overdue.length===1?"":"s"}`;
   renderSyncStatus();
 }
 async function delRecord(key){
