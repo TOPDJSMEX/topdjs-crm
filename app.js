@@ -1,5 +1,5 @@
-const STORE="topdjs_v11_4_4_dashboard_real";
-const OLD_STORES=["topdjs_v11_4_3_dashboard_cobranza","topdjs_v11_4_2_cobrar_monto","topdjs_v11_4_1_anticipo_metodo","topdjs_v11_4_cobranza_eventos","topdjs_v11_2_header_logo","topdjs_v11_1_black_neon_ui","topdjs_v11_0_1_bitacora_visible","topdjs_v11_0_auditoria_bitacora","topdjs_v10_9_historial_clientes","topdjs_v10_8_pedido_bodega_pdf","topdjs_v10_7_restore_catalog_edit","topdjs_v10_6_setinput_fix","topdjs_v10_5_edit_delete_fix","topdjs_v10_4_edit_robusto","topdjs_v10_3_edit_from_cloud","topdjs_v10_2_edit_events","topdjs_v10_1_event_files","topdjs_v10_event_files","topdjs_v9_2_delete_fix","topdjs_v9_1_supabase_fix","topdjs_v9_hibrida","topdjs_v8_evento_iconos","topdjs_v7_pax"];
+const STORE="topdjs_v11_4_5_gastos_evento";
+const OLD_STORES=["topdjs_v11_4_4_dashboard_real","topdjs_v11_4_3_dashboard_cobranza","topdjs_v11_4_2_cobrar_monto","topdjs_v11_4_1_anticipo_metodo","topdjs_v11_4_cobranza_eventos","topdjs_v11_2_header_logo","topdjs_v11_1_black_neon_ui","topdjs_v11_0_1_bitacora_visible","topdjs_v11_0_auditoria_bitacora","topdjs_v10_9_historial_clientes","topdjs_v10_8_pedido_bodega_pdf","topdjs_v10_7_restore_catalog_edit","topdjs_v10_6_setinput_fix","topdjs_v10_5_edit_delete_fix","topdjs_v10_4_edit_robusto","topdjs_v10_3_edit_from_cloud","topdjs_v10_2_edit_events","topdjs_v10_1_event_files","topdjs_v10_event_files","topdjs_v9_2_delete_fix","topdjs_v9_1_supabase_fix","topdjs_v9_hibrida","topdjs_v8_evento_iconos","topdjs_v7_pax"];
 let db=JSON.parse(localStorage.getItem(STORE)||"null");
 if(!db){
   db={records:[],contacts:[],eventFiles:[],eventPayments:[]};
@@ -28,6 +28,108 @@ function paidForRecord(r){
 }
 const bal=r=>Math.max(Number(r.amount||0)-paidForRecord(r),0);
 
+
+const STAFF_AUDIO_RATE=1800;
+const STAFF_LIGHTING_VIDEO_RATE=1500;
+const STAGE_HAND_RATE=1250;
+const PREVIOUS_DAY_SETUP_RATE=750;
+
+function getDefaultExpenses(){
+  return {
+    previousDaySetupPeople:0,
+    setupExtras:0,
+    staffExtras:0,
+    generatorExpense:0,
+    djsExpense:0,
+    miscExpenses:[]
+  };
+}
+function toMoneyNumber(value){
+  const n=Number(String(value??0).replace(/[$, ]/g,""));
+  return Number.isFinite(n)?n:0;
+}
+function normalizeExpenses(expenses){
+  if(typeof expenses==="string"){
+    try{expenses=JSON.parse(expenses)}catch(e){expenses={}}
+  }
+  expenses=expenses&&typeof expenses==="object"?expenses:{};
+  return {
+    ...getDefaultExpenses(),
+    ...expenses,
+    previousDaySetupPeople:toMoneyNumber(expenses.previousDaySetupPeople),
+    setupExtras:toMoneyNumber(expenses.setupExtras),
+    staffExtras:toMoneyNumber(expenses.staffExtras),
+    generatorExpense:toMoneyNumber(expenses.generatorExpense),
+    djsExpense:toMoneyNumber(expenses.djsExpense),
+    miscExpenses:Array.isArray(expenses.miscExpenses)?expenses.miscExpenses.map(item=>({
+      concept:String(item?.concept||""),
+      description:String(item?.description||""),
+      amount:toMoneyNumber(item?.amount)
+    })) : []
+  };
+}
+function displayCatalogItemName(name){
+  const n=normalizeCatalogKey(name);
+  if(n==="ING ILUMINACION" || n==="ING ILUMINACION VIDEO")return "ING ILUMINACION/VIDEO";
+  return name;
+}
+function getStaffQtyFromQuoteCatalog(qc,aliases=[]){
+  let qty=0;
+  const aliasKeys=aliases.map(normalizeCatalogKey);
+  try{
+    const sections=getSelectedCatalogSections(parseMaybeJson(qc));
+    sections.forEach(sec=>{
+      sec.items.forEach(item=>{
+        const itemKey=normalizeCatalogKey(item.item);
+        if(aliasKeys.some(a=>itemKey===a || itemKey.includes(a) || a.includes(itemKey))){
+          qty+=toMoneyNumber(item.qty)||0;
+        }
+      });
+    });
+  }catch(e){console.warn("No se pudo calcular staff desde cotizador",e)}
+  return qty;
+}
+function staffQuantitiesFromRecord(record){
+  return {
+    audioQty:getStaffQtyFromQuoteCatalog(record?.quote_catalog,["ING. AUDIO","ING AUDIO"]),
+    lightingVideoQty:getStaffQtyFromQuoteCatalog(record?.quote_catalog,["ING ILUMINACION/VIDEO","ING ILUMINACION VIDEO","ING ILUMINACION","ING. ILUMINACIÓN","ING ILUMINACIÓN"]),
+    stageHandsQty:getStaffQtyFromQuoteCatalog(record?.quote_catalog,["STAGE HANDS","STAGE HAND"])
+  };
+}
+function calculateEventExpenses(record,overrideExpenses=null){
+  record=normalizeRecord(record||{});
+  const expenses=normalizeExpenses(overrideExpenses || record.expenses_jsonb);
+  const staff=staffQuantitiesFromRecord(record);
+  const staffFromQuote=(staff.audioQty*STAFF_AUDIO_RATE)+(staff.lightingVideoQty*STAFF_LIGHTING_VIDEO_RATE)+(staff.stageHandsQty*STAGE_HAND_RATE);
+  const previousDaySetupTotal=toMoneyNumber(expenses.previousDaySetupPeople)*PREVIOUS_DAY_SETUP_RATE;
+  const setupExtras=toMoneyNumber(expenses.setupExtras);
+  const staffExtras=toMoneyNumber(expenses.staffExtras);
+  const generatorExpense=toMoneyNumber(expenses.generatorExpense);
+  const djsExpense=toMoneyNumber(expenses.djsExpense);
+  const miscTotal=expenses.miscExpenses.reduce((sum,item)=>sum+toMoneyNumber(item.amount),0);
+  const totalStaff=staffFromQuote+previousDaySetupTotal+setupExtras+staffExtras;
+  const totalExpenses=totalStaff+generatorExpense+djsExpense+miscTotal;
+  const totalQuoted=toMoneyNumber(record.amount);
+  const totalPaid=paidForRecord(record);
+  return {
+    expenses,
+    ...staff,
+    staffFromQuote,
+    previousDaySetupTotal,
+    setupExtras,
+    staffExtras,
+    generatorExpense,
+    djsExpense,
+    miscTotal,
+    totalStaff,
+    totalExpenses,
+    totalQuoted,
+    totalPaid,
+    realProfit:totalPaid-totalExpenses,
+    projectedProfit:totalQuoted-totalExpenses
+  };
+}
+
 function setInput(id,value){
   const el=$(id);
   if(!el)return;
@@ -49,6 +151,8 @@ function normalizeRecord(r){
   if(r.startTime&&!r.start_time)r.start_time=r.startTime;
   if(r.endTime&&!r.end_time)r.end_time=r.endTime;
   if(r.quoteCatalog&&!r.quote_catalog)r.quote_catalog=r.quoteCatalog;
+  if(r.expensesJsonb&&!r.expenses_jsonb)r.expenses_jsonb=r.expensesJsonb;
+  r.expenses_jsonb=normalizeExpenses(r.expenses_jsonb);
   if(!r.status)r.status="EN SEGUIMIENTO";
   return r;
 }
@@ -174,7 +278,23 @@ $("clearQuoteBtn").onclick=()=>{
   ["quoteClient","quoteCompany","quotePhone","quoteEmail","quoteInstagram","quoteProject","quoteDate","quoteVenue","quotePax","quoteServiceHours","quoteSetupHours","quoteSetupTime","quoteStartTime","quoteEndTime","quoteTotal","quoteNotes"].forEach(id=>$(id).value="");
   $("quotePaid").value=0;$("quoteSetupType").value="MISMO DÍA";clearCatalog();updateQuoteBalance()
 };
-function collectQuoteData(local_id=null){const amount=Number($("quoteTotal").value||0),paid=Number($("quotePaid").value||0);return{local_id:local_id||uid(),type:"COTIZACIÓN ENVIADA",date:$("quoteDate").value,client:$("quoteClient").value,company:$("quoteCompany").value,phone:$("quotePhone").value,email:$("quoteEmail").value,instagram:$("quoteInstagram").value,event_type:$("quoteEventType").value,project:$("quoteProject").value,venue:$("quoteVenue").value,pax:Number($("quotePax").value||0),service_hours:Number($("quoteServiceHours").value||0),setup_type:$("quoteSetupType").value,setup_hours:Number($("quoteSetupHours").value||0),setup_time:$("quoteSetupTime").value,start_time:$("quoteStartTime").value,end_time:$("quoteEndTime").value,amount,paid,status:paid>=amount&&amount>0?"PAGADO":paid>0?"ANTICIPO RECIBIDO":"EN SEGUIMIENTO",notes:$("quoteNotes").value,quote_catalog:getCatalogSelection(),updated_at:new Date().toISOString(),_dirty:true}}
+
+function clearQuoteForm(){
+  ["quoteClient","quoteCompany","quotePhone","quoteEmail","quoteInstagram","quoteProject","quoteDate","quoteVenue","quotePax","quoteServiceHours","quoteSetupHours","quoteSetupTime","quoteStartTime","quoteEndTime","quoteTotal","quoteNotes"].forEach(id=>{if($(id))$(id).value=""});
+  if($("quotePaid"))$("quotePaid").value=0;
+  if($("quotePaidMethod"))$("quotePaidMethod").value="";
+  if($("quoteSetupType"))$("quoteSetupType").value="MISMO DÍA";
+  editingRecordId=null;
+  clearCatalog();
+  updateQuoteBalance();
+  if($("saveQuoteBtn"))$("saveQuoteBtn").textContent="GUARDAR COMO COTIZACIÓN";
+  if($("cancelEditBtn"))$("cancelEditBtn").classList.add("hidden");
+  if($("editNotice"))$("editNotice").classList.add("hidden");
+  if($("quoteFormTitle"))$("quoteFormTitle").textContent="🧾 COTIZADOR";
+}
+if($("cancelEditBtn"))$("cancelEditBtn").onclick=()=>clearQuoteForm();
+
+function collectQuoteData(local_id=null){const amount=Number($("quoteTotal").value||0),paid=Number($("quotePaid").value||0);return{local_id:local_id||uid(),type:"COTIZACIÓN ENVIADA",date:$("quoteDate").value,client:$("quoteClient").value,company:$("quoteCompany").value,phone:$("quotePhone").value,email:$("quoteEmail").value,instagram:$("quoteInstagram").value,event_type:$("quoteEventType").value,project:$("quoteProject").value,venue:$("quoteVenue").value,pax:Number($("quotePax").value||0),service_hours:Number($("quoteServiceHours").value||0),setup_type:$("quoteSetupType").value,setup_hours:Number($("quoteSetupHours").value||0),setup_time:$("quoteSetupTime").value,start_time:$("quoteStartTime").value,end_time:$("quoteEndTime").value,amount,paid,paid_method:$("quotePaidMethod")?.value||"",status:paid>=amount&&amount>0?"PAGADO":paid>0?"ANTICIPO RECIBIDO":"EN SEGUIMIENTO",notes:$("quoteNotes").value,quote_catalog:getCatalogSelection(),updated_at:new Date().toISOString(),_dirty:true}}
 $("saveQuoteBtn").onclick=async()=>{
   const amount=Number($("quoteTotal").value||0);
   if(!$("quoteClient").value||!$("quoteDate").value)return alert("AGREGA CLIENTE Y FECHA.");
@@ -222,10 +342,11 @@ function mergeRecordForEdit(local, remote){
   local=normalizeRecord(local||{});
   remote=normalizeRecord(remote||{});
   const out={...local};
-  ["id","local_id","type","date","client","company","phone","email","instagram","event_type","project","venue","pax","service_hours","setup_type","setup_hours","setup_time","start_time","end_time","amount","paid","status","notes","quote_catalog","paid_method","updated_by","updated_at"].forEach(k=>{
+  ["id","local_id","type","date","client","company","phone","email","instagram","event_type","project","venue","pax","service_hours","setup_type","setup_hours","setup_time","start_time","end_time","amount","paid","status","notes","quote_catalog","expenses_jsonb","paid_method","updated_by","updated_at"].forEach(k=>{
     out[k]=firstValue(remote[k], local[k]);
   });
   out.quote_catalog=parseMaybeJson(firstValue(remote.quote_catalog, local.quote_catalog));
+  out.expenses_jsonb=normalizeExpenses(parseMaybeJson(firstValue(remote.expenses_jsonb, local.expenses_jsonb)));
   return normalizeRecord(out);
 }
 async function getRemoteRecordFlexible(record){
@@ -276,8 +397,8 @@ function fillEditForm(r){
   updateQuoteBalance();
   $("saveQuoteBtn").textContent="GUARDAR CAMBIOS";
   $("cancelEditBtn").classList.remove("hidden");
-  $("editNotice").classList.remove("hidden");
-  $("quoteFormTitle").textContent="✏️ EDITAR EVENTO";
+  if($("editNotice"))$("editNotice").classList.remove("hidden");
+  if($("quoteFormTitle"))$("quoteFormTitle").textContent="✏️ EDITAR EVENTO";
   return true;
 }
 async function editRecord(key){
@@ -329,7 +450,7 @@ function generateWarehouseOrderPdf(key){
   const rowsHtml=sections.length?sections.map(sec=>`
     <section class="section">
       <h2>${esc(sec.rub)}</h2>
-      ${sec.items.length?`<table><thead><tr><th>CANT.</th><th>EQUIPO / SERVICIO</th><th>CHECK</th></tr></thead><tbody>${sec.items.map(i=>`<tr><td class="qty">${esc(i.qty)}</td><td>${esc(i.item)}</td><td class="check">☐</td></tr>`).join("")}</tbody></table>`:""}
+      ${sec.items.length?`<table><thead><tr><th>CANT.</th><th>EQUIPO / SERVICIO</th><th>CHECK</th></tr></thead><tbody>${sec.items.map(i=>`<tr><td class="qty">${esc(i.qty)}</td><td>${esc(displayCatalogItemName(i.item))}</td><td class="check">☐</td></tr>`).join("")}</tbody></table>`:""}
       ${sec.notes?`<div class="notes"><strong>OBSERVACIONES ${esc(sec.rub)}:</strong><br>${esc(sec.notes)}</div>`:""}
     </section>
   `).join(""):`<p class="empty">No hay equipo seleccionado en este evento.</p>`;
@@ -670,18 +791,171 @@ function catalogHtml(qc){
   Object.entries(qc).forEach(([rub,d])=>{
     if((d.selected||[]).length||d.notes){
       html+=`<h4>${esc(rub)}</h4><ul>`;
-      (d.selected||[]).forEach(x=>html+=`<li>${esc(x.item)}: <strong>${esc(x.qty)}</strong></li>`);
+      (d.selected||[]).forEach(x=>html+=`<li>${esc(displayCatalogItemName(x.item))}: <strong>${esc(x.qty)}</strong></li>`);
       html+="</ul>";
       if(d.notes)html+=`<p><strong>OBSERVACIONES ${esc(rub)}:</strong><br>${esc(d.notes)}</p>`
     }
   });
   return html
 }
+
+function renderMiscExpenseRows(miscExpenses=[]){
+  const rows=(miscExpenses&&miscExpenses.length)?miscExpenses:[{concept:"",description:"",amount:""}];
+  return rows.map(item=>`
+    <div class="expenseMiscRow">
+      <input class="expenseMiscConcept" placeholder="Concepto" value="${esc(item.concept||"")}" oninput="updateEventExpensesPreview(currentFileRecordId)">
+      <input class="expenseMiscDescription" placeholder="Descripción / notas" value="${esc(item.description||"")}" oninput="updateEventExpensesPreview(currentFileRecordId)">
+      <input class="expenseMiscAmount" type="number" min="0" step="0.01" placeholder="Monto" value="${esc(item.amount||"")}" oninput="updateEventExpensesPreview(currentFileRecordId)">
+      <button class="delete smallBtn expenseRemoveBtn" onclick="removeMiscExpenseRow(this,currentFileRecordId)">×</button>
+    </div>
+  `).join("");
+}
+function collectExpensesFromModal(){
+  const miscExpenses=Array.from(document.querySelectorAll(".expenseMiscRow")).map(row=>({
+    concept:row.querySelector(".expenseMiscConcept")?.value||"",
+    description:row.querySelector(".expenseMiscDescription")?.value||"",
+    amount:toMoneyNumber(row.querySelector(".expenseMiscAmount")?.value)
+  })).filter(item=>item.concept||item.description||item.amount>0);
+  return normalizeExpenses({
+    previousDaySetupPeople:toMoneyNumber($("expensePreviousDaySetupPeople")?.value),
+    setupExtras:toMoneyNumber($("expenseSetupExtras")?.value),
+    staffExtras:toMoneyNumber($("expenseStaffExtras")?.value),
+    generatorExpense:toMoneyNumber($("expenseGenerator")?.value),
+    djsExpense:toMoneyNumber($("expenseDjs")?.value),
+    miscExpenses
+  });
+}
+function updateExpensePreviewTexts(calc){
+  const set=(id,value)=>{const el=$(id);if(el)el.textContent=value};
+  set("expensePreviousDaySetupTotal",money(calc.previousDaySetupTotal));
+  set("expenseStaffTotal",money(calc.totalStaff));
+  set("expenseGeneratorTotal",money(calc.generatorExpense));
+  set("expenseDjsTotal",money(calc.djsExpense));
+  set("expenseMiscTotal",money(calc.miscTotal));
+  set("expenseTotal",money(calc.totalExpenses));
+  set("expenseRealProfit",money(calc.realProfit));
+  set("expenseProjectedProfit",money(calc.projectedProfit));
+}
+function updateEventExpensesPreview(local_id){
+  const r=normalizeRecord(findLocalRecordFlexible(local_id)||{});
+  if(!r.local_id)return;
+  const calc=calculateEventExpenses(r,collectExpensesFromModal());
+  updateExpensePreviewTexts(calc);
+}
+function addMiscExpenseRow(local_id){
+  const container=$("expenseMiscRows");
+  if(!container)return;
+  const row=document.createElement("div");
+  row.className="expenseMiscRow";
+  row.innerHTML=`
+    <input class="expenseMiscConcept" placeholder="Concepto" oninput="updateEventExpensesPreview('${esc(local_id||"")}')">
+    <input class="expenseMiscDescription" placeholder="Descripción / notas" oninput="updateEventExpensesPreview('${esc(local_id||"")}')">
+    <input class="expenseMiscAmount" type="number" min="0" step="0.01" placeholder="Monto" oninput="updateEventExpensesPreview('${esc(local_id||"")}')">
+    <button class="delete smallBtn expenseRemoveBtn" onclick="removeMiscExpenseRow(this,'${esc(local_id||"")}')">×</button>
+  `;
+  container.appendChild(row);
+  updateEventExpensesPreview(local_id);
+}
+function removeMiscExpenseRow(btn,local_id){
+  const row=btn.closest(".expenseMiscRow");
+  if(row)row.remove();
+  const container=$("expenseMiscRows");
+  if(container && !container.querySelector(".expenseMiscRow"))addMiscExpenseRow(local_id);
+  updateEventExpensesPreview(local_id);
+}
+async function saveEventExpenses(local_id){
+  const r=findLocalRecordFlexible(local_id);
+  if(!r)return alert("No encontré este evento.");
+  const actor=askActor("guardar gastos del evento");
+  if(!actor)return;
+  const expensesJsonb=collectExpensesFromModal();
+  r.expenses_jsonb=expensesJsonb;
+  r.updated_by=actor;
+  r.updated_at=new Date().toISOString();
+  markDirty(r);
+  save();
+  renderAll();
+  try{
+    if(navigator.onLine){
+      await syncAll();
+      await updateRecordAudit(r.local_id,actor);
+      await insertHistory(r.local_id,"EXPENSES","Gastos del evento actualizados",actor);
+      await syncAll();
+    }else{
+      showError("Gastos guardados localmente. Se sincronizarán cuando tengas internet.");
+    }
+    alert("Gastos del evento actualizados.");
+    showRecord(r.local_id);
+  }catch(e){
+    showError("ERROR AL GUARDAR GASTOS:\n"+e.message);
+  }
+}
+function expensesHtml(local_id){
+  const r=normalizeRecord(findLocalRecordFlexible(local_id)||{});
+  const calc=calculateEventExpenses(r);
+  return `<div class="expensesBox">
+    <h3>💸 GASTOS DEL EVENTO</h3>
+    <p class="hint">Los costos de staff salen del cotizador. Los demás campos se capturan manualmente por evento.</p>
+
+    <div class="expenseSummaryGrid">
+      <div class="expenseSummaryCard expenseBlue"><span>Staff</span><strong id="expenseStaffTotal">${money(calc.totalStaff)}</strong></div>
+      <div class="expenseSummaryCard expenseBlue"><span>Planta de luz</span><strong id="expenseGeneratorTotal">${money(calc.generatorExpense)}</strong></div>
+      <div class="expenseSummaryCard expenseBlue"><span>DJs</span><strong id="expenseDjsTotal">${money(calc.djsExpense)}</strong></div>
+      <div class="expenseSummaryCard expenseBlue"><span>Varios</span><strong id="expenseMiscTotal">${money(calc.miscTotal)}</strong></div>
+      <div class="expenseSummaryCard expenseYellow"><span>Total gastos</span><strong id="expenseTotal">${money(calc.totalExpenses)}</strong></div>
+      <div class="expenseSummaryCard expenseGreen"><span>Utilidad real</span><strong id="expenseRealProfit">${money(calc.realProfit)}</strong></div>
+      <div class="expenseSummaryCard expenseGreen"><span>Utilidad proyectada</span><strong id="expenseProjectedProfit">${money(calc.projectedProfit)}</strong></div>
+    </div>
+
+    <div class="expenseSubBox">
+      <h4>👷 Staff automático desde cotizador</h4>
+      <div class="expenseLines">
+        <div><span>Ing. audio</span><strong>${esc(calc.audioQty)} x ${money(STAFF_AUDIO_RATE)} = ${money(calc.audioQty*STAFF_AUDIO_RATE)}</strong></div>
+        <div><span>Ing. iluminación/video</span><strong>${esc(calc.lightingVideoQty)} x ${money(STAFF_LIGHTING_VIDEO_RATE)} = ${money(calc.lightingVideoQty*STAFF_LIGHTING_VIDEO_RATE)}</strong></div>
+        <div><span>Stage hands</span><strong>${esc(calc.stageHandsQty)} x ${money(STAGE_HAND_RATE)} = ${money(calc.stageHandsQty*STAGE_HAND_RATE)}</strong></div>
+      </div>
+    </div>
+
+    <div class="expenseFormGrid">
+      <div>
+        <label>Personas montaje día anterior · ${money(PREVIOUS_DAY_SETUP_RATE)} c/u</label>
+        <input id="expensePreviousDaySetupPeople" type="number" min="0" step="1" value="${esc(calc.expenses.previousDaySetupPeople)}" oninput="updateEventExpensesPreview('${esc(local_id)}')">
+        <small>Total montaje: <strong id="expensePreviousDaySetupTotal">${money(calc.previousDaySetupTotal)}</strong></small>
+      </div>
+      <div>
+        <label>Extras montaje</label>
+        <input id="expenseSetupExtras" type="number" min="0" step="0.01" value="${esc(calc.expenses.setupExtras)}" oninput="updateEventExpensesPreview('${esc(local_id)}')">
+      </div>
+      <div>
+        <label>Extras staff</label>
+        <input id="expenseStaffExtras" type="number" min="0" step="0.01" value="${esc(calc.expenses.staffExtras)}" oninput="updateEventExpensesPreview('${esc(local_id)}')">
+      </div>
+      <div>
+        <label>Planta de luz</label>
+        <input id="expenseGenerator" type="number" min="0" step="0.01" value="${esc(calc.expenses.generatorExpense)}" oninput="updateEventExpensesPreview('${esc(local_id)}')">
+      </div>
+      <div>
+        <label>DJs</label>
+        <input id="expenseDjs" type="number" min="0" step="0.01" value="${esc(calc.expenses.djsExpense)}" oninput="updateEventExpensesPreview('${esc(local_id)}')">
+      </div>
+    </div>
+
+    <div class="expenseSubBox">
+      <h4>🧾 Varios / Otros gastos</h4>
+      <div class="expenseMiscHeader"><span>Concepto</span><span>Descripción</span><span>Monto</span><span></span></div>
+      <div id="expenseMiscRows">${renderMiscExpenseRows(calc.expenses.miscExpenses)}</div>
+      <button class="fileBtn" onclick="addMiscExpenseRow('${esc(local_id)}')">+ AGREGAR GASTO VARIOS</button>
+    </div>
+
+    <button class="fileBtn" onclick="saveEventExpenses('${esc(local_id)}')">💾 GUARDAR GASTOS</button>
+  </div>`;
+}
+
 function showRecord(local_id){
   const r=normalizeRecord(records.find(x=>x.local_id===local_id));if(!r)return;
   currentFileRecordId=local_id;
   $("modalTitle").textContent=r.client;
-  $("modalBody").innerHTML=`<h3>📋 INFORMACIÓN DEL EVENTO</h3><p><strong>📅 FECHA:</strong> ${esc(r.date)}</p><p><strong>🎉 PROYECTO:</strong> ${esc(r.project)}</p><p><strong>🎯 TIPO:</strong> ${esc(r.event_type)}</p><p><strong>📍 LUGAR:</strong> ${esc(r.venue)}</p><p><strong>👥 PAX:</strong> ${esc(r.pax||"")}</p><p><strong>⏰ HORAS DE SERVICIO:</strong> ${esc(r.service_hours||"")}</p><p><strong>🔧 MONTAJE:</strong> ${esc(r.setup_type||"")} · ${esc(r.setup_hours||"")} HRS · ${esc(r.setup_time||"")}</p><p><strong>🎬 INICIO:</strong> ${esc(r.start_time||"")} · <strong>🏁 TÉRMINO:</strong> ${esc(r.end_time||"")}</p><p><strong>💰 MONTO:</strong> ${money(r.amount)} | <strong>💳 RECIBIDO:</strong> ${money(paidForRecord(r))} | <strong>💸 SALDO:</strong> ${money(bal(r))}</p><p>${r.phone?`<a class="button whatsapp" href="${wa(r.phone,"Hola, te contacto de TopDJs sobre "+(r.project||"tu evento"))}" target="_blank">WHATSAPP</a> <a class="button call" href="${tel(r.phone)}">LLAMAR</a>`:""} <button class="editBtn" onclick="$('modal').classList.add('hidden');editRecord('${r.local_id}')">EDITAR EVENTO</button> <button class="fileBtn" onclick="generateWarehouseOrderPdf('${r.local_id}')">PEDIDO BODEGA PDF</button></p>${paymentsHtml(local_id)}${auditHtml(r)}${catalogHtml(r.quote_catalog)}<h3>📝 OBSERVACIONES GENERALES</h3><p>${esc(r.notes)}</p>${filesHtml(local_id)}`;
+  $("modalBody").innerHTML=`<h3>📋 INFORMACIÓN DEL EVENTO</h3><p><strong>📅 FECHA:</strong> ${esc(r.date)}</p><p><strong>🎉 PROYECTO:</strong> ${esc(r.project)}</p><p><strong>🎯 TIPO:</strong> ${esc(r.event_type)}</p><p><strong>📍 LUGAR:</strong> ${esc(r.venue)}</p><p><strong>👥 PAX:</strong> ${esc(r.pax||"")}</p><p><strong>⏰ HORAS DE SERVICIO:</strong> ${esc(r.service_hours||"")}</p><p><strong>🔧 MONTAJE:</strong> ${esc(r.setup_type||"")} · ${esc(r.setup_hours||"")} HRS · ${esc(r.setup_time||"")}</p><p><strong>🎬 INICIO:</strong> ${esc(r.start_time||"")} · <strong>🏁 TÉRMINO:</strong> ${esc(r.end_time||"")}</p><p><strong>💰 MONTO:</strong> ${money(r.amount)} | <strong>💳 RECIBIDO:</strong> ${money(paidForRecord(r))} | <strong>💸 SALDO:</strong> ${money(bal(r))}</p><p>${r.phone?`<a class="button whatsapp" href="${wa(r.phone,"Hola, te contacto de TopDJs sobre "+(r.project||"tu evento"))}" target="_blank">WHATSAPP</a> <a class="button call" href="${tel(r.phone)}">LLAMAR</a>`:""} <button class="editBtn" onclick="$('modal').classList.add('hidden');editRecord('${r.local_id}')">EDITAR EVENTO</button> <button class="fileBtn" onclick="generateWarehouseOrderPdf('${r.local_id}')">PEDIDO BODEGA PDF</button></p>${paymentsHtml(local_id)}${expensesHtml(local_id)}${auditHtml(r)}${catalogHtml(r.quote_catalog)}<h3>📝 OBSERVACIONES GENERALES</h3><p>${esc(r.notes)}</p>${filesHtml(local_id)}`;
   $("modal").classList.remove("hidden");setTimeout(()=>loadHistoryIntoModal(r.local_id),300)
 }
 $("closeModal").onclick=()=>$("modal").classList.add("hidden");
@@ -728,7 +1002,37 @@ async function delContact(local_id){
   catch(e){contacts=backup;save();renderContacts();showError("ERROR AL BORRAR CONTACTO:\n"+e.message)}
 }
 
-function dbRecord(r){r=normalizeRecord(r);return{local_id:r.local_id,type:r.type||null,date:r.date||null,client:r.client||null,company:r.company||null,phone:r.phone||null,email:r.email||null,instagram:r.instagram||null,event_type:r.event_type||null,project:r.project||null,venue:r.venue||null,pax:r.pax||0,service_hours:r.service_hours||0,setup_type:r.setup_type||null,setup_hours:r.setup_hours||0,setup_time:r.setup_time||null,start_time:r.start_time||null,end_time:r.end_time||null,amount:r.amount||0,paid:r.paid||0,status:r.status||null,notes:r.notes||null,quote_catalog:r.quote_catalog||null,updated_at:r.updated_at||new Date().toISOString()}}
+function dbRecord(r){
+  r=normalizeRecord(r);
+  return {
+    local_id:r.local_id,
+    type:r.type||null,
+    date:r.date||null,
+    client:r.client||null,
+    company:r.company||null,
+    phone:r.phone||null,
+    email:r.email||null,
+    instagram:r.instagram||null,
+    event_type:r.event_type||null,
+    project:r.project||null,
+    venue:r.venue||null,
+    pax:r.pax||0,
+    service_hours:r.service_hours||0,
+    setup_type:r.setup_type||null,
+    setup_hours:r.setup_hours||0,
+    setup_time:r.setup_time||null,
+    start_time:r.start_time||null,
+    end_time:r.end_time||null,
+    amount:r.amount||0,
+    paid:r.paid||0,
+    status:r.status||null,
+    notes:r.notes||null,
+    quote_catalog:r.quote_catalog||null,
+    expenses_jsonb:normalizeExpenses(r.expenses_jsonb),
+    updated_by:r.updated_by||null,
+    updated_at:r.updated_at||new Date().toISOString()
+  }
+}
 function dbContact(c){return{local_id:c.local_id,ig:c.ig||null,name:c.name||null,phone:c.phone||null,email:c.email||null,segment:c.segment||null,notes:c.notes||null,updated_at:c.updated_at||new Date().toISOString()}}
 async function api(path,opts={}){
   const res=await fetch(BASE+"/rest/v1/"+path,{...opts,headers:{...headers,...(opts.headers||{})}});

@@ -392,3 +392,86 @@ tr.eventUpcoming td{background:rgba(0,184,255,.025) !important}
   .summaryDashboard{grid-template-columns:1fr}
   .summaryCard strong{font-size:26px}
 }
+
+
+/* TOPDJS CRM v11.4.5 - Gastos por Evento */
+.expensesBox{
+  margin-top:18px;
+  border:1px solid rgba(0,184,255,.60);
+  border-radius:18px;
+  padding:16px;
+  background:#00030a;
+  box-shadow:0 0 20px rgba(0,184,255,.20), inset 0 0 12px rgba(0,184,255,.05);
+}
+.expensesBox h3,.expensesBox h4{margin:0 0 10px;color:#fff !important;text-shadow:0 0 10px rgba(0,184,255,.22)}
+.expenseSummaryGrid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+  gap:10px;
+  margin:12px 0 16px;
+}
+.expenseSummaryCard{
+  border-radius:15px;
+  padding:13px;
+  background:linear-gradient(180deg,rgba(5,11,24,.98),rgba(0,0,0,.98));
+}
+.expenseSummaryCard span{
+  display:block;
+  color:#b8c7d9 !important;
+  font-size:11px;
+  font-weight:900;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  margin-bottom:7px;
+}
+.expenseSummaryCard strong{display:block;font-size:20px;color:#fff !important}
+.expenseBlue{border:1px solid rgba(0,184,255,.70);box-shadow:0 0 16px rgba(0,184,255,.22)}
+.expenseGreen{border:1px solid rgba(44,255,154,.70);box-shadow:0 0 16px rgba(44,255,154,.20)}
+.expenseYellow{border:1px solid rgba(255,217,61,.75);box-shadow:0 0 16px rgba(255,217,61,.18)}
+.expenseSubBox{
+  margin-top:14px;
+  border:1px solid rgba(0,184,255,.35);
+  border-radius:16px;
+  padding:14px;
+  background:rgba(5,11,24,.70);
+}
+.expenseLines{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:10px;
+}
+.expenseLines div{
+  border:1px solid rgba(0,184,255,.25);
+  border-radius:12px;
+  padding:10px;
+  background:#050b18;
+}
+.expenseLines span{display:block;color:#b8c7d9;font-size:12px;font-weight:800;text-transform:uppercase}
+.expenseLines strong{display:block;margin-top:4px;color:#fff}
+.expenseFormGrid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:12px;
+  margin-top:14px;
+}
+.expenseFormGrid small{display:block;margin-top:6px;color:#b8c7d9 !important}
+.expenseMiscHeader,.expenseMiscRow{
+  display:grid;
+  grid-template-columns:1fr 1.5fr 130px 44px;
+  gap:8px;
+  align-items:center;
+}
+.expenseMiscHeader{
+  color:#b8c7d9;
+  font-size:11px;
+  font-weight:900;
+  text-transform:uppercase;
+  margin-bottom:8px;
+}
+.expenseMiscRow{margin-bottom:8px}
+.expenseRemoveBtn{margin-top:0 !important;padding:9px 0 !important}
+@media(max-width:760px){
+  .expenseMiscHeader{display:none}
+  .expenseMiscRow{grid-template-columns:1fr}
+  .expenseRemoveBtn{width:100%}
+}
