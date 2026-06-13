@@ -1,5 +1,5 @@
-const STORE="topdjs_v11_4_1_anticipo_metodo";
-const OLD_STORES=["topdjs_v11_4_cobranza_eventos","topdjs_v11_2_header_logo","topdjs_v11_1_black_neon_ui","topdjs_v11_0_1_bitacora_visible","topdjs_v11_0_auditoria_bitacora","topdjs_v10_9_historial_clientes","topdjs_v10_8_pedido_bodega_pdf","topdjs_v10_7_restore_catalog_edit","topdjs_v10_6_setinput_fix","topdjs_v10_5_edit_delete_fix","topdjs_v10_4_edit_robusto","topdjs_v10_3_edit_from_cloud","topdjs_v10_2_edit_events","topdjs_v10_1_event_files","topdjs_v10_event_files","topdjs_v9_2_delete_fix","topdjs_v9_1_supabase_fix","topdjs_v9_hibrida","topdjs_v8_evento_iconos","topdjs_v7_pax"];
+const STORE="topdjs_v11_4_2_cobrar_monto";
+const OLD_STORES=["topdjs_v11_4_1_anticipo_metodo","topdjs_v11_4_cobranza_eventos","topdjs_v11_2_header_logo","topdjs_v11_1_black_neon_ui","topdjs_v11_0_1_bitacora_visible","topdjs_v11_0_auditoria_bitacora","topdjs_v10_9_historial_clientes","topdjs_v10_8_pedido_bodega_pdf","topdjs_v10_7_restore_catalog_edit","topdjs_v10_6_setinput_fix","topdjs_v10_5_edit_delete_fix","topdjs_v10_4_edit_robusto","topdjs_v10_3_edit_from_cloud","topdjs_v10_2_edit_events","topdjs_v10_1_event_files","topdjs_v10_event_files","topdjs_v9_2_delete_fix","topdjs_v9_1_supabase_fix","topdjs_v9_hibrida","topdjs_v8_evento_iconos","topdjs_v7_pax"];
 let db=JSON.parse(localStorage.getItem(STORE)||"null");
 if(!db){
   db={records:[],contacts:[],eventFiles:[],eventPayments:[]};
@@ -490,7 +490,7 @@ function isLiquidated(r){
   return bal(r)<=0 || String(r.status||"").toUpperCase()==="PAGADO";
 }
 function operationalEventStatus(r){
-  if(isPastEvent(r) && !isLiquidated(r))return {label:"⚠️ PASADO / PENDIENTE DE COBRO", cls:"eventPastDue"};
+  if(isPastEvent(r) && !isLiquidated(r))return {label:`🔴 COBRAR ${money(bal(r))}`, cls:"eventPastDue"};
   if(!isPastEvent(r) && isLiquidated(r))return {label:"✅ PRÓXIMO / LIQUIDADO", cls:"eventUpcomingPaid"};
   if(!isPastEvent(r))return {label:"🔜 PRÓXIMO", cls:"eventUpcoming"};
   return {label:"ARCHIVADO", cls:"eventArchived"};
