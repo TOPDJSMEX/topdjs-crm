@@ -590,3 +590,12 @@ tr.eventUpcoming td{background:rgba(0,184,255,.025) !important}
   color:#b8c7d9 !important;
   font-weight:800;
 }
+
+
+/* TOPDJS CRM v11.4.10 - Botón Archivo directo */
+.uploadFileBtn{
+  background:linear-gradient(180deg,#ffd6a8,#ff8f3a) !important;
+  color:#221000 !important;
+  border-color:#ffe0b8 !important;
+  box-shadow:0 0 20px rgba(255,143,58,.35) !important;
+}

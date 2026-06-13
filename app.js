@@ -749,7 +749,7 @@ function renderRecords(){
     const paid=paidForRecord(r);
     let tr=document.createElement("tr");
     tr.className=op.cls;
-    tr.innerHTML=`<td>${esc(r.date)}</td><td>${esc(r.client)}<br><small>${esc(r.company)}</small><br><span class="eventBadge ${op.cls}">${op.label}</span></td><td>${esc(r.project)}</td><td>${esc(r.pax||"")}</td><td>${esc(r.service_hours||"")}</td><td>${esc(r.setup_type||"")}</td><td>${money(r.amount)}<br><small>Recibido: ${money(paid)}</small></td><td>${money(bal(r))}</td><td>${r._dirty?"PENDIENTE":"OK"}${fileCount?`<br>📎 ${fileCount}`:""}</td><td>${esc(r.updated_by||"—")}<br><small>${esc(fmtAuditDate(r.updated_at||""))}</small></td><td><div class="recordActions"><button class="actionBtn actionViewBtn" onclick="showRecord('${r.local_id}')">👁️ VER</button><button class="actionBtn expensesBtn" onclick="showExpensesOnly('${r.local_id}')">💸 GASTOS</button><button class="actionBtn editBtn" onclick="editRecord('${r.local_id}')">✏️ EDITAR</button><button class="actionBtn warehouseBtn" onclick="generateWarehouseOrderPdf('${r.local_id}')">📦 PEDIDO BODEGA</button><button class="actionBtn payBtn" onclick="addPayment('${r.local_id}')">💳 REGISTRAR PAGO</button><button class="actionBtn liquidateBtn" onclick="markPaid('${r.local_id}')">✅ LIQUIDAR</button><button class="actionBtn delete" onclick="delRecord('${r.local_id}')">🗑️ BORRAR</button></div></td>`;
+    tr.innerHTML=`<td>${esc(r.date)}</td><td>${esc(r.client)}<br><small>${esc(r.company)}</small><br><span class="eventBadge ${op.cls}">${op.label}</span></td><td>${esc(r.project)}</td><td>${esc(r.pax||"")}</td><td>${esc(r.service_hours||"")}</td><td>${esc(r.setup_type||"")}</td><td>${money(r.amount)}<br><small>Recibido: ${money(paid)}</small></td><td>${money(bal(r))}</td><td>${r._dirty?"PENDIENTE":"OK"}${fileCount?`<br>📎 ${fileCount}`:""}</td><td>${esc(r.updated_by||"—")}<br><small>${esc(fmtAuditDate(r.updated_at||""))}</small></td><td><div class="recordActions"><button class="actionBtn actionViewBtn" onclick="showRecord('${r.local_id}')">👁️ VER</button><button class="actionBtn expensesBtn" onclick="showExpensesOnly('${r.local_id}')">💸 GASTOS</button><button class="actionBtn uploadFileBtn" onclick="openFilePicker('${r.local_id}')">📎 ARCHIVO</button><button class="actionBtn editBtn" onclick="editRecord('${r.local_id}')">✏️ EDITAR</button><button class="actionBtn warehouseBtn" onclick="generateWarehouseOrderPdf('${r.local_id}')">📦 PEDIDO BODEGA</button><button class="actionBtn payBtn" onclick="addPayment('${r.local_id}')">💳 REGISTRAR PAGO</button><button class="actionBtn liquidateBtn" onclick="markPaid('${r.local_id}')">✅ LIQUIDAR</button><button class="actionBtn delete" onclick="delRecord('${r.local_id}')">🗑️ BORRAR</button></div></td>`;
     tb.appendChild(tr);
   });
   $("sumQuoted").textContent=money(visible.reduce((s,r)=>s+Number(r.amount||0),0));
@@ -1112,7 +1112,7 @@ async function loadEventFiles(){
 }
 function filesHtml(local_id){
   const list=eventFiles.filter(f=>f.record_local_id===local_id);
-  let html=`<div class="filesBox"><h3>📎 ARCHIVOS DEL EVENTO</h3><p class="hint">Contratos, comprobantes, layouts, riders, PDFs o imágenes.</p><button class="fileBtn" onclick="openFilePicker('${local_id}')">+ AGREGAR ARCHIVO</button>`;
+  let html=`<div class="filesBox"><h3>📎 ARCHIVOS DEL EVENTO</h3><p class="hint">Contratos, comprobantes, layouts, riders, PDFs o imágenes.</p>`;
   if(!list.length){html+=`<p class="hint">Aún no hay archivos adjuntos.</p>`}
   else{
     list.forEach(f=>{

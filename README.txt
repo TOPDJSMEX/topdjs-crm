@@ -1,23 +1,18 @@
-TOPDJS CRM v11.4.9 - TOTAL GASTOS STAFF
+TOPDJS CRM v11.4.10 - ARCHIVO DIRECTO EN MENÚ DE EVENTO
 
-Cambios:
-- Cambia etiqueta “Staff montaje día anterior” por “Staff montaje/desmontaje”.
-- Cambia etiqueta “Extras montaje” por “Extras montaje y desmontaje”.
-- Agrega bloque visible “Total gastos staff”.
-- Total gastos staff suma:
-  Staff automático desde cotizador
-  + staff montaje/desmontaje
-  + extras montaje y desmontaje
-  + extras staff
+Nuevo:
+- El botón para agregar archivo salió de la sección VER.
+- Ahora aparece como botón directo en el menú de acciones de cada evento: 📎 ARCHIVO.
+- La sección VER conserva el listado de archivos adjuntos para ver/descargar/eliminar, pero ya no muestra el botón + AGREGAR ARCHIVO.
 
 Mantiene:
-- Botón directo de gastos.
-- Acciones neon diferenciadas.
-- Guardado en expenses_jsonb.
+- Gastos por evento.
+- Total gastos staff.
+- Botones neón diferenciados.
 - Dashboard real de cobranza.
 
 Instalación:
 1. Subir los 7 archivos a GitHub.
-2. Commit: TopDJs CRM v11.4.9 - Total gastos staff
+2. Commit: TopDJs CRM v11.4.10 - Archivo directo en eventos
 3. Deploy to Production en Vercel.
 4. Recarga fuerte: Option + Command + R.
