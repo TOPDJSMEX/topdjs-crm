@@ -1,16 +1,16 @@
-const STORE="topdjs_v11_2_header_logo";
-const OLD_STORES=["topdjs_v11_1_black_neon_ui","topdjs_v11_0_1_bitacora_visible","topdjs_v11_0_auditoria_bitacora","topdjs_v10_9_historial_clientes","topdjs_v10_8_pedido_bodega_pdf","topdjs_v10_7_restore_catalog_edit","topdjs_v10_6_setinput_fix","topdjs_v10_5_edit_delete_fix","topdjs_v10_4_edit_robusto","topdjs_v10_3_edit_from_cloud","topdjs_v10_2_edit_events","topdjs_v10_1_event_files","topdjs_v10_event_files","topdjs_v9_2_delete_fix","topdjs_v9_1_supabase_fix","topdjs_v9_hibrida","topdjs_v8_evento_iconos","topdjs_v7_pax"];
+const STORE="topdjs_v11_4_cobranza_eventos";
+const OLD_STORES=["topdjs_v11_2_header_logo","topdjs_v11_1_black_neon_ui","topdjs_v11_0_1_bitacora_visible","topdjs_v11_0_auditoria_bitacora","topdjs_v10_9_historial_clientes","topdjs_v10_8_pedido_bodega_pdf","topdjs_v10_7_restore_catalog_edit","topdjs_v10_6_setinput_fix","topdjs_v10_5_edit_delete_fix","topdjs_v10_4_edit_robusto","topdjs_v10_3_edit_from_cloud","topdjs_v10_2_edit_events","topdjs_v10_1_event_files","topdjs_v10_event_files","topdjs_v9_2_delete_fix","topdjs_v9_1_supabase_fix","topdjs_v9_hibrida","topdjs_v8_evento_iconos","topdjs_v7_pax"];
 let db=JSON.parse(localStorage.getItem(STORE)||"null");
 if(!db){
-  db={records:[],contacts:[],eventFiles:[]};
+  db={records:[],contacts:[],eventFiles:[],eventPayments:[]};
   for(const k of OLD_STORES){
     try{
       const old=JSON.parse(localStorage.getItem(k)||"null");
-      if(old){db.records=old.records||[];db.contacts=old.contacts||[];db.eventFiles=old.eventFiles||[];break}
+      if(old){db.records=old.records||[];db.contacts=old.contacts||[];db.eventFiles=old.eventFiles||[];db.eventPayments=old.eventPayments||[];break}
     }catch(e){}
   }
 }
-let records=db.records||[],contacts=db.contacts||[],eventFiles=db.eventFiles||[],visibleDate=new Date(),currentFileRecordId=null,editingRecordId=null;
+let records=db.records||[],contacts=db.contacts||[],eventFiles=db.eventFiles||[],eventPayments=db.eventPayments||[],visibleDate=new Date(),currentFileRecordId=null,editingRecordId=null;
 const CATALOG=window.TOPDJS_CATALOG||{},BASE=window.SUPABASE_URL,KEY=window.SUPABASE_ANON_KEY,$=id=>document.getElementById(id);
 const headers={"apikey":KEY,"Authorization":"Bearer "+KEY,"Content-Type":"application/json"};
 const money=n=>Number(n||0).toLocaleString("es-MX",{style:"currency",currency:"MXN"});
@@ -19,7 +19,14 @@ const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&
 const cleanPhone=s=>String(s||"").replace(/\D/g,"");
 const wa=(phone,msg="")=>{let p=cleanPhone(phone);if(!p)return"#";if(p.length===10)p="52"+p;return`https://wa.me/${p}${msg?`?text=${encodeURIComponent(msg)}`:""}`};
 const tel=p=>cleanPhone(p)?`tel:${cleanPhone(p)}`:"#";
-const bal=r=>Math.max(Number(r.amount||0)-Number(r.paid||0),0);
+function paymentTotal(local_id){
+  return eventPayments.filter(p=>p.record_local_id===local_id).reduce((s,p)=>s+Number(p.amount||0),0);
+}
+function paidForRecord(r){
+  const total=paymentTotal(r.local_id);
+  return total>0?total:Number(r.paid||0);
+}
+const bal=r=>Math.max(Number(r.amount||0)-paidForRecord(r),0);
 
 function setInput(id,value){
   const el=$(id);
@@ -29,7 +36,7 @@ function setInput(id,value){
   try{ el.dispatchEvent(new Event("change",{bubbles:true})); }catch(e){}
 }
 
-function save(){db.records=records;db.contacts=contacts;db.eventFiles=eventFiles;localStorage.setItem(STORE,JSON.stringify(db));renderSyncStatus();}
+function save(){db.records=records;db.contacts=contacts;db.eventFiles=eventFiles;db.eventPayments=eventPayments;localStorage.setItem(STORE,JSON.stringify(db));renderSyncStatus();}
 function showError(msg){const e=$("errorBox");if(!msg){e.classList.add("hidden");e.textContent="";return}e.textContent=msg;e.classList.remove("hidden");}
 function markDirty(obj){obj._dirty=true;obj.updated_at=new Date().toISOString();}
 function normalizeRecord(r){
@@ -467,19 +474,140 @@ async function loadHistoryIntoModal(local_id){
   box.innerHTML=hist.length?hist.map(h=>`<div class="historyItem"><strong>${esc(fmtAuditDate(h.created_at))}</strong><br><span>👤 ${esc(h.updated_by||"")}</span><br><b>${esc(h.action||"")}</b><pre>${esc(h.details||"")}</pre></div>`).join(""):"<p class='hint'>Sin bitácora registrada todavía.</p>";
 }
 
+
+function todayISO(){
+  const d=new Date();
+  const y=d.getFullYear();
+  const m=String(d.getMonth()+1).padStart(2,"0");
+  const day=String(d.getDate()).padStart(2,"0");
+  return `${y}-${m}-${day}`;
+}
+function isPastEvent(r){
+  if(!r.date)return false;
+  return String(r.date) < todayISO();
+}
+function isLiquidated(r){
+  return bal(r)<=0 || String(r.status||"").toUpperCase()==="PAGADO";
+}
+function operationalEventStatus(r){
+  if(isPastEvent(r) && !isLiquidated(r))return {label:"⚠️ PASADO / PENDIENTE DE COBRO", cls:"eventPastDue"};
+  if(!isPastEvent(r) && isLiquidated(r))return {label:"✅ PRÓXIMO / LIQUIDADO", cls:"eventUpcomingPaid"};
+  if(!isPastEvent(r))return {label:"🔜 PRÓXIMO", cls:"eventUpcoming"};
+  return {label:"ARCHIVADO", cls:"eventArchived"};
+}
+function visibleOperationalRecords(){
+  return records.filter(r=>!r._deleted).filter(r=>!(isPastEvent(r)&&isLiquidated(r)));
+}
+const PAYMENT_METHODS=["Efectivo","NU","BBVA","Manuel"];
+function paymentMethodFromInput(v){
+  const clean=String(v||"").trim().toLowerCase();
+  if(clean==="1"||clean==="efectivo")return "Efectivo";
+  if(clean==="2"||clean==="nu")return "NU";
+  if(clean==="3"||clean==="bbva")return "BBVA";
+  if(clean==="4"||clean==="manuel")return "Manuel";
+  return null;
+}
+function paymentsHtml(local_id){
+  const r=normalizeRecord(records.find(x=>x.local_id===local_id)||{});
+  const list=eventPayments.filter(p=>p.record_local_id===local_id).sort((a,b)=>String(b.payment_date||b.created_at).localeCompare(String(a.payment_date||a.created_at)));
+  const rows=list.length?list.map(p=>`<tr><td>${esc(p.payment_date||"")}</td><td>${money(p.amount)}</td><td>${esc(p.method||"")}</td><td>${esc(p.note||"")}</td><td><button class="delete smallBtn" onclick="deletePayment('${p.id}','${local_id}')">ELIMINAR</button></td></tr>`).join(""):`<tr><td colspan="5">Aún no hay movimientos de pago.</td></tr>`;
+  return `<div class="paymentsBox">
+    <h3>💳 MOVIMIENTOS DE PAGO</h3>
+    <div class="paymentSummary">
+      <div><span>Total vendido</span><strong>${money(r.amount)}</strong></div>
+      <div><span>Total recibido</span><strong>${money(paidForRecord(r))}</strong></div>
+      <div><span>Saldo pendiente</span><strong>${money(bal(r))}</strong></div>
+    </div>
+    <button class="fileBtn" onclick="addPayment('${local_id}')">+ AGREGAR PAGO</button>
+    <table><thead><tr><th>FECHA</th><th>MONTO</th><th>MÉTODO</th><th>NOTA</th><th>ACCIÓN</th></tr></thead><tbody>${rows}</tbody></table>
+  </div>`;
+}
+async function loadEventPayments(){
+  try{
+    const pp=await api("event_payments?select=*&order=created_at.desc",{method:"GET"});
+    if(Array.isArray(pp))eventPayments=pp;
+  }catch(e){
+    console.warn("event_payments",e);
+  }
+}
+async function updateRecordPaidFromPayments(local_id,actor,detail){
+  const r=records.find(x=>x.local_id===local_id);
+  if(!r)return;
+  const total=paymentTotal(local_id);
+  r.paid=total;
+  r.status=bal(r)<=0&&Number(r.amount||0)>0?"PAGADO":total>0?"ANTICIPO RECIBIDO":"EN SEGUIMIENTO";
+  r.updated_by=actor;
+  r.updated_at=new Date().toISOString();
+  markDirty(r);
+  save();
+  await syncAll();
+  await updateRecordAudit(local_id,actor);
+  await insertHistory(local_id,"PAYMENT",detail,actor);
+  await syncAll();
+  renderAll();
+}
+async function addPayment(local_id){
+  const r=records.find(x=>x.local_id===local_id);
+  if(!r)return alert("No encontré este evento.");
+  const actor=askActor("registrar pago");
+  if(!actor)return;
+  const amountRaw=prompt("Monto del pago:");
+  if(amountRaw===null)return;
+  const amount=Number(String(amountRaw).replace(/[$, ]/g,""));
+  if(!amount||amount<=0)return alert("Monto inválido.");
+  const methodRaw=prompt("Método de pago:\n1 = Efectivo\n2 = NU\n3 = BBVA\n4 = Manuel");
+  if(methodRaw===null)return;
+  const method=paymentMethodFromInput(methodRaw);
+  if(!method)return alert("Método inválido.");
+  const date=prompt("Fecha del pago (YYYY-MM-DD):",todayISO());
+  if(date===null)return;
+  const note=prompt("Nota del pago:", paidForRecord(r)>0?"Pago adicional":"Anticipo")||"";
+  try{
+    if(!navigator.onLine)return alert("Necesitas internet para registrar pagos.");
+    await api("event_payments",{method:"POST",headers:{"Content-Type":"application/json","Prefer":"return=minimal"},body:JSON.stringify({record_local_id:local_id,payment_date:date,amount,method,note})});
+    await loadEventPayments();
+    await updateRecordPaidFromPayments(local_id,actor,`Registró pago:\n${money(amount)}\nMétodo: ${method}\nNota: ${note}`);
+    showRecord(local_id);
+  }catch(e){
+    showError("ERROR AL REGISTRAR PAGO:\n"+e.message);
+  }
+}
+async function deletePayment(id,local_id){
+  const actor=askActor("eliminar pago");
+  if(!actor)return;
+  if(!confirm("¿Eliminar este movimiento de pago?"))return;
+  const p=eventPayments.find(x=>String(x.id)===String(id));
+  try{
+    await api(`event_payments?id=eq.${encodeURIComponent(id)}`,{method:"DELETE",headers:{"Prefer":"return=minimal"}});
+    eventPayments=eventPayments.filter(x=>String(x.id)!==String(id));
+    await updateRecordPaidFromPayments(local_id,actor,`Eliminó pago:\n${p?money(p.amount):""}\nMétodo: ${p?(p.method||""):""}`);
+    showRecord(local_id);
+  }catch(e){
+    showError("ERROR AL ELIMINAR PAGO:\n"+e.message);
+  }
+}
+
 function renderRecords(){
-  const tb=$("recordsTable");tb.innerHTML="";
-  records.filter(r=>!r._deleted).sort((a,b)=>String(a.date).localeCompare(String(b.date))).forEach(r=>{
-    r=normalizeRecord(r);
-    const fileCount=eventFiles.filter(f=>f.record_local_id===r.local_id).length;
-    let tr=document.createElement("tr");
-    tr.innerHTML=`<td>${esc(r.date)}</td><td>${esc(r.client)}<br><small>${esc(r.company)}</small></td><td>${esc(r.project)}</td><td>${esc(r.pax||"")}</td><td>${esc(r.service_hours||"")}</td><td>${esc(r.setup_type||"")}</td><td>${money(r.amount)}</td><td>${money(bal(r))}</td><td>${r._dirty?"PENDIENTE":"OK"}${fileCount?`<br>📎 ${fileCount}`:""}</td><td><button onclick="showRecord('${r.local_id}')">VER</button> <button class="editBtn" onclick="editRecord('${r.local_id}')">EDITAR</button> <button class="fileBtn" onclick="generateWarehouseOrderPdf('${r.local_id}')">PEDIDO BODEGA</button> <button onclick="markPaid('${r.local_id}')">PAGADO</button> <button class="delete" onclick="delRecord('${r.local_id}')">BORRAR</button></td>`;
-    tb.appendChild(tr)
+  const tb=$("recordsTable");
+  tb.innerHTML="";
+  const visible=visibleOperationalRecords().map(normalizeRecord).sort((a,b)=>{
+    const ap=isPastEvent(a)?0:1, bp=isPastEvent(b)?0:1;
+    if(ap!==bp)return ap-bp;
+    return String(a.date).localeCompare(String(b.date));
   });
-  $("sumQuoted").textContent=money(records.filter(r=>!r._deleted).reduce((s,r)=>s+Number(r.amount||0),0));
-  $("sumPaid").textContent=money(records.filter(r=>!r._deleted).reduce((s,r)=>s+Number(r.paid||0),0));
-  $("sumBalance").textContent=money(records.filter(r=>!r._deleted).reduce((s,r)=>s+bal(r),0));
-  renderSyncStatus()
+  visible.forEach(r=>{
+    const fileCount=eventFiles.filter(f=>f.record_local_id===r.local_id).length;
+    const op=operationalEventStatus(r);
+    const paid=paidForRecord(r);
+    let tr=document.createElement("tr");
+    tr.className=op.cls;
+    tr.innerHTML=`<td>${esc(r.date)}</td><td>${esc(r.client)}<br><small>${esc(r.company)}</small><br><span class="eventBadge ${op.cls}">${op.label}</span></td><td>${esc(r.project)}</td><td>${esc(r.pax||"")}</td><td>${esc(r.service_hours||"")}</td><td>${esc(r.setup_type||"")}</td><td>${money(r.amount)}<br><small>Recibido: ${money(paid)}</small></td><td>${money(bal(r))}</td><td>${r._dirty?"PENDIENTE":"OK"}${fileCount?`<br>📎 ${fileCount}`:""}</td><td>${esc(r.updated_by||"—")}<br><small>${esc(fmtAuditDate(r.updated_at||""))}</small></td><td><button onclick="showRecord('${r.local_id}')">VER</button> <button class="editBtn" onclick="editRecord('${r.local_id}')">EDITAR</button> <button class="fileBtn" onclick="generateWarehouseOrderPdf('${r.local_id}')">PEDIDO BODEGA</button> <button class="fileBtn" onclick="addPayment('${r.local_id}')">PAGO</button> <button onclick="markPaid('${r.local_id}')">PAGADO</button> <button class="delete" onclick="delRecord('${r.local_id}')">BORRAR</button></td>`;
+    tb.appendChild(tr);
+  });
+  $("sumQuoted").textContent=money(visible.reduce((s,r)=>s+Number(r.amount||0),0));
+  $("sumPaid").textContent=money(visible.reduce((s,r)=>s+paidForRecord(r),0));
+  $("sumBalance").textContent=money(visible.reduce((s,r)=>s+bal(r),0));
+  renderSyncStatus();
 }
 async function delRecord(key){
   const r=findLocalRecordFlexible(key)||{local_id:key,id:key};
@@ -523,7 +651,7 @@ function showRecord(local_id){
   const r=normalizeRecord(records.find(x=>x.local_id===local_id));if(!r)return;
   currentFileRecordId=local_id;
   $("modalTitle").textContent=r.client;
-  $("modalBody").innerHTML=`<h3>📋 INFORMACIÓN DEL EVENTO</h3><p><strong>📅 FECHA:</strong> ${esc(r.date)}</p><p><strong>🎉 PROYECTO:</strong> ${esc(r.project)}</p><p><strong>🎯 TIPO:</strong> ${esc(r.event_type)}</p><p><strong>📍 LUGAR:</strong> ${esc(r.venue)}</p><p><strong>👥 PAX:</strong> ${esc(r.pax||"")}</p><p><strong>⏰ HORAS DE SERVICIO:</strong> ${esc(r.service_hours||"")}</p><p><strong>🔧 MONTAJE:</strong> ${esc(r.setup_type||"")} · ${esc(r.setup_hours||"")} HRS · ${esc(r.setup_time||"")}</p><p><strong>🎬 INICIO:</strong> ${esc(r.start_time||"")} · <strong>🏁 TÉRMINO:</strong> ${esc(r.end_time||"")}</p><p><strong>💰 MONTO:</strong> ${money(r.amount)} | <strong>💸 SALDO:</strong> ${money(bal(r))}</p><p>${r.phone?`<a class="button whatsapp" href="${wa(r.phone,"Hola, te contacto de TopDJs sobre "+(r.project||"tu evento"))}" target="_blank">WHATSAPP</a> <a class="button call" href="${tel(r.phone)}">LLAMAR</a>`:""} <button class="editBtn" onclick="$('modal').classList.add('hidden');editRecord('${r.local_id}')">EDITAR EVENTO</button> <button class="fileBtn" onclick="generateWarehouseOrderPdf('${r.local_id}')">PEDIDO BODEGA PDF</button></p>${auditHtml(r)}${catalogHtml(r.quote_catalog)}<h3>📝 OBSERVACIONES GENERALES</h3><p>${esc(r.notes)}</p>${filesHtml(local_id)}`;
+  $("modalBody").innerHTML=`<h3>📋 INFORMACIÓN DEL EVENTO</h3><p><strong>📅 FECHA:</strong> ${esc(r.date)}</p><p><strong>🎉 PROYECTO:</strong> ${esc(r.project)}</p><p><strong>🎯 TIPO:</strong> ${esc(r.event_type)}</p><p><strong>📍 LUGAR:</strong> ${esc(r.venue)}</p><p><strong>👥 PAX:</strong> ${esc(r.pax||"")}</p><p><strong>⏰ HORAS DE SERVICIO:</strong> ${esc(r.service_hours||"")}</p><p><strong>🔧 MONTAJE:</strong> ${esc(r.setup_type||"")} · ${esc(r.setup_hours||"")} HRS · ${esc(r.setup_time||"")}</p><p><strong>🎬 INICIO:</strong> ${esc(r.start_time||"")} · <strong>🏁 TÉRMINO:</strong> ${esc(r.end_time||"")}</p><p><strong>💰 MONTO:</strong> ${money(r.amount)} | <strong>💳 RECIBIDO:</strong> ${money(paidForRecord(r))} | <strong>💸 SALDO:</strong> ${money(bal(r))}</p><p>${r.phone?`<a class="button whatsapp" href="${wa(r.phone,"Hola, te contacto de TopDJs sobre "+(r.project||"tu evento"))}" target="_blank">WHATSAPP</a> <a class="button call" href="${tel(r.phone)}">LLAMAR</a>`:""} <button class="editBtn" onclick="$('modal').classList.add('hidden');editRecord('${r.local_id}')">EDITAR EVENTO</button> <button class="fileBtn" onclick="generateWarehouseOrderPdf('${r.local_id}')">PEDIDO BODEGA PDF</button></p>${paymentsHtml(local_id)}${auditHtml(r)}${catalogHtml(r.quote_catalog)}<h3>📝 OBSERVACIONES GENERALES</h3><p>${esc(r.notes)}</p>${filesHtml(local_id)}`;
   $("modal").classList.remove("hidden");setTimeout(()=>loadHistoryIntoModal(r.local_id),300)
 }
 $("closeModal").onclick=()=>$("modal").classList.add("hidden");
@@ -614,6 +742,7 @@ async function syncAll(){
       cc.forEach(x=>{if(!dirtySet.has(x.local_id)){const i=contacts.findIndex(c=>c.local_id===x.local_id);const obj={...x,_dirty:false};if(i>=0)contacts[i]=obj;else contacts.push(obj)}})
     }
     await loadEventFiles();
+    await loadEventPayments();
     save();renderAll()
   }catch(e){console.error(e);showError("ERROR DE SINCRONIZACIÓN:\n"+e.message);renderSyncStatus()}
 }

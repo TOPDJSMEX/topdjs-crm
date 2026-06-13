@@ -234,3 +234,39 @@ header{
     letter-spacing:.04em !important;
   }
 }
+
+
+/* TOPDJS CRM v11.4 - Cobranza y eventos operativos */
+.eventBadge{
+  display:inline-block;margin-top:6px;padding:5px 8px;border-radius:999px;
+  font-size:11px;font-weight:900;letter-spacing:.03em;
+}
+.eventBadge.eventPastDue{
+  background:rgba(255,95,124,.14) !important;border:1px solid rgba(255,95,124,.8) !important;
+  color:#ff9aab !important;box-shadow:0 0 12px rgba(255,95,124,.22) !important;
+}
+.eventBadge.eventUpcoming{
+  background:rgba(0,184,255,.14) !important;border:1px solid rgba(0,184,255,.8) !important;
+  color:#7ee7ff !important;box-shadow:0 0 12px rgba(0,184,255,.20) !important;
+}
+.eventBadge.eventUpcomingPaid{
+  background:rgba(44,255,154,.14) !important;border:1px solid rgba(44,255,154,.8) !important;
+  color:#8dffc4 !important;box-shadow:0 0 12px rgba(44,255,154,.20) !important;
+}
+tr.eventPastDue td{background:rgba(255,95,124,.055) !important}
+tr.eventUpcomingPaid td{background:rgba(44,255,154,.035) !important}
+tr.eventUpcoming td{background:rgba(0,184,255,.025) !important}
+
+.paymentsBox{
+  margin-top:18px;border:1px solid rgba(0,184,255,.55);border-radius:16px;
+  padding:14px;background:#00030a;box-shadow:0 0 18px rgba(0,184,255,.18);
+}
+.paymentSummary{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:10px 0 12px;
+}
+.paymentSummary div{
+  border:1px solid rgba(0,184,255,.35);border-radius:12px;padding:12px;background:#050b18;
+}
+.paymentSummary span{display:block;color:#b8c7d9;font-size:12px;font-weight:800;text-transform:uppercase}
+.paymentSummary strong{display:block;color:#fff;font-size:18px;margin-top:4px}
+@media(max-width:760px){.paymentSummary{grid-template-columns:1fr}}
