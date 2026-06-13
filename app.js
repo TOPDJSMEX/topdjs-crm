@@ -1,5 +1,5 @@
-const STORE="topdjs_v11_4_cobranza_eventos";
-const OLD_STORES=["topdjs_v11_2_header_logo","topdjs_v11_1_black_neon_ui","topdjs_v11_0_1_bitacora_visible","topdjs_v11_0_auditoria_bitacora","topdjs_v10_9_historial_clientes","topdjs_v10_8_pedido_bodega_pdf","topdjs_v10_7_restore_catalog_edit","topdjs_v10_6_setinput_fix","topdjs_v10_5_edit_delete_fix","topdjs_v10_4_edit_robusto","topdjs_v10_3_edit_from_cloud","topdjs_v10_2_edit_events","topdjs_v10_1_event_files","topdjs_v10_event_files","topdjs_v9_2_delete_fix","topdjs_v9_1_supabase_fix","topdjs_v9_hibrida","topdjs_v8_evento_iconos","topdjs_v7_pax"];
+const STORE="topdjs_v11_4_1_anticipo_metodo";
+const OLD_STORES=["topdjs_v11_4_cobranza_eventos","topdjs_v11_2_header_logo","topdjs_v11_1_black_neon_ui","topdjs_v11_0_1_bitacora_visible","topdjs_v11_0_auditoria_bitacora","topdjs_v10_9_historial_clientes","topdjs_v10_8_pedido_bodega_pdf","topdjs_v10_7_restore_catalog_edit","topdjs_v10_6_setinput_fix","topdjs_v10_5_edit_delete_fix","topdjs_v10_4_edit_robusto","topdjs_v10_3_edit_from_cloud","topdjs_v10_2_edit_events","topdjs_v10_1_event_files","topdjs_v10_event_files","topdjs_v9_2_delete_fix","topdjs_v9_1_supabase_fix","topdjs_v9_hibrida","topdjs_v8_evento_iconos","topdjs_v7_pax"];
 let db=JSON.parse(localStorage.getItem(STORE)||"null");
 if(!db){
   db={records:[],contacts:[],eventFiles:[],eventPayments:[]};
@@ -187,7 +187,7 @@ $("saveQuoteBtn").onclick=async()=>{
     if(i>=0){
       const rec={...records[i],...collectQuoteData(editingRecordId),updated_by:actor,updated_at:new Date().toISOString(),_dirty:true};
       records[i]=rec;save();renderAll();
-      await syncAll();await updateRecordAudit(rec.local_id,actor);
+      await syncAll();await createInitialAdvancePaymentIfNeeded(rec,actor);await updateRecordAudit(rec.local_id,actor);
       await insertHistory(rec.local_id,"UPDATE",diffRecords(oldRecord,rec).join("\n\n"),actor);
       await syncAll();
       alert("CAMBIOS GUARDADOS.");
@@ -196,7 +196,7 @@ $("saveQuoteBtn").onclick=async()=>{
   }
   const rec={...collectQuoteData(),updated_by:actor,updated_at:new Date().toISOString(),_dirty:true};
   records.push(rec);save();renderAll();
-  await syncAll();await updateRecordAudit(rec.local_id,actor);
+  await syncAll();await createInitialAdvancePaymentIfNeeded(rec,actor);await updateRecordAudit(rec.local_id,actor);
   await insertHistory(rec.local_id,"CREATE","Creó evento",actor);
   await syncAll();
   alert("COTIZACIÓN GUARDADA.");
@@ -222,7 +222,7 @@ function mergeRecordForEdit(local, remote){
   local=normalizeRecord(local||{});
   remote=normalizeRecord(remote||{});
   const out={...local};
-  ["id","local_id","type","date","client","company","phone","email","instagram","event_type","project","venue","pax","service_hours","setup_type","setup_hours","setup_time","start_time","end_time","amount","paid","status","notes","quote_catalog","updated_by","updated_at"].forEach(k=>{
+  ["id","local_id","type","date","client","company","phone","email","instagram","event_type","project","venue","pax","service_hours","setup_type","setup_hours","setup_time","start_time","end_time","amount","paid","status","notes","quote_catalog","paid_method","updated_by","updated_at"].forEach(k=>{
     out[k]=firstValue(remote[k], local[k]);
   });
   out.quote_catalog=parseMaybeJson(firstValue(remote.quote_catalog, local.quote_catalog));
@@ -269,7 +269,7 @@ function fillEditForm(r){
   setInput("quoteStartTime",r.start_time);
   setInput("quoteEndTime",r.end_time);
   setInput("quoteTotal",r.amount);
-  setInput("quotePaid",r.paid);
+  setInput("quotePaid",r.paid);setInput("quotePaidMethod",r.paid_method||"");
   setInput("quoteStatus",r.status||"EN SEGUIMIENTO");
   setInput("quoteNotes",r.notes);
   setCatalogSelection(parseMaybeJson(r.quote_catalog));
@@ -514,9 +514,9 @@ function paymentsHtml(local_id){
   return `<div class="paymentsBox">
     <h3>💳 MOVIMIENTOS DE PAGO</h3>
     <div class="paymentSummary">
-      <div><span>Total vendido</span><strong>${money(r.amount)}</strong></div>
-      <div><span>Total recibido</span><strong>${money(paidForRecord(r))}</strong></div>
-      <div><span>Saldo pendiente</span><strong>${money(bal(r))}</strong></div>
+      <div class="payBoxSold"><span>Total vendido</span><strong>${money(r.amount)}</strong></div>
+      <div class="payBoxReceived"><span>Total recibido</span><strong>${money(paidForRecord(r))}</strong></div>
+      <div class="payBoxBalance"><span>Saldo pendiente</span><strong>${money(bal(r))}</strong></div>
     </div>
     <button class="fileBtn" onclick="addPayment('${local_id}')">+ AGREGAR PAGO</button>
     <table><thead><tr><th>FECHA</th><th>MONTO</th><th>MÉTODO</th><th>NOTA</th><th>ACCIÓN</th></tr></thead><tbody>${rows}</tbody></table>
@@ -584,6 +584,33 @@ async function deletePayment(id,local_id){
     showRecord(local_id);
   }catch(e){
     showError("ERROR AL ELIMINAR PAGO:\n"+e.message);
+  }
+}
+
+
+async function createInitialAdvancePaymentIfNeeded(rec,actor){
+  const amount=Number(rec.paid||0);
+  const method=rec.paid_method||"";
+  if(!amount || amount<=0 || !method)return;
+  const existing=eventPayments.some(p=>p.record_local_id===rec.local_id);
+  if(existing)return;
+  try{
+    if(!navigator.onLine)return;
+    await api("event_payments",{
+      method:"POST",
+      headers:{"Content-Type":"application/json","Prefer":"return=minimal"},
+      body:JSON.stringify({
+        record_local_id:rec.local_id,
+        payment_date:todayISO(),
+        amount,
+        method,
+        note:"Anticipo inicial"
+      })
+    });
+    await loadEventPayments();
+    await insertHistory(rec.local_id,"PAYMENT",`Registró anticipo inicial:\n${money(amount)}\nMétodo: ${method}`,actor);
+  }catch(e){
+    console.warn("No se pudo crear anticipo inicial",e);
   }
 }
 

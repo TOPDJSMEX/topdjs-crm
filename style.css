@@ -270,3 +270,30 @@ tr.eventUpcoming td{background:rgba(0,184,255,.025) !important}
 .paymentSummary span{display:block;color:#b8c7d9;font-size:12px;font-weight:800;text-transform:uppercase}
 .paymentSummary strong{display:block;color:#fff;font-size:18px;margin-top:4px}
 @media(max-width:760px){.paymentSummary{grid-template-columns:1fr}}
+
+
+/* v11.4.1 - Anticipo + colores cobranza */
+.payBoxReceived{
+  border-color:rgba(44,255,154,.85) !important;
+  background:rgba(44,255,154,.08) !important;
+  box-shadow:0 0 18px rgba(44,255,154,.20) !important;
+}
+.payBoxReceived span,
+.payBoxReceived strong{
+  color:#8dffc4 !important;
+}
+
+.payBoxBalance{
+  border-color:rgba(255,95,124,.85) !important;
+  background:rgba(255,95,124,.08) !important;
+  box-shadow:0 0 18px rgba(255,95,124,.22) !important;
+}
+.payBoxBalance span,
+.payBoxBalance strong{
+  color:#ff9aab !important;
+}
+
+.payBoxSold{
+  border-color:rgba(0,184,255,.65) !important;
+  background:rgba(0,184,255,.06) !important;
+}
