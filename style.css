@@ -1001,3 +1001,36 @@ body.modal-open .operTable thead th{
   .clientHistoryTable{min-width:980px}
   .clientHistoryTable th:nth-child(8),.clientHistoryTable td:nth-child(8){width:240px}
 }
+
+
+/* TOPDJS CRM v11.4.27 - Estados comerciales */
+.summaryDashboard{
+  grid-template-columns:repeat(6, minmax(170px,1fr));
+}
+.summaryConfirmedNoPay{
+  border:1px solid #FFD93D !important;
+  box-shadow:0 0 22px rgba(255,217,61,.26), inset 0 0 18px rgba(255,217,61,.05) !important;
+}
+.summaryConfirmedNoPay span,.summaryConfirmedNoPay strong,.summaryConfirmedNoPay small{color:#ffe66d !important}
+.summaryConfirmedNoPay::after{background:#FFD93D;box-shadow:0 0 14px #FFD93D}
+.summaryConfirmedWithPay{
+  border:1px solid #2CFF9A !important;
+  box-shadow:0 0 22px rgba(44,255,154,.28), inset 0 0 18px rgba(44,255,154,.05) !important;
+}
+.summaryConfirmedWithPay span,.summaryConfirmedWithPay strong,.summaryConfirmedWithPay small{color:#8dffc4 !important}
+.summaryConfirmedWithPay::after{background:#2CFF9A;box-shadow:0 0 14px #2CFF9A}
+.commercialBadge{
+  display:inline-block;width:max-content;margin-top:4px;padding:5px 8px;border-radius:999px;
+  font-size:11px;font-weight:900;letter-spacing:.03em;text-transform:uppercase;
+}
+.statusQuoted{background:rgba(0,184,255,.12);border:1px solid rgba(0,184,255,.75);color:#7ee7ff;box-shadow:0 0 12px rgba(0,184,255,.20)}
+.statusConfirmedNoPay{background:rgba(255,217,61,.12);border:1px solid rgba(255,217,61,.75);color:#ffe66d;box-shadow:0 0 12px rgba(255,217,61,.20)}
+.statusConfirmedPay{background:rgba(44,255,154,.12);border:1px solid rgba(44,255,154,.75);color:#8dffc4;box-shadow:0 0 12px rgba(44,255,154,.20)}
+.statusLiquidated{background:rgba(44,255,154,.18);border:1px solid rgba(44,255,154,.85);color:#8dffc4;box-shadow:0 0 12px rgba(44,255,154,.22)}
+.statusCanceled,.statusLost{background:rgba(255,95,124,.12);border:1px solid rgba(255,95,124,.75);color:#ff9aab;box-shadow:0 0 12px rgba(255,95,124,.20)}
+.eventQuoted td{background:rgba(0,184,255,.018) !important}
+.eventConfirmedNoPay td{background:rgba(255,217,61,.035) !important}
+.eventConfirmedPay td{background:rgba(44,255,154,.025) !important}
+.eventCanceled td,.eventLost td{opacity:.65}
+@media(max-width:1350px){.summaryDashboard{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:760px){.summaryDashboard{grid-template-columns:1fr}}

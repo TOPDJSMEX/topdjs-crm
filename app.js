@@ -68,6 +68,57 @@ function normalizeExpenses(expenses){
     })) : []
   };
 }
+
+const COMMERCIAL_STATUSES=[
+  "COTIZADO",
+  "CONFIRMADO SIN ANTICIPO",
+  "CONFIRMADO CON ANTICIPO",
+  "LIQUIDADO",
+  "CANCELADO",
+  "PERDIDO"
+];
+function normalizeCommercialStatus(raw){
+  const s=String(raw||"").trim().toUpperCase();
+  if(!s || s==="EN SEGUIMIENTO")return "COTIZADO";
+  if(s==="PAGADO")return "LIQUIDADO";
+  if(s==="ANTICIPO RECIBIDO")return "CONFIRMADO CON ANTICIPO";
+  if(s==="CONFIRMADO")return "CONFIRMADO SIN ANTICIPO";
+  if(s==="COTIZACIÓN" || s==="COTIZACION" || s==="COTIZACIÓN ENVIADA" || s==="COTIZACION ENVIADA")return "COTIZADO";
+  if(s==="CONFIRMADO SIN ANTICIPO")return "CONFIRMADO SIN ANTICIPO";
+  if(s==="CONFIRMADO CON ANTICIPO")return "CONFIRMADO CON ANTICIPO";
+  if(s==="LIQUIDADO")return "LIQUIDADO";
+  if(s==="CANCELADO")return "CANCELADO";
+  if(s==="PERDIDO")return "PERDIDO";
+  return s;
+}
+function inferCommercialStatus(record){
+  const amount=Number(record?.amount||0);
+  const paid=paidForRecord ? paidForRecord(record) : Number(record?.paid||0);
+  const balance=Math.max(amount-paid,0);
+  const current=normalizeCommercialStatus(record?.status);
+  if(current==="CANCELADO" || current==="PERDIDO")return current;
+  if(amount>0 && balance<=0)return "LIQUIDADO";
+  if(paid>0 && ["COTIZADO","EN SEGUIMIENTO","ANTICIPO RECIBIDO","CONFIRMADO CON ANTICIPO"].includes(current))return "CONFIRMADO CON ANTICIPO";
+  return current;
+}
+function isConfirmedStatus(status){
+  const s=normalizeCommercialStatus(status);
+  return ["CONFIRMADO SIN ANTICIPO","CONFIRMADO CON ANTICIPO","LIQUIDADO"].includes(s);
+}
+function statusBadgeClass(status){
+  const s=normalizeCommercialStatus(status);
+  if(s==="COTIZADO")return "statusQuoted";
+  if(s==="CONFIRMADO SIN ANTICIPO")return "statusConfirmedNoPay";
+  if(s==="CONFIRMADO CON ANTICIPO")return "statusConfirmedPay";
+  if(s==="LIQUIDADO")return "statusLiquidated";
+  if(s==="CANCELADO")return "statusCanceled";
+  if(s==="PERDIDO")return "statusLost";
+  return "statusQuoted";
+}
+function commercialStatusLabel(status){
+  return normalizeCommercialStatus(status);
+}
+
 function displayCatalogItemName(name){
   const n=normalizeCatalogKey(name);
   if(n==="ING ILUMINACION" || n==="ING ILUMINACION VIDEO")return "ING ILUMINACION/VIDEO";
@@ -153,7 +204,7 @@ function normalizeRecord(r){
   if(r.quoteCatalog&&!r.quote_catalog)r.quote_catalog=r.quoteCatalog;
   if(r.expensesJsonb&&!r.expenses_jsonb)r.expenses_jsonb=r.expensesJsonb;
   r.expenses_jsonb=normalizeExpenses(r.expenses_jsonb);
-  if(!r.status)r.status="EN SEGUIMIENTO";
+  r.status=inferCommercialStatus(r);
   return r;
 }
 records=records.map(normalizeRecord).filter(r=>!r._deleted);
@@ -276,7 +327,7 @@ $("quoteTotal").oninput=updateQuoteBalance;$("quotePaid").oninput=updateQuoteBal
 $("clearQuoteBtn").onclick=()=>{
   if(!confirm("¿LIMPIAR COTIZADOR?"))return;
   ["quoteClient","quoteCompany","quotePhone","quoteEmail","quoteInstagram","quoteProject","quoteDate","quoteVenue","quotePax","quoteServiceHours","quoteSetupHours","quoteSetupTime","quoteStartTime","quoteEndTime","quoteTotal","quoteNotes"].forEach(id=>$(id).value="");
-  $("quotePaid").value=0;if($("quotePaidDate"))$("quotePaidDate").value=todayISO();$("quoteSetupType").value="MISMO DÍA";clearCatalog();updateQuoteBalance()
+  $("quotePaid").value=0;if($("quotePaidDate"))$("quotePaidDate").value=todayISO();if($("quoteStatus"))$("quoteStatus").value="COTIZADO";$("quoteSetupType").value="MISMO DÍA";clearCatalog();updateQuoteBalance()
 };
 
 function clearQuoteForm(){
@@ -284,6 +335,7 @@ function clearQuoteForm(){
   if($("quotePaid"))$("quotePaid").value=0;
   if($("quotePaidDate"))$("quotePaidDate").value=todayISO();
   if($("quotePaidMethod"))$("quotePaidMethod").value="";
+  if($("quoteStatus"))$("quoteStatus").value="COTIZADO";
   if($("quoteSetupType"))$("quoteSetupType").value="MISMO DÍA";
   editingRecordId=null;
   clearCatalog();
@@ -295,7 +347,7 @@ function clearQuoteForm(){
 }
 if($("cancelEditBtn"))$("cancelEditBtn").onclick=()=>clearQuoteForm();
 
-function collectQuoteData(local_id=null){const amount=Number($("quoteTotal").value||0),paid=Number($("quotePaid").value||0);return{local_id:local_id||uid(),type:"COTIZACIÓN ENVIADA",date:$("quoteDate").value,client:$("quoteClient").value,company:$("quoteCompany").value,phone:$("quotePhone").value,email:$("quoteEmail").value,instagram:$("quoteInstagram").value,event_type:$("quoteEventType").value,project:$("quoteProject").value,venue:$("quoteVenue").value,pax:Number($("quotePax").value||0),service_hours:Number($("quoteServiceHours").value||0),setup_type:$("quoteSetupType").value,setup_hours:Number($("quoteSetupHours").value||0),setup_time:$("quoteSetupTime").value,start_time:$("quoteStartTime").value,end_time:$("quoteEndTime").value,amount,paid,paid_method:$("quotePaidMethod")?.value||"",paid_date:$("quotePaidDate")?.value||todayISO(),status:paid>=amount&&amount>0?"PAGADO":paid>0?"ANTICIPO RECIBIDO":"EN SEGUIMIENTO",notes:$("quoteNotes").value,quote_catalog:getCatalogSelection(),updated_at:new Date().toISOString(),_dirty:true}}
+function collectQuoteData(local_id=null){const amount=Number($("quoteTotal").value||0),paid=Number($("quotePaid").value||0);return{local_id:local_id||uid(),type:"COTIZACIÓN ENVIADA",date:$("quoteDate").value,client:$("quoteClient").value,company:$("quoteCompany").value,phone:$("quotePhone").value,email:$("quoteEmail").value,instagram:$("quoteInstagram").value,event_type:$("quoteEventType").value,project:$("quoteProject").value,venue:$("quoteVenue").value,pax:Number($("quotePax").value||0),service_hours:Number($("quoteServiceHours").value||0),setup_type:$("quoteSetupType").value,setup_hours:Number($("quoteSetupHours").value||0),setup_time:$("quoteSetupTime").value,start_time:$("quoteStartTime").value,end_time:$("quoteEndTime").value,amount,paid,paid_method:$("quotePaidMethod")?.value||"",paid_date:$("quotePaidDate")?.value||todayISO(),status:normalizeCommercialStatus($("quoteStatus")?.value || (paid>=amount&&amount>0?"LIQUIDADO":paid>0?"CONFIRMADO CON ANTICIPO":"COTIZADO")),notes:$("quoteNotes").value,quote_catalog:getCatalogSelection(),updated_at:new Date().toISOString(),_dirty:true}}
 $("saveQuoteBtn").onclick=async()=>{
   const amount=Number($("quoteTotal").value||0);
   if(!$("quoteClient").value||!$("quoteDate").value)return alert("AGREGA CLIENTE Y FECHA.");
@@ -394,7 +446,7 @@ function fillEditForm(r){
   setInput("quotePaid",r.paid);setInput("quotePaidMethod",r.paid_method||"");
   const firstPayment=(eventPayments||[]).filter(p=>p.record_local_id===r.local_id).sort((a,b)=>String(a.payment_date||a.created_at).localeCompare(String(b.payment_date||b.created_at)))[0];
   setInput("quotePaidDate", firstPayment?.payment_date || r.paid_date || todayISO());
-  setInput("quoteStatus",r.status||"EN SEGUIMIENTO");
+  setInput("quoteStatus",normalizeCommercialStatus(r.status));
   setInput("quoteNotes",r.notes);
   setCatalogSelection(parseMaybeJson(r.quote_catalog));
   updateQuoteBalance();
@@ -628,13 +680,20 @@ function isLiquidated(r){
   return bal(r)<=0 || String(r.status||"").toUpperCase()==="PAGADO";
 }
 function operationalEventStatus(r){
-  if(isPastEvent(r) && !isLiquidated(r))return {label:`🔴 COBRAR ${money(bal(r))}`, cls:"eventPastDue"};
-  if(!isPastEvent(r) && isLiquidated(r))return {label:"✅ PRÓXIMO / LIQUIDADO", cls:"eventUpcomingPaid"};
-  if(!isPastEvent(r))return {label:"🔜 PRÓXIMO", cls:"eventUpcoming"};
-  return {label:"ARCHIVADO", cls:"eventArchived"};
+  r=normalizeRecord(r);
+  const s=normalizeCommercialStatus(r.status);
+  if(s==="COTIZADO")return {label:"🧾 COTIZADO", cls:"eventQuoted"};
+  if(s==="CONFIRMADO SIN ANTICIPO")return {label:"⚠️ CONFIRMADO SIN ANTICIPO", cls:"eventConfirmedNoPay"};
+  if(s==="CONFIRMADO CON ANTICIPO" && isPastEvent(r) && !isLiquidated(r))return {label:`🔴 COBRAR ${money(bal(r))}`, cls:"eventPastDue"};
+  if(s==="CONFIRMADO CON ANTICIPO")return {label:"✅ CONFIRMADO CON ANTICIPO", cls:"eventConfirmedPay"};
+  if(s==="LIQUIDADO" && !isPastEvent(r))return {label:"✅ PRÓXIMO / LIQUIDADO", cls:"eventUpcomingPaid"};
+  if(s==="LIQUIDADO")return {label:"ARCHIVADO", cls:"eventArchived"};
+  if(s==="CANCELADO")return {label:"🚫 CANCELADO", cls:"eventCanceled"};
+  if(s==="PERDIDO")return {label:"❌ PERDIDO", cls:"eventLost"};
+  return {label:"🔜 PRÓXIMO", cls:"eventUpcoming"};
 }
 function visibleOperationalRecords(){
-  return records.filter(r=>!r._deleted).filter(r=>!(isPastEvent(r)&&isLiquidated(r)));
+  return records.filter(r=>!r._deleted).map(normalizeRecord).filter(r=>!["CANCELADO","PERDIDO"].includes(normalizeCommercialStatus(r.status))).filter(r=>!(isPastEvent(r)&&isLiquidated(r)));
 }
 const PAYMENT_METHODS=["Efectivo","NU","BBVA","Manuel"];
 function paymentMethodFromInput(v){
@@ -783,13 +842,21 @@ function renderRecords(){
     const paid=paidForRecord(r);
     let tr=document.createElement("tr");
     tr.className=`operRow ${op.cls}`;
-    tr.innerHTML=`<td><div class="evtDateCell"><strong>${esc(formatDateDMY(r.date))}</strong></div></td><td><div class="evtClientBlock"><strong class="evtClientName">${esc(r.client)}</strong><small class="evtClientCompany">${esc(r.company)}</small><span class="eventBadge ${op.cls}">${op.label}</span></div></td><td><div class="evtTextBlock"><strong>${esc(r.project)}</strong></div></td><td><div class="evtMiniData">${esc(r.pax||"")}</div></td><td><div class="evtMiniData">${esc(r.service_hours||"")}</div></td><td><div class="evtTextBlock">${esc(r.setup_type||"")}</div></td><td><div class="recordMoneyBox recordMoneyAmount"><strong>${money(r.amount)}</strong><small>Recibido</small><small class="moneySubValue">${money(paid)}</small></div></td><td><div class="recordMoneyBox recordMoneyBalance"><strong>${money(bal(r))}</strong></div></td><td><div class="evtSyncBlock"><span class="evtSyncBadge ${r._dirty?"syncPending":"syncOk"}">${r._dirty?"PENDIENTE":"OK"}</span>${fileCount?`<small class="evtFileCount">📎 ${fileCount} archivo${fileCount===1?"":"s"}</small>`:""}<small class="evtUpdatedBy">${esc(r.updated_by||"—")}</small><small class="evtUpdatedAt">${esc(fmtAuditDate(r.updated_at||""))}</small></div></td><td><div class="recordActions"><button class="actionBtn actionViewBtn" onclick="showRecord('${r.local_id}')">👁️ VER</button><button class="actionBtn expensesBtn" onclick="showExpensesOnly('${r.local_id}')">💸 GASTOS</button><button class="actionBtn uploadFileBtn" onclick="openFilePicker('${r.local_id}')">📎 ARCHIVO</button><button class="actionBtn editBtn" onclick="editRecord('${r.local_id}')">✏️ EDITAR</button><button class="actionBtn warehouseBtn" onclick="generateWarehouseOrderPdf('${r.local_id}')">📦 PEDIDO BODEGA</button><button class="actionBtn payBtn" onclick="addPayment('${r.local_id}')">💳 REGISTRAR PAGO</button><button class="actionBtn delete" onclick="delRecord('${r.local_id}')">🗑️ BORRAR</button></div></td>`;
+    tr.innerHTML=`<td><div class="evtDateCell"><strong>${esc(formatDateDMY(r.date))}</strong></div></td><td><div class="evtClientBlock"><strong class="evtClientName">${esc(r.client)}</strong><small class="evtClientCompany">${esc(r.company)}</small><span class="commercialBadge ${statusBadgeClass(r.status)}">${esc(commercialStatusLabel(r.status))}</span><span class="eventBadge ${op.cls}">${op.label}</span></div></td><td><div class="evtTextBlock"><strong>${esc(r.project)}</strong></div></td><td><div class="evtMiniData">${esc(r.pax||"")}</div></td><td><div class="evtMiniData">${esc(r.service_hours||"")}</div></td><td><div class="evtTextBlock">${esc(r.setup_type||"")}</div></td><td><div class="recordMoneyBox recordMoneyAmount"><strong>${money(r.amount)}</strong><small>Recibido</small><small class="moneySubValue">${money(paid)}</small></div></td><td><div class="recordMoneyBox recordMoneyBalance"><strong>${money(bal(r))}</strong></div></td><td><div class="evtSyncBlock"><span class="evtSyncBadge ${r._dirty?"syncPending":"syncOk"}">${r._dirty?"PENDIENTE":"OK"}</span>${fileCount?`<small class="evtFileCount">📎 ${fileCount} archivo${fileCount===1?"":"s"}</small>`:""}<small class="evtUpdatedBy">${esc(r.updated_by||"—")}</small><small class="evtUpdatedAt">${esc(fmtAuditDate(r.updated_at||""))}</small></div></td><td><div class="recordActions"><button class="actionBtn actionViewBtn" onclick="showRecord('${r.local_id}')">👁️ VER</button><button class="actionBtn expensesBtn" onclick="showExpensesOnly('${r.local_id}')">💸 GASTOS</button><button class="actionBtn uploadFileBtn" onclick="openFilePicker('${r.local_id}')">📎 ARCHIVO</button><button class="actionBtn editBtn" onclick="editRecord('${r.local_id}')">✏️ EDITAR</button><button class="actionBtn warehouseBtn" onclick="generateWarehouseOrderPdf('${r.local_id}')">📦 PEDIDO BODEGA</button><button class="actionBtn payBtn" onclick="addPayment('${r.local_id}')">💳 REGISTRAR PAGO</button><button class="actionBtn delete" onclick="delRecord('${r.local_id}')">🗑️ BORRAR</button></div></td>`;
     tb.appendChild(tr);
   });
-  $("sumQuoted").textContent=money(visible.reduce((s,r)=>s+Number(r.amount||0),0));
+  const quotedOpen=visible.filter(r=>normalizeCommercialStatus(r.status)==="COTIZADO");
+  const confirmedNoPay=visible.filter(r=>normalizeCommercialStatus(r.status)==="CONFIRMADO SIN ANTICIPO");
+  const confirmedWithPay=visible.filter(r=>normalizeCommercialStatus(r.status)==="CONFIRMADO CON ANTICIPO");
+  const confirmed=visible.filter(r=>isConfirmedStatus(r.status));
+  $("sumQuoted").textContent=money(quotedOpen.reduce((s,r)=>s+Number(r.amount||0),0));
   $("sumPaid").textContent=money(visible.reduce((s,r)=>s+paidForRecord(r),0));
-  $("sumBalance").textContent=money(visible.reduce((s,r)=>s+bal(r),0));
-  const overdue=visible.filter(r=>isPastEvent(r)&&!isLiquidated(r));
+  $("sumBalance").textContent=money(confirmed.reduce((s,r)=>s+bal(r),0));
+  if($("sumConfirmedNoPay"))$("sumConfirmedNoPay").textContent=money(confirmedNoPay.reduce((s,r)=>s+Number(r.amount||0),0));
+  if($("confirmedNoPayCount"))$("confirmedNoPayCount").textContent=`${confirmedNoPay.length} evento${confirmedNoPay.length===1?"":"s"}`;
+  if($("sumConfirmedWithPay"))$("sumConfirmedWithPay").textContent=money(confirmedWithPay.reduce((s,r)=>s+Number(r.amount||0),0));
+  if($("confirmedWithPayCount"))$("confirmedWithPayCount").textContent=`${confirmedWithPay.length} evento${confirmedWithPay.length===1?"":"s"}`;
+  const overdue=confirmed.filter(r=>isPastEvent(r)&&!isLiquidated(r));
   if($("sumOverdue"))$("sumOverdue").textContent=money(overdue.reduce((s,r)=>s+bal(r),0));
   if($("overdueCount"))$("overdueCount").textContent=`${overdue.length} evento${overdue.length===1?"":"s"}`;
   renderSyncStatus();
@@ -1012,7 +1079,7 @@ function showRecord(local_id){
   const r=normalizeRecord(records.find(x=>x.local_id===local_id));if(!r)return;
   currentFileRecordId=local_id;
   $("modalTitle").textContent=r.client;
-  $("modalBody").innerHTML=`<h3>📋 INFORMACIÓN DEL EVENTO</h3><p><strong>📅 FECHA:</strong> ${esc(r.date)}</p><p><strong>🎉 PROYECTO:</strong> ${esc(r.project)}</p><p><strong>🎯 TIPO:</strong> ${esc(r.event_type)}</p><p><strong>📍 LUGAR:</strong> ${esc(r.venue)}</p><p><strong>👥 PAX:</strong> ${esc(r.pax||"")}</p><p><strong>⏰ HORAS DE SERVICIO:</strong> ${esc(r.service_hours||"")}</p><p><strong>🔧 MONTAJE:</strong> ${esc(r.setup_type||"")} · ${esc(r.setup_hours||"")} HRS · ${esc(r.setup_time||"")}</p><p><strong>🎬 INICIO:</strong> ${esc(r.start_time||"")} · <strong>🏁 TÉRMINO:</strong> ${esc(r.end_time||"")}</p><p><strong>💰 MONTO:</strong> ${money(r.amount)} | <strong>💳 RECIBIDO:</strong> ${money(paidForRecord(r))} | <strong>💸 SALDO:</strong> ${money(bal(r))}</p><p>${r.phone?`<a class="button whatsapp" href="${wa(r.phone,"Hola, te contacto de TopDJs sobre "+(r.project||"tu evento"))}" target="_blank">WHATSAPP</a> <a class="button call" href="${tel(r.phone)}">LLAMAR</a>`:""} <button class="editBtn" onclick="$('modal').classList.add('hidden');document.body.classList.remove('modal-open');editRecord('${r.local_id}')">EDITAR EVENTO</button> <button class="fileBtn" onclick="generateWarehouseOrderPdf('${r.local_id}')">PEDIDO BODEGA PDF</button></p>${paymentsHtml(local_id)}${auditHtml(r)}${catalogHtml(r.quote_catalog)}<h3>📝 OBSERVACIONES GENERALES</h3><p>${esc(r.notes)}</p>${filesHtml(local_id)}`;
+  $("modalBody").innerHTML=`<h3>📋 INFORMACIÓN DEL EVENTO</h3><p><strong>📅 FECHA:</strong> ${esc(r.date)}</p><p><strong>🎉 PROYECTO:</strong> ${esc(r.project)}</p><p><strong>🎯 TIPO:</strong> ${esc(r.event_type)}</p><p><strong>📍 LUGAR:</strong> ${esc(r.venue)}</p><p><strong>👥 PAX:</strong> ${esc(r.pax||"")}</p><p><strong>⏰ HORAS DE SERVICIO:</strong> ${esc(r.service_hours||"")}</p><p><strong>🔧 MONTAJE:</strong> ${esc(r.setup_type||"")} · ${esc(r.setup_hours||"")} HRS · ${esc(r.setup_time||"")}</p><p><strong>🎬 INICIO:</strong> ${esc(r.start_time||"")} · <strong>🏁 TÉRMINO:</strong> ${esc(r.end_time||"")}</p><p><strong>📌 ESTADO:</strong> ${esc(commercialStatusLabel(r.status))}</p><p><strong>💰 MONTO:</strong> ${money(r.amount)} | <strong>💳 RECIBIDO:</strong> ${money(paidForRecord(r))} | <strong>💸 SALDO:</strong> ${money(bal(r))}</p><p>${r.phone?`<a class="button whatsapp" href="${wa(r.phone,"Hola, te contacto de TopDJs sobre "+(r.project||"tu evento"))}" target="_blank">WHATSAPP</a> <a class="button call" href="${tel(r.phone)}">LLAMAR</a>`:""} <button class="editBtn" onclick="$('modal').classList.add('hidden');document.body.classList.remove('modal-open');editRecord('${r.local_id}')">EDITAR EVENTO</button> <button class="fileBtn" onclick="generateWarehouseOrderPdf('${r.local_id}')">PEDIDO BODEGA PDF</button></p>${paymentsHtml(local_id)}${auditHtml(r)}${catalogHtml(r.quote_catalog)}<h3>📝 OBSERVACIONES GENERALES</h3><p>${esc(r.notes)}</p>${filesHtml(local_id)}`;
   $("modal").classList.remove("hidden");setTimeout(()=>loadHistoryIntoModal(r.local_id),300)
 }
 $("closeModal").onclick=()=>$("modal").classList.add("hidden");

@@ -6,12 +6,12 @@
 <meta name="theme-color" content="#0f172a">
 <link rel="manifest" href="manifest.json">
 <link rel="stylesheet" href="style.css">
-<title>TOPDJS CRM v11.4.26</title>
+<title>TOPDJS CRM v11.4.27</title>
 </head>
 <body>
 <header>
   <div>
-    <div class="brandHeader"><img src="topdjs-logo.png" class="brandLogo" alt="TopDJs"><div><h1>TOPDJS CRM v11.4.26</h1><p class="brandSub">Audio • Iluminación • Video • DJ</p></div></div>
+    <div class="brandHeader"><img src="topdjs-logo.png" class="brandLogo" alt="TopDJs"><div><h1>TOPDJS CRM v11.4.27</h1><p class="brandSub">Audio • Iluminación • Video • DJ</p></div></div>
     <p>Offline + Supabase + auditoría + dashboard real + gastos por evento.</p>
   </div>
   <div class="topActions">
@@ -81,6 +81,16 @@
   <option value="BBVA">BBVA</option>
   <option value="Manuel">Manuel</option>
 </select>
+
+      <label>📌 ESTADO DEL EVENTO</label>
+      <select id="quoteStatus">
+        <option value="COTIZADO">Cotizado</option>
+        <option value="CONFIRMADO SIN ANTICIPO">Confirmado sin anticipo</option>
+        <option value="CONFIRMADO CON ANTICIPO">Confirmado con anticipo</option>
+        <option value="LIQUIDADO">Liquidado</option>
+        <option value="CANCELADO">Cancelado</option>
+        <option value="PERDIDO">Perdido</option>
+      </select>
       <p class="big"><strong>💸 SALDO:</strong> <span id="quoteBalance">$0</span></p>
       <button id="saveQuoteBtn">GUARDAR COMO COTIZACIÓN</button>
       <button id="cancelEditBtn" class="secondary hidden">CANCELAR EDICIÓN</button>
@@ -103,7 +113,7 @@
     <h2>📊 DASHBOARD DE COBRANZA</h2>
     <div class="summaryDashboard">
       <div class="summaryCard summaryQuoted">
-        <span>💰 COTIZADO</span>
+        <span>💰 COTIZADO NO CONFIRMADO</span>
         <strong id="sumQuoted">$0</strong>
       </div>
       <div class="summaryCard summaryPaid">
@@ -111,8 +121,19 @@
         <strong id="sumPaid">$0</strong>
       </div>
       <div class="summaryCard summaryPending">
-        <span>⚠️ PENDIENTE</span>
+        <span>⚠️ PENDIENTE CONFIRMADO</span>
         <strong id="sumBalance">$0</strong>
+      </div>
+
+      <div class="summaryCard summaryConfirmedNoPay">
+        <span>⚠️ CONFIRMADO SIN ANTICIPO</span>
+        <strong id="sumConfirmedNoPay">$0</strong>
+        <small id="confirmedNoPayCount">0 eventos</small>
+      </div>
+      <div class="summaryCard summaryConfirmedWithPay">
+        <span>✅ CONFIRMADO CON ANTICIPO</span>
+        <strong id="sumConfirmedWithPay">$0</strong>
+        <small id="confirmedWithPayCount">0 eventos</small>
       </div>
       <div class="summaryCard summaryOverdue">
         <span>🔴 VENCIDO</span>
