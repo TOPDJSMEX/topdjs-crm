@@ -1003,10 +1003,40 @@ function showRecord(local_id){
 }
 $("closeModal").onclick=()=>$("modal").classList.add("hidden");
 
+const CALENDAR_MONTH_NAMES=["ENERO","FEBRERO","MARZO","ABRIL","MAYO","JUNIO","JULIO","AGOSTO","SEPTIEMBRE","OCTUBRE","NOVIEMBRE","DICIEMBRE"];
+
+function initCalendarControls(){
+  const monthSelect=$("calendarMonthSelect");
+  if(monthSelect && !monthSelect.options.length){
+    CALENDAR_MONTH_NAMES.forEach((name,idx)=>{
+      const opt=document.createElement("option");
+      opt.value=String(idx);
+      opt.textContent=name;
+      monthSelect.appendChild(opt);
+    });
+  }
+}
+
+function updateCalendarControls(){
+  const y=visibleDate.getFullYear(),m=visibleDate.getMonth();
+  if($("calendarMonthSelect"))$("calendarMonthSelect").value=String(m);
+  if($("calendarYearInput"))$("calendarYearInput").value=String(y);
+}
+
+function setCalendarDateFromControls(){
+  const month=Number($("calendarMonthSelect")?.value ?? visibleDate.getMonth());
+  const year=Number($("calendarYearInput")?.value ?? visibleDate.getFullYear());
+  if(!Number.isFinite(year)||year<1900||year>2200)return alert("Año inválido");
+  visibleDate=new Date(year, month, 1);
+  renderCalendar();
+}
+
 function renderCalendar(){
+  initCalendarControls();
   const grid=$("calendarGrid");grid.innerHTML="";
-  const y=visibleDate.getFullYear(),m=visibleDate.getMonth(),names=["ENERO","FEBRERO","MARZO","ABRIL","MAYO","JUNIO","JULIO","AGOSTO","SEPTIEMBRE","OCTUBRE","NOVIEMBRE","DICIEMBRE"];
-  $("monthTitle").textContent=`${names[m]} ${y}`;
+  const y=visibleDate.getFullYear(),m=visibleDate.getMonth();
+  $("monthTitle").textContent=`${CALENDAR_MONTH_NAMES[m]} ${y}`;
+  updateCalendarControls();
   ["LUN","MAR","MIÉ","JUE","VIE","SÁB","DOM"].forEach(d=>{let e=document.createElement("div");e.className="dayHeader";e.textContent=d;grid.appendChild(e)});
   const first=new Date(y,m,1),off=(first.getDay()+6)%7,start=new Date(y,m,1-off);
   for(let i=0;i<42;i++){
@@ -1023,6 +1053,12 @@ function renderCalendar(){
 }
 $("prevMonth").onclick=()=>{visibleDate.setMonth(visibleDate.getMonth()-1);renderCalendar()};
 $("nextMonth").onclick=()=>{visibleDate.setMonth(visibleDate.getMonth()+1);renderCalendar()};
+$("prevYear").onclick=()=>{visibleDate.setFullYear(visibleDate.getFullYear()-1);renderCalendar()};
+$("nextYear").onclick=()=>{visibleDate.setFullYear(visibleDate.getFullYear()+1);renderCalendar()};
+$("goCalendarDate").onclick=()=>setCalendarDateFromControls();
+$("todayCalendar").onclick=()=>{visibleDate=new Date();renderCalendar()};
+if($("calendarMonthSelect"))$("calendarMonthSelect").onchange=()=>setCalendarDateFromControls();
+if($("calendarYearInput"))$("calendarYearInput").onkeydown=e=>{if(e.key==="Enter")setCalendarDateFromControls()};
 
 $("addContactBtn").onclick=()=>{
   const c={local_id:uid(),ig:$("igUser").value,name:$("contactName").value,phone:$("contactPhone").value,email:$("contactEmail").value,segment:$("contactSegment").value,notes:$("contactNotes").value,updated_at:new Date().toISOString(),_dirty:true};

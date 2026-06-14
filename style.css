@@ -746,3 +746,68 @@ tr.eventUpcoming td{background:rgba(0,184,255,.025) !important}
 body.modal-open .operTable thead th{
   position:static;
 }
+
+
+/* TOPDJS CRM v11.4.21 - Calendario multi año */
+.calendarTopAdvanced{
+  gap:12px;
+  flex-wrap:wrap;
+  align-items:center;
+  justify-content:space-between;
+}
+.calendarTitleBox{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:8px;
+  min-width:280px;
+  flex:1;
+}
+.calendarTitleBox h2{
+  margin:0 !important;
+  text-align:center;
+  font-size:28px;
+  letter-spacing:.08em;
+  color:#7ee7ff !important;
+  text-shadow:0 0 14px rgba(0,184,255,.35);
+}
+.calendarJump{
+  display:flex;
+  gap:8px;
+  align-items:center;
+  justify-content:center;
+  flex-wrap:wrap;
+}
+.calendarJump select,.calendarJump input{
+  width:auto !important;
+  min-width:140px;
+  margin:0 !important;
+  height:38px;
+  padding:7px 10px !important;
+}
+.calendarJump input{
+  min-width:96px;
+  text-align:center;
+  font-weight:900;
+}
+.calendarJump button{
+  margin-top:0 !important;
+  height:38px;
+  padding:7px 12px !important;
+}
+.calendarTopAdvanced > button{
+  margin-top:0 !important;
+  min-width:145px;
+}
+.day strong{
+  color:#fff;
+  font-size:15px;
+}
+.day.outside strong{
+  color:#6f8197;
+}
+@media(max-width:900px){
+  .calendarTopAdvanced{justify-content:center}
+  .calendarTopAdvanced > button{min-width:140px;font-size:12px}
+  .calendarTitleBox{order:-1;flex-basis:100%}
+}
