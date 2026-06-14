@@ -599,3 +599,48 @@ tr.eventUpcoming td{background:rgba(0,184,255,.025) !important}
   border-color:#ffe0b8 !important;
   box-shadow:0 0 20px rgba(255,143,58,.35) !important;
 }
+
+
+/* TOPDJS CRM v11.4.16 - Monto y saldo neon */
+.recordMoneyBox{
+  border-radius:16px;
+  padding:12px 14px;
+  border:1px solid rgba(0,184,255,.35);
+  background:linear-gradient(180deg, rgba(5,11,24,.95), rgba(0,0,0,.98));
+  min-width:170px;
+  box-shadow:inset 0 0 12px rgba(255,255,255,.02);
+}
+.recordMoneyBox strong{
+  display:block;
+  font-size:20px;
+  line-height:1.1;
+  font-weight:900;
+  margin-bottom:8px;
+}
+.recordMoneyBox small{
+  display:block;
+  font-size:11px;
+  font-weight:800;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+}
+.recordMoneyBox .moneySubValue{
+  margin-top:2px;
+  font-size:14px;
+  font-weight:900;
+  text-transform:none;
+}
+.recordMoneyAmount{
+  border-color:rgba(44,255,154,.85) !important;
+  box-shadow:0 0 18px rgba(44,255,154,.24), inset 0 0 12px rgba(44,255,154,.06) !important;
+}
+.recordMoneyAmount strong,.recordMoneyAmount small,.recordMoneyAmount .moneySubValue{
+  color:#8dffc4 !important;
+}
+.recordMoneyBalance{
+  border-color:rgba(255,217,61,.85) !important;
+  box-shadow:0 0 18px rgba(255,217,61,.24), inset 0 0 12px rgba(255,217,61,.06) !important;
+}
+.recordMoneyBalance strong,.recordMoneyBalance small{
+  color:#ffe66d !important;
+}
