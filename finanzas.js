@@ -1,6 +1,6 @@
 // =======================================================
-// TopDJs Finanzas CRM v2.1.1
-// Panel limpio + gastos fijos en ventana completa + pagos + historial
+// TopDJs Finanzas CRM v2.1.2
+// Panel limpio + gastos fijos en ventana con botones directos + pagos + historial
 // =======================================================
 
 const SUPABASE_URL = window.SUPABASE_URL;
@@ -369,7 +369,7 @@ function renderFixedExpenses() {
     const estimate = expenseMonthlyEstimate(expense);
 
     return `
-      <article class="expense-compact-row" onclick="showExpenseDetail('${escapeHtml(expense.id)}')">
+      <article class="expense-compact-row">
         <div class="expense-main">
           <strong>${escapeHtml(expenseName(expense))}</strong>
           <small>${frequency === "weekly" ? "Semanal" : "Mensual"} · ${escapeHtml(expenseDateLabel(expense))}</small>
@@ -390,7 +390,11 @@ function renderFixedExpenses() {
           <strong>${money(estimate)}</strong>
         </div>
 
-        <div class="open-link">Abrir →</div>
+        <div class="expense-actions direct">
+          <button type="button" class="pay" onclick="showPaymentForm('${escapeHtml(expense.id)}')">Pagar</button>
+          <button type="button" onclick="editExpense('${escapeHtml(expense.id)}')">Editar</button>
+          <button type="button" class="danger" onclick="deleteExpense('${escapeHtml(expense.id)}')">Borrar</button>
+        </div>
       </article>
     `;
   }).join("");
