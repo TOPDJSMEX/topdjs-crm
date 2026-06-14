@@ -1348,3 +1348,30 @@ body.workspace-open {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* ================================
+   v2.1.9 · Próximo pago de tarjeta detallado
+================================ */
+
+.cards-module-stats {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.cards-module-stats strong {
+  font-size: 15px;
+  line-height: 1.12;
+  word-break: break-word;
+}
+
+@media (max-width: 1100px) {
+  .cards-module-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .cards-module-stats {
+    grid-template-columns: 1fr;
+  }
+}

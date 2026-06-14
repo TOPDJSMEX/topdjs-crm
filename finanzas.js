@@ -1,6 +1,6 @@
 // =======================================================
-// TopDJs Finanzas CRM v2.1.8
-// Panel limpio + gastos fijos + tarjetas + sincronización CRM + tacómetros + asistente interno
+// TopDJs Finanzas CRM v2.1.9
+// Panel limpio + gastos fijos + tarjetas con próximo pago detallado + sincronización CRM + tacómetros + asistente interno
 // =======================================================
 
 const SUPABASE_URL = window.SUPABASE_URL;
@@ -1397,9 +1397,16 @@ function renderCreditCards() {
       const dateB = nextDateByDay(cardDueDay(b), cardDueNextMonth(b)).getTime();
       return dateA - dateB;
     })[0];
+
     setText("tarjetasProximoPago", cardDueDateLabel(nextDue));
+    setText("tarjetasProximoTarjeta", cardName(nextDue));
+    setText("tarjetasProximoMinimo", money(cardMinimum(nextDue)));
+    setText("tarjetasProximoNoIntereses", money(cardNoInterest(nextDue)));
   } else {
     setText("tarjetasProximoPago", "-");
+    setText("tarjetasProximoTarjeta", "-");
+    setText("tarjetasProximoMinimo", "$0");
+    setText("tarjetasProximoNoIntereses", "$0");
   }
 
   if (!container) return;

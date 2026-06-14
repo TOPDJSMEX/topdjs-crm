@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TopDJs Finanzas CRM v2.1.8</title>
-  <link rel="stylesheet" href="finanzas.css?v=218" />
+  <title>TopDJs Finanzas CRM v2.1.9</title>
+  <link rel="stylesheet" href="finanzas.css?v=219" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     window.SUPABASE_URL = "https://xbrsnmbmkbvxyhrtiywy.supabase.co";
@@ -15,10 +15,10 @@
   <div class="app-shell">
     <header class="topbar">
       <div>
-        <p class="eyebrow">TopDJs Finanzas CRM v2.1.8 · Panel limpio</p>
+        <p class="eyebrow">TopDJs Finanzas CRM v2.1.9 · Panel limpio</p>
         <h1>Finanzas TopDJs</h1>
         <p class="subtitle">
-          Panel principal compacto con liquidez, gastos, tarjetas, tacómetros y asistente financiero interno con estrategias.
+          Panel principal compacto con liquidez, gastos, tarjetas, próximo pago detallado, tacómetros y asistente financiero interno.
         </p>
       </div>
 
@@ -102,7 +102,7 @@
             <p>Resumen compacto de deuda, crédito disponible, mínimos y pagos para no generar intereses.</p>
           </div>
 
-          <div class="module-stats">
+          <div class="module-stats cards-module-stats">
             <div>
               <span>Deuda total</span>
               <strong id="tarjetasDeudaTotal">$0</strong>
@@ -114,6 +114,18 @@
             <div>
               <span>Próximo pago</span>
               <strong id="tarjetasProximoPago">-</strong>
+            </div>
+            <div>
+              <span>Tarjeta</span>
+              <strong id="tarjetasProximoTarjeta">-</strong>
+            </div>
+            <div>
+              <span>Mínimo</span>
+              <strong id="tarjetasProximoMinimo">$0</strong>
+            </div>
+            <div>
+              <span>No intereses</span>
+              <strong id="tarjetasProximoNoIntereses">$0</strong>
             </div>
           </div>
 
@@ -281,6 +293,6 @@
     </div>
   </section>
 
-  <script src="finanzas.js?v=218"></script>
+  <script src="finanzas.js?v=219"></script>
 </body>
 </html>
