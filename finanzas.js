@@ -1,6 +1,6 @@
 // =======================================================
-// TOPDJS FINANZAS CRM v1.0
-// Frontend MVP
+// TOPDJS FINANZAS CRM v1.0.1
+// Tarjetas con límite, disponible, usado y % uso
 // =======================================================
 
 // IMPORTANTE:
@@ -29,6 +29,47 @@ const shortMoney = (value) => {
     maximumFractionDigits: 0,
   });
 };
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function firstDefined(source, keys, fallback = null) {
+  for (const key of keys) {
+    if (source[key] !== undefined && source[key] !== null) return source[key];
+  }
+  return fallback;
+}
+
+function asNumber(value, fallback = 0) {
+  if (value === "" || value === null || value === undefined) return fallback;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : fallback;
+}
+
+function inputNumberValue(value) {
+  return value === null || value === undefined ? "" : Number(value || 0);
+}
+
+function readMoneyInput(id) {
+  const input = document.getElementById(id);
+  if (!input || input.value === "") return null;
+  const number = Number(input.value);
+  return Number.isFinite(number) ? number : null;
+}
+
+function percentText(value) {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) {
+    return "Pendiente";
+  }
+
+  return `${Number(value).toFixed(1)}%`;
+}
 
 function countMondaysInCurrentMonth() {
   const now = new Date();
@@ -61,11 +102,62 @@ function badgeRisk(level) {
     low: "Bajo",
   };
 
-  return `<span class="badge ${normalized}">${labelMap[normalized] || level}</span>`;
+  return `<span class="badge ${normalized}">${labelMap[normalized] || escapeHtml(level)}</span>`;
+}
+
+function calculateCardMetrics(card) {
+  const balance = asNumber(
+    firstDefined(card, ["current_balance", "balance", "saldo"], 0)
+  );
+
+  const creditLimitRaw = firstDefined(card, ["credit_limit", "limit", "limite"], null);
+  const availableRaw = firstDefined(
+    card,
+    ["available_credit", "available", "disponible"],
+    null
+  );
+
+  const creditLimit = creditLimitRaw === null ? null : asNumber(creditLimitRaw, 0);
+  const availableCredit = availableRaw === null ? null : asNumber(availableRaw, 0);
+
+  const usedCredit =
+    firstDefined(card, ["used_credit", "used", "saldo_usado"], null) !== null
+      ? asNumber(firstDefined(card, ["used_credit", "used", "saldo_usado"], 0))
+      : creditLimit !== null && availableCredit !== null
+      ? Math.max(creditLimit - availableCredit, 0)
+      : balance;
+
+  const usagePercentage =
+    firstDefined(card, ["usage_percentage", "usage_percent", "porcentaje_uso"], null) !== null
+      ? asNumber(firstDefined(card, ["usage_percentage", "usage_percent", "porcentaje_uso"], 0))
+      : creditLimit && creditLimit > 0
+      ? (usedCredit / creditLimit) * 100
+      : null;
+
+  return {
+    balance,
+    creditLimit,
+    availableCredit,
+    usedCredit,
+    usagePercentage,
+  };
+}
+
+function calculateRiskLevel(card) {
+  if (card.risk_level) return card.risk_level;
+
+  const { balance, usagePercentage } = calculateCardMetrics(card);
+  const cat = asNumber(firstDefined(card, ["cat", "cat_rate", "interest_rate"], 0));
+
+  if (cat >= 100 || usagePercentage >= 90 || balance >= 80000) return "critical";
+  if (cat >= 60 || usagePercentage >= 70 || balance >= 30000) return "high";
+  if (cat >= 25 || usagePercentage >= 40) return "medium";
+  return "low";
 }
 
 function renderAccounts(accounts) {
   const el = document.getElementById("accountsList");
+  if (!el) return;
 
   if (!accounts || !accounts.length) {
     el.innerHTML = `<div class="empty-state">No hay cuentas registradas.</div>`;
@@ -87,10 +179,10 @@ function renderAccounts(accounts) {
           .map(
             (account) => `
             <tr>
-              <td><strong>${account.name}</strong></td>
-              <td>${account.type || "-"}</td>
+              <td><strong>${escapeHtml(account.name)}</strong></td>
+              <td>${escapeHtml(account.type || "-")}</td>
               <td class="amount">${money(account.current_balance)}</td>
-              <td>${account.notes || ""}</td>
+              <td>${escapeHtml(account.notes || "")}</td>
             </tr>
           `
           )
@@ -100,31 +192,17 @@ function renderAccounts(accounts) {
   `;
 }
 
-function renderCards(cards) {
-  const el = document.getElementById("cardsList");
-
-  if (!cards || !cards.length) {
-    el.innerHTML = `<div class="empty-state">No hay tarjetas registradas.</div>`;
-    return;
-  }
 async function updateCardFinanceFields(cardId) {
-  const minimumInput = document.getElementById(`min-${cardId}`);
-  const limitInput = document.getElementById(`limit-${cardId}`);
-
-  const minimumRaw = minimumInput ? minimumInput.value : "";
-  const limitRaw = limitInput ? limitInput.value : "";
-
-  const minimumPayment =
-    minimumRaw === "" || minimumRaw === null ? null : Number(minimumRaw);
-
-  const creditLimit =
-    limitRaw === "" || limitRaw === null ? null : Number(limitRaw);
+  const minimumPayment = readMoneyInput(`min-${cardId}`);
+  const creditLimit = readMoneyInput(`limit-${cardId}`);
+  const availableCredit = readMoneyInput(`available-${cardId}`);
 
   const payload = {
     minimum_payment: minimumPayment,
     minimum_payment_status: minimumPayment === null ? "pending_app" : "known",
     credit_limit: creditLimit,
     credit_limit_status: creditLimit === null ? "pending" : "known",
+    available_credit: availableCredit,
   };
 
   const { error } = await db
@@ -139,8 +217,21 @@ async function updateCardFinanceFields(cardId) {
 
   await loadFinance();
 }
+
+// Necesario porque los botones usan onclick dentro de HTML renderizado.
+window.updateCardFinanceFields = updateCardFinanceFields;
+
+function renderCards(cards) {
+  const el = document.getElementById("cardsList");
+  if (!el) return;
+
+  if (!cards || !cards.length) {
+    el.innerHTML = `<div class="empty-state">No hay tarjetas registradas.</div>`;
+    return;
+  }
+
   el.innerHTML = `
-    <table>
+    <table class="cards-table">
       <thead>
         <tr>
           <th>Prioridad</th>
@@ -148,7 +239,9 @@ async function updateCardFinanceFields(cardId) {
           <th>Saldo</th>
           <th>Límite</th>
           <th>Disponible</th>
-          <th>Mínimo editable</th>
+          <th>Usado</th>
+          <th>% uso</th>
+          <th>Mínimo</th>
           <th>CAT / Tasa</th>
           <th>Riesgo</th>
           <th>Guardar</th>
@@ -157,63 +250,87 @@ async function updateCardFinanceFields(cardId) {
       <tbody>
         ${cards
           .map((card) => {
-            const catOrRate = card.cat
-              ? `CAT ${card.cat}%`
-              : card.interest_rate
-              ? `${card.interest_rate}%`
-              : "-";
+            const metrics = calculateCardMetrics(card);
+            const cat = firstDefined(card, ["cat", "cat_rate"], null);
+            const interestRate = firstDefined(card, ["interest_rate", "rate"], null);
+            const catOrRate =
+              cat !== null
+                ? `CAT ${Number(cat).toFixed(1)}%`
+                : interestRate !== null
+                ? `${Number(interestRate).toFixed(1)}%`
+                : "-";
 
             const minimumValue =
               card.minimum_payment_status === "pending_app" ||
-              card.minimum_payment === null
+              card.minimum_payment === null ||
+              card.minimum_payment === undefined
                 ? ""
-                : Number(card.minimum_payment || 0);
+                : inputNumberValue(card.minimum_payment);
 
-            const creditLimitValue =
-              card.credit_limit === null || card.credit_limit === undefined
-                ? ""
-                : Number(card.credit_limit || 0);
+            const creditLimitValue = inputNumberValue(metrics.creditLimit);
+            const availableCreditValue = inputNumberValue(metrics.availableCredit);
+            const usageClass =
+              metrics.usagePercentage === null
+                ? "pending"
+                : metrics.usagePercentage >= 80
+                ? "danger"
+                : metrics.usagePercentage >= 50
+                ? "warning"
+                : "positive";
 
-            const available =
-              card.available_credit === null || card.available_credit === undefined
-                ? "Pendiente"
-                : money(card.available_credit);
+            const bank = firstDefined(card, ["bank", "bank_name", "issuer"], "-");
+            const usageType = firstDefined(card, ["usage_type", "card_type"], "Mixta");
+            const riskLevel = calculateRiskLevel(card);
 
             return `
               <tr>
-                <td>${card.priority || "-"}</td>
+                <td>${escapeHtml(card.priority || "-")}</td>
                 <td>
-                  <strong>${card.card_name}</strong><br>
-                  <small>${card.bank} · ${card.usage_type || "Mixta"}</small>
+                  <strong>${escapeHtml(card.card_name || card.name || "Tarjeta")}</strong><br>
+                  <small>${escapeHtml(bank)} · ${escapeHtml(usageType)}</small>
                 </td>
-                <td class="amount">${money(card.current_balance)}</td>
+                <td class="amount">${money(metrics.balance)}</td>
                 <td>
                   <input
                     class="money-input"
                     type="number"
                     min="0"
                     step="1"
-                    id="limit-${card.id}"
+                    id="limit-${escapeHtml(card.id)}"
                     value="${creditLimitValue}"
                     placeholder="Límite"
                   />
                 </td>
-                <td class="amount">${available}</td>
                 <td>
                   <input
-                    class="money-input"
+                    class="money-input positive"
                     type="number"
                     min="0"
                     step="1"
-                    id="min-${card.id}"
+                    id="available-${escapeHtml(card.id)}"
+                    value="${availableCreditValue}"
+                    placeholder="Disponible"
+                  />
+                </td>
+                <td class="amount muted-amount">${money(metrics.usedCredit)}</td>
+                <td>
+                  <span class="usage-pill ${usageClass}">${percentText(metrics.usagePercentage)}</span>
+                </td>
+                <td>
+                  <input
+                    class="money-input warning"
+                    type="number"
+                    min="0"
+                    step="1"
+                    id="min-${escapeHtml(card.id)}"
                     value="${minimumValue}"
                     placeholder="Mínimo"
                   />
                 </td>
-                <td>${catOrRate}</td>
-                <td>${badgeRisk(card.risk_level)}</td>
-                <td>
-                  <button onclick="updateCardFinanceFields('${card.id}')">
+                <td>${escapeHtml(catOrRate)}</td>
+                <td>${badgeRisk(riskLevel)}</td>
+                <td class="actions-cell">
+                  <button onclick="updateCardFinanceFields('${escapeHtml(card.id)}')">
                     Guardar
                   </button>
                 </td>
@@ -225,62 +342,10 @@ async function updateCardFinanceFields(cardId) {
     </table>
   `;
 }
-function renderCards(cards) {
-  const el = document.getElementById("cardsList");
-
-  if (!cards || !cards.length) {
-    el.innerHTML = `<div class="empty-state">No hay tarjetas registradas.</div>`;
-    return;
-  }
-
-  el.innerHTML = `
-    <table>
-      <thead>
-        <tr>
-          <th>Prioridad</th>
-          <th>Tarjeta</th>
-          <th>Saldo</th>
-          <th>Mínimo</th>
-          <th>CAT / Tasa</th>
-          <th>Riesgo</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${cards
-          .map((card) => {
-            const catOrRate = card.cat
-              ? `CAT ${card.cat}%`
-              : card.interest_rate
-              ? `${card.interest_rate}%`
-              : "-";
-
-            const minimum =
-              card.minimum_payment_status === "pending_app"
-                ? "Pendiente"
-                : money(card.minimum_payment);
-
-            return `
-              <tr>
-                <td>${card.priority || "-"}</td>
-                <td>
-                  <strong>${card.card_name}</strong><br>
-                  <small>${card.bank} · ${card.usage_type || "Mixta"}</small>
-                </td>
-                <td class="amount">${money(card.current_balance)}</td>
-                <td class="amount">${minimum}</td>
-                <td>${catOrRate}</td>
-                <td>${badgeRisk(card.risk_level)}</td>
-              </tr>
-            `;
-          })
-          .join("")}
-      </tbody>
-    </table>
-  `;
-}
 
 function renderExpenses(expenses) {
   const el = document.getElementById("expensesList");
+  if (!el) return;
 
   if (!expenses || !expenses.length) {
     el.innerHTML = `<div class="empty-state">No hay gastos fijos registrados.</div>`;
@@ -312,12 +377,12 @@ function renderExpenses(expenses) {
 
             return `
               <tr>
-                <td><strong>${expense.name}</strong></td>
+                <td><strong>${escapeHtml(expense.name)}</strong></td>
                 <td class="amount">${money(expense.amount)}</td>
-                <td>${frequency}</td>
-                <td>${day}</td>
-                <td>${expense.suggested_account || "Flexible"}</td>
-                <td>${expense.category || "-"}</td>
+                <td>${escapeHtml(frequency)}</td>
+                <td>${escapeHtml(day)}</td>
+                <td>${escapeHtml(expense.suggested_account || "Flexible")}</td>
+                <td>${escapeHtml(expense.category || "-")}</td>
               </tr>
             `;
           })
@@ -415,7 +480,7 @@ async function loadFinance() {
       alert.classList.add("red");
       alert.innerHTML = `
         Error cargando TopDJs Finanzas. Revisa SUPABASE_URL, SUPABASE_ANON_KEY o permisos.
-        <br><small>${error.message || error}</small>
+        <br><small>${escapeHtml(error.message || error)}</small>
       `;
     }
   }
