@@ -1,6 +1,6 @@
 // =======================================================
-// TOPDJS FINANZAS CRM v1.0.6
-// Layout vertical limpio: cuentas arriba y tarjetas compactas en filas completas
+// TOPDJS FINANZAS CRM v1.0.7
+// Límites fijos por tarjeta + mínimo editable + layout limpio
 // =======================================================
 
 // IMPORTANTE:
@@ -9,6 +9,16 @@ const SUPABASE_URL = window.SUPABASE_URL;
 const SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY;
 
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// Límites reales de crédito definidos por TopDJs Finanzas.
+// Ya no se capturan en pantalla. Se usan para calcular disponible y % de uso.
+const FIXED_CARD_LIMITS = {
+  "nu": 140000,
+  "bbva vane": 180000,
+  "bbva manuel": 77900,
+  "liverpool visa": 50000,
+  "liverpool departamental": 25000,
+};
 
 const money = (value) => {
   const number = Number(value || 0);
@@ -37,6 +47,15 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
+}
+
+function normalizeCardName(value) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function firstDefined(source, keys, fallback = null) {
@@ -105,20 +124,26 @@ function badgeRisk(level) {
   return `<span class="badge ${normalized}">${labelMap[normalized] || escapeHtml(level)}</span>`;
 }
 
+function getFixedCreditLimit(card) {
+  const cardName = normalizeCardName(firstDefined(card, ["card_name", "name"], ""));
+
+  if (FIXED_CARD_LIMITS[cardName]) {
+    return FIXED_CARD_LIMITS[cardName];
+  }
+
+  // Respaldo: si en Supabase ya existe credit_limit, se usa.
+  const storedLimit = asNumber(firstDefined(card, ["credit_limit", "limit", "limite"], 0), 0);
+  return storedLimit > 0 ? storedLimit : null;
+}
+
 function calculateCardMetrics(card) {
   const balance = asNumber(
     firstDefined(card, ["current_balance", "balance", "saldo"], 0)
   );
 
-  const creditLimitRaw = firstDefined(card, ["credit_limit", "limit", "limite"], null);
-  const creditLimitValue = creditLimitRaw === null ? null : asNumber(creditLimitRaw, 0);
-  const creditLimit = creditLimitValue && creditLimitValue > 0 ? creditLimitValue : null;
-
-  // Regla TopDJs Finanzas v1.0.3:
-  // Tú capturas el límite. El sistema calcula disponible = límite - saldo.
+  const creditLimit = getFixedCreditLimit(card);
   const usedCredit = Math.max(balance, 0);
-  const availableCredit =
-    creditLimit !== null ? creditLimit - usedCredit : null;
+  const availableCredit = creditLimit !== null ? creditLimit - usedCredit : null;
   const usagePercentage =
     creditLimit !== null && creditLimit > 0 ? (usedCredit / creditLimit) * 100 : null;
 
@@ -207,61 +232,19 @@ function renderAccounts(accounts) {
   `;
 }
 
-function updateCardPreview(cardId) {
+async function updateCardFinanceFields(cardId) {
   const card = financeCardsById.get(String(cardId));
   if (!card) return;
 
-  const balance = calculateCardMetrics(card).balance;
-  const creditLimit = readMoneyInput(`limit-${cardId}`);
-  const availableCredit =
-    creditLimit !== null && creditLimit > 0 ? creditLimit - balance : null;
-  const usagePercentage =
-    creditLimit !== null && creditLimit > 0 ? (balance / creditLimit) * 100 : null;
-  const usageClass = getUsageClass(usagePercentage);
-
-  const availableEl = document.getElementById(`available-display-${cardId}`);
-  const usageEl = document.getElementById(`usage-display-${cardId}`);
-  const progressEl = document.getElementById(`usage-progress-${cardId}`);
-  const riskEl = document.getElementById(`risk-display-${cardId}`);
-
-  if (availableEl) {
-    availableEl.textContent = displayMoneyOrPending(availableCredit, "Captura límite");
-    availableEl.classList.toggle("negative", availableCredit !== null && availableCredit < 0);
-  }
-
-  if (usageEl) {
-    usageEl.className = `usage-pill ${usageClass}`;
-    usageEl.textContent = percentText(usagePercentage);
-  }
-
-  if (progressEl) {
-    progressEl.className = `usage-progress-fill ${usageClass}`;
-    progressEl.style.width = `${usageProgressWidth(usagePercentage)}%`;
-  }
-
-  if (riskEl) {
-    const cat = asNumber(firstDefined(card, ["cat", "cat_rate", "interest_rate"], 0));
-    const riskLevel = calculateRiskLevelFromValues({ balance, usagePercentage, cat });
-    riskEl.innerHTML = badgeRisk(riskLevel);
-  }
-}
-
-async function updateCardFinanceFields(cardId) {
-  const card = financeCardsById.get(String(cardId));
-  const metrics = card ? calculateCardMetrics(card) : { balance: 0 };
+  const metrics = calculateCardMetrics(card);
   const minimumPayment = readMoneyInput(`min-${cardId}`);
-  const creditLimit = readMoneyInput(`limit-${cardId}`);
-  const availableCredit =
-    creditLimit !== null && creditLimit > 0
-      ? creditLimit - metrics.balance
-      : null;
 
   const payload = {
     minimum_payment: minimumPayment,
     minimum_payment_status: minimumPayment === null ? "pending_app" : "known",
-    credit_limit: creditLimit,
-    credit_limit_status: creditLimit === null ? "pending" : "known",
-    available_credit: availableCredit,
+    credit_limit: metrics.creditLimit,
+    credit_limit_status: metrics.creditLimit === null ? "pending" : "known",
+    available_credit: metrics.availableCredit,
   };
 
   const { error } = await db
@@ -278,10 +261,6 @@ async function updateCardFinanceFields(cardId) {
 }
 
 function wireCardsBoardEvents(container) {
-  container.querySelectorAll(".card-limit-input").forEach((input) => {
-    input.addEventListener("input", () => updateCardPreview(input.dataset.cardId));
-  });
-
   container.querySelectorAll(".save-card-btn").forEach((button) => {
     button.addEventListener("click", () => updateCardFinanceFields(button.dataset.cardId));
   });
@@ -289,7 +268,6 @@ function wireCardsBoardEvents(container) {
 
 // Disponible para debug desde consola si hace falta.
 window.updateCardFinanceFields = updateCardFinanceFields;
-window.updateCardPreview = updateCardPreview;
 
 function renderCards(cards) {
   const el = document.getElementById("cardsList");
@@ -303,7 +281,7 @@ function renderCards(cards) {
   financeCardsById = new Map(cards.map((card) => [String(card.id), card]));
 
   el.innerHTML = `
-    <div class="cards-list-v106">
+    <div class="cards-list-v107">
       ${cards
         .map((card) => {
           const metrics = calculateCardMetrics(card);
@@ -323,83 +301,70 @@ function renderCards(cards) {
               ? ""
               : inputNumberValue(card.minimum_payment);
 
-          const creditLimitValue = inputNumberValue(metrics.creditLimit);
           const usageClass = getUsageClass(metrics.usagePercentage);
           const bank = firstDefined(card, ["bank", "bank_name", "issuer"], "-");
           const usageType = firstDefined(card, ["usage_type", "card_type"], "Mixta");
           const riskLevel = calculateRiskLevel(card);
           const cardId = escapeHtml(card.id);
           const priority = escapeHtml(card.priority || "-");
-          const availableText = displayMoneyOrPending(metrics.availableCredit, "Captura límite");
+          const availableText = displayMoneyOrPending(metrics.availableCredit, "Sin límite");
           const availableNegativeClass = metrics.availableCredit !== null && metrics.availableCredit < 0 ? " negative" : "";
 
           return `
-            <article class="finance-card-row-v106 risk-${riskLevel}" data-card-container="${cardId}">
-              <section class="card-id-v106">
-                <div class="priority-pill-v106">#${priority}</div>
-                <div class="card-title-v106">
+            <article class="finance-card-row-v107 risk-${riskLevel}" data-card-container="${cardId}">
+              <div class="card-main-v107">
+                <span class="priority-pill-v107">#${priority}</span>
+                <div class="card-title-v107">
                   <h3>${escapeHtml(card.card_name || card.name || "Tarjeta")}</h3>
                   <p>${escapeHtml(bank)} · ${escapeHtml(usageType)}</p>
-                  <div class="card-badges-v106">
-                    <span class="rate-pill-v106">${escapeHtml(catOrRate)}</span>
-                    <span id="risk-display-${cardId}">${badgeRisk(riskLevel)}</span>
-                  </div>
                 </div>
-              </section>
-
-              <section class="card-fields-v106">
-                <div class="card-cell-v106 debt-cell-v106">
-                  <span>Saldo usado</span>
-                  <strong>${money(metrics.balance)}</strong>
+                <div class="card-badges-v107">
+                  <span class="rate-pill-v107">${escapeHtml(catOrRate)}</span>
+                  <span id="risk-display-${cardId}">${badgeRisk(riskLevel)}</span>
                 </div>
+              </div>
 
-                <label class="card-cell-v106 input-cell-v106">
-                  <span>Límite crédito</span>
-                  <input
-                    class="money-input card-limit-input"
-                    type="number"
-                    min="0"
-                    step="1"
-                    id="limit-${cardId}"
-                    data-card-id="${cardId}"
-                    value="${creditLimitValue}"
-                    placeholder="Ej. 100000"
-                  />
-                </label>
+              <div class="metric-box-v107 debt-box-v107">
+                <span>Saldo usado</span>
+                <strong>${money(metrics.balance)}</strong>
+              </div>
 
-                <label class="card-cell-v106 input-cell-v106">
-                  <span>Mínimo a pagar</span>
-                  <input
-                    class="money-input warning"
-                    type="number"
-                    min="0"
-                    step="1"
-                    id="min-${cardId}"
-                    value="${minimumValue}"
-                    placeholder="Mínimo"
-                  />
-                </label>
+              <div class="metric-box-v107 limit-box-v107">
+                <span>Límite crédito</span>
+                <strong>${displayMoneyOrPending(metrics.creditLimit, "Sin límite")}</strong>
+              </div>
 
-                <div class="card-cell-v106 computed-cell-v106">
-                  <span>Disponible</span>
-                  <strong id="available-display-${cardId}" class="computed-money-v106${availableNegativeClass}">${availableText}</strong>
-                  <small>Límite - saldo</small>
+              <label class="metric-box-v107 minimum-box-v107">
+                <span>Mínimo a pagar</span>
+                <input
+                  class="money-input warning"
+                  type="number"
+                  min="0"
+                  step="1"
+                  id="min-${cardId}"
+                  value="${minimumValue}"
+                  placeholder="Mínimo"
+                />
+              </label>
+
+              <div class="metric-box-v107 available-box-v107">
+                <span>Disponible</span>
+                <strong class="computed-money-v107${availableNegativeClass}">${availableText}</strong>
+              </div>
+
+              <div class="metric-box-v107 usage-box-v107">
+                <div class="usage-top-v107">
+                  <span>% uso</span>
+                  <b class="usage-pill ${usageClass}">${percentText(metrics.usagePercentage)}</b>
                 </div>
-
-                <div class="card-cell-v106 usage-cell-v106">
-                  <div class="usage-top-v106">
-                    <span>% uso</span>
-                    <span id="usage-display-${cardId}" class="usage-pill ${usageClass}">${percentText(metrics.usagePercentage)}</span>
-                  </div>
-                  <div class="usage-progress-v106" aria-hidden="true">
-                    <div id="usage-progress-${cardId}" class="usage-progress-fill ${usageClass}" style="width: ${usageProgressWidth(metrics.usagePercentage)}%"></div>
-                  </div>
+                <div class="usage-progress-v107" aria-hidden="true">
+                  <div class="usage-progress-fill ${usageClass}" style="width: ${usageProgressWidth(metrics.usagePercentage)}%"></div>
                 </div>
+              </div>
 
-                <div class="card-cell-v106 action-cell-v106">
-                  <button class="save-card-btn" type="button" data-card-id="${cardId}">Guardar</button>
-                </div>
-              </section>
+              <div class="action-box-v107">
+                <button class="save-card-btn" type="button" data-card-id="${cardId}">Guardar mínimo</button>
+              </div>
             </article>
           `;
         })

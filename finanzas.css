@@ -1676,3 +1676,336 @@ td.amount {
     grid-template-columns: 1fr;
   }
 }
+
+/* =======================================================
+   TopDJs Finanzas CRM v1.0.7
+   Límites fijos, mínimo editable y tarjetas organizadas
+======================================================= */
+
+.panel-grid {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 22px !important;
+  align-items: start !important;
+}
+
+.panel-grid > .panel {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+}
+
+#cardsList,
+#cardsList.table-wrap,
+.table-wrap:has(#cardsList) {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  overflow-x: visible !important;
+}
+
+.cards-list-v107 {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 100%;
+  padding: 14px;
+  box-sizing: border-box;
+}
+
+.finance-card-row-v107 {
+  position: relative;
+  display: grid;
+  grid-template-columns:
+    minmax(220px, 1fr)
+    minmax(105px, 0.65fr)
+    minmax(105px, 0.65fr)
+    minmax(125px, 0.8fr)
+    minmax(110px, 0.7fr)
+    minmax(125px, 0.8fr)
+    minmax(130px, auto);
+  gap: 10px;
+  align-items: stretch;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  padding: 12px 12px 12px 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background:
+    radial-gradient(circle at top right, rgba(0, 170, 255, 0.12), transparent 36%),
+    linear-gradient(180deg, rgba(16, 24, 44, 0.96), rgba(7, 10, 20, 0.98));
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.24);
+  overflow: hidden;
+}
+
+.finance-card-row-v107::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: rgba(148, 163, 184, 0.35);
+}
+
+.finance-card-row-v107.risk-critical::before {
+  background: var(--red);
+  box-shadow: var(--shadow-red);
+}
+
+.finance-card-row-v107.risk-high::before {
+  background: #fb7185;
+  box-shadow: 0 0 18px rgba(251, 113, 133, 0.28);
+}
+
+.finance-card-row-v107.risk-medium::before {
+  background: var(--yellow);
+  box-shadow: var(--shadow-yellow);
+}
+
+.finance-card-row-v107.risk-low::before {
+  background: var(--green);
+  box-shadow: 0 0 18px rgba(34, 197, 94, 0.24);
+}
+
+.card-main-v107,
+.metric-box-v107,
+.action-box-v107 {
+  min-width: 0;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  background: rgba(5, 7, 13, 0.45);
+  border-radius: 15px;
+  padding: 12px;
+  box-sizing: border-box;
+}
+
+.card-main-v107 {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  gap: 6px 10px;
+  align-items: center;
+  background: rgba(0, 170, 255, 0.055);
+}
+
+.priority-pill-v107 {
+  grid-row: 1 / span 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background: rgba(148, 163, 184, 0.1);
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.card-title-v107 {
+  min-width: 0;
+}
+
+.card-title-v107 h3 {
+  margin: 0;
+  font-size: clamp(19px, 1.55vw, 26px);
+  line-height: 1;
+  letter-spacing: -0.035em;
+  overflow-wrap: anywhere;
+}
+
+.card-title-v107 p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.card-badges-v107 {
+  grid-column: 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.rate-pill-v107 {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 9px;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 170, 255, 0.35);
+  background: rgba(0, 170, 255, 0.09);
+  color: #dbeafe;
+  font-size: 12px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.metric-box-v107 {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 78px;
+}
+
+.metric-box-v107 > span,
+.usage-top-v107 > span:first-child {
+  display: block;
+  margin-bottom: 7px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.075em;
+}
+
+.metric-box-v107 strong,
+.metric-box-v107 input {
+  min-width: 0;
+}
+
+.metric-box-v107 strong {
+  display: block;
+  color: var(--text);
+  font-size: clamp(17px, 1.35vw, 22px);
+  line-height: 1;
+  letter-spacing: -0.03em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.debt-box-v107 {
+  border-color: rgba(239, 68, 68, 0.28);
+  background: rgba(239, 68, 68, 0.055);
+}
+
+.limit-box-v107 {
+  border-color: rgba(0, 170, 255, 0.22);
+  background: rgba(0, 170, 255, 0.045);
+}
+
+.minimum-box-v107 {
+  border-color: rgba(250, 204, 21, 0.26);
+}
+
+.available-box-v107 {
+  border-color: rgba(34, 197, 94, 0.22);
+  background: rgba(34, 197, 94, 0.045);
+}
+
+.computed-money-v107 {
+  color: var(--green) !important;
+}
+
+.computed-money-v107.negative {
+  color: var(--red) !important;
+}
+
+.finance-card-row-v107 .money-input {
+  width: 100% !important;
+  height: 38px !important;
+  min-height: 38px !important;
+  padding: 7px 9px !important;
+  border-radius: 10px !important;
+  font-size: 16px !important;
+  font-weight: 850 !important;
+}
+
+.usage-box-v107 {
+  gap: 8px;
+}
+
+.usage-top-v107 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.usage-progress-v107 {
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(148, 163, 184, 0.15);
+}
+
+.usage-progress-fill {
+  height: 100%;
+  width: 0;
+  border-radius: inherit;
+  transition: width 0.18s ease;
+}
+
+.usage-progress-fill.positive {
+  background: var(--green);
+}
+
+.usage-progress-fill.warning {
+  background: var(--yellow);
+}
+
+.usage-progress-fill.danger {
+  background: var(--red);
+}
+
+.action-box-v107 {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.action-box-v107 .save-card-btn {
+  width: 100%;
+  min-width: 112px;
+  height: 38px;
+  padding: 8px 12px;
+  border-radius: 11px;
+  font-size: 12px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+@media (max-width: 1050px) {
+  .finance-card-row-v107 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .card-main-v107 {
+    grid-column: 1 / -1;
+  }
+
+  .action-box-v107 {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 680px) {
+  .cards-list-v107 {
+    padding: 12px;
+  }
+
+  .finance-card-row-v107 {
+    grid-template-columns: 1fr;
+    padding: 12px 12px 12px 16px;
+  }
+
+  .card-main-v107,
+  .action-box-v107 {
+    grid-column: auto;
+  }
+
+  .card-main-v107 {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .metric-box-v107 strong {
+    white-space: normal;
+  }
+}
