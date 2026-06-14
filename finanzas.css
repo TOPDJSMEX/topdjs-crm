@@ -287,3 +287,18 @@ td.amount {
     text-align: center;
   }
 }
+.money-input {
+  width: 110px;
+  border: 1px solid rgba(0, 170, 255, 0.35);
+  background: rgba(5, 7, 13, 0.9);
+  color: var(--text);
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-weight: 800;
+  outline: none;
+}
+
+.money-input:focus {
+  border-color: rgba(0, 170, 255, 0.85);
+  box-shadow: 0 0 14px rgba(0, 170, 255, 0.25);
+}
