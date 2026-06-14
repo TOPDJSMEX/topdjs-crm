@@ -1,11 +1,11 @@
-TOPDJS CRM v11.4.18 - FIX MODAL SUPERPUESTA
+TOPDJS CRM v11.4.19 - FIX NÚMERO DE VERSIÓN
 
 Corrección:
-- Al abrir VER / GASTOS, la tabla de Eventos Operativos ya no se monta encima del modal.
-- Se elevó el z-index del modal y su contenido.
-- Se ajustó la cabecera sticky de la tabla para que no invada la vista del modal.
+- Actualiza el texto visible del encabezado y título del navegador a v11.4.19.
+- Mantiene todos los cambios funcionales y visuales de v11.4.18.
 
 Mantiene:
+- Fix modal superpuesta
 - Eventos operativos ordenados
 - Monto y saldo neon
 - Fix sync paid_method
@@ -17,6 +17,6 @@ Mantiene:
 
 Instalación:
 1. Subir los 7 archivos a GitHub.
-2. Commit: TopDJs CRM v11.4.18 - Fix modal superpuesta
+2. Commit: TopDJs CRM v11.4.19 - Fix número de versión
 3. Deploy to Production en Vercel.
 4. Recarga fuerte: Option + Command + R.

@@ -1312,5 +1312,5 @@ renderCatalog();save();renderAll();syncAll();setInterval(syncAll,30000);
 if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js").catch(()=>{})}
 
 
-// TOPDJS CRM v11.4.14 - Fecha de anticipo
+// TOPDJS CRM v11.4.19 - Fecha de anticipo
 if($("quotePaidDate") && !$("quotePaidDate").value){$("quotePaidDate").value=todayISO()}
