@@ -601,21 +601,85 @@ tr.eventUpcoming td{background:rgba(0,184,255,.025) !important}
 }
 
 
-/* TOPDJS CRM v11.4.16 - Monto y saldo neon */
+/* TOPDJS CRM v11.4.17 - Eventos Operativos ordenados */
+.operTableWrap{
+  width:100%;
+  overflow-x:auto;
+  padding-bottom:4px;
+}
+.operTable{
+  width:100%;
+  min-width:1500px;
+  border-collapse:separate;
+  border-spacing:0;
+}
+.operTable th,.operTable td{
+  padding:16px 14px !important;
+  vertical-align:top;
+}
+.operTable thead th{
+  position:sticky;
+  top:0;
+  z-index:1;
+}
+.operRow td{
+  border-bottom:1px solid rgba(0,184,255,.32) !important;
+}
+.evtDateCell strong,.evtTextBlock strong,.evtMiniData,.evtClientName{
+  color:#fff;
+  font-size:16px;
+  font-weight:900;
+}
+.evtClientBlock,.evtTextBlock,.evtSyncBlock{
+  display:flex;
+  flex-direction:column;
+  gap:7px;
+}
+.evtClientCompany,.evtSyncBlock small{
+  color:#b8c7d9 !important;
+  font-size:12px;
+}
+.evtMiniData{
+  min-width:54px;
+}
+.evtSyncBlock{
+  min-width:150px;
+}
+.evtSyncBadge{
+  display:inline-flex;
+  width:max-content;
+  padding:6px 10px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:900;
+  letter-spacing:.04em;
+  border:1px solid rgba(0,184,255,.45);
+}
+.evtSyncBadge.syncOk{
+  color:#8dffc4;
+  border-color:rgba(44,255,154,.7);
+  background:rgba(44,255,154,.08);
+  box-shadow:0 0 12px rgba(44,255,154,.18);
+}
+.evtSyncBadge.syncPending{
+  color:#ffe66d;
+  border-color:rgba(255,217,61,.7);
+  background:rgba(255,217,61,.08);
+  box-shadow:0 0 12px rgba(255,217,61,.18);
+}
 .recordMoneyBox{
   border-radius:16px;
   padding:12px 14px;
+  min-width:170px;
   border:1px solid rgba(0,184,255,.35);
   background:linear-gradient(180deg, rgba(5,11,24,.95), rgba(0,0,0,.98));
-  min-width:170px;
-  box-shadow:inset 0 0 12px rgba(255,255,255,.02);
 }
 .recordMoneyBox strong{
   display:block;
   font-size:20px;
   line-height:1.1;
   font-weight:900;
-  margin-bottom:8px;
+  margin-bottom:10px;
 }
 .recordMoneyBox small{
   display:block;
@@ -625,7 +689,7 @@ tr.eventUpcoming td{background:rgba(0,184,255,.025) !important}
   text-transform:uppercase;
 }
 .recordMoneyBox .moneySubValue{
-  margin-top:2px;
+  margin-top:3px;
   font-size:14px;
   font-weight:900;
   text-transform:none;
@@ -634,13 +698,35 @@ tr.eventUpcoming td{background:rgba(0,184,255,.025) !important}
   border-color:rgba(44,255,154,.85) !important;
   box-shadow:0 0 18px rgba(44,255,154,.24), inset 0 0 12px rgba(44,255,154,.06) !important;
 }
-.recordMoneyAmount strong,.recordMoneyAmount small,.recordMoneyAmount .moneySubValue{
-  color:#8dffc4 !important;
-}
+.recordMoneyAmount strong,.recordMoneyAmount small,.recordMoneyAmount .moneySubValue{color:#8dffc4 !important}
 .recordMoneyBalance{
   border-color:rgba(255,217,61,.85) !important;
   box-shadow:0 0 18px rgba(255,217,61,.24), inset 0 0 12px rgba(255,217,61,.06) !important;
 }
-.recordMoneyBalance strong,.recordMoneyBalance small{
-  color:#ffe66d !important;
+.recordMoneyBalance strong,.recordMoneyBalance small{color:#ffe66d !important}
+.recordActions{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(145px,1fr));
+  gap:10px;
+  min-width:330px;
+}
+.recordActions .actionBtn{
+  margin-top:0 !important;
+  width:100%;
+  justify-content:center;
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  font-weight:900;
+}
+.actionViewBtn{background:linear-gradient(180deg,#8fdcff,#1f8fff) !important;color:#00111d !important;border-color:#a8e8ff !important;box-shadow:0 0 20px rgba(31,143,255,.35) !important}
+.expensesBtn{background:linear-gradient(180deg,#9dfcff,#00c8ff) !important;color:#00111d !important;border-color:#b7ffff !important;box-shadow:0 0 20px rgba(0,200,255,.35) !important}
+.uploadFileBtn{background:linear-gradient(180deg,#ffdca8,#ff9e2c) !important;color:#221000 !important;border-color:#ffe0b8 !important;box-shadow:0 0 20px rgba(255,158,44,.32) !important}
+.editBtn{background:linear-gradient(180deg,#fff29b,#ffca3a) !important;color:#1b1400 !important;border-color:#fff2a8 !important;box-shadow:0 0 20px rgba(255,202,58,.32) !important}
+.warehouseBtn{background:linear-gradient(180deg,#d6b8ff,#8b5cf6) !important;color:#14051f !important;border-color:#e6d2ff !important;box-shadow:0 0 20px rgba(139,92,246,.35) !important}
+.payBtn{background:linear-gradient(180deg,#b9ffd7,#2cff9a) !important;color:#00180b !important;border-color:#caffdf !important;box-shadow:0 0 20px rgba(44,255,154,.35) !important}
+.delete.actionBtn{background:linear-gradient(180deg,#ffb0bf,#ff4d73) !important;color:#2b0010 !important;border-color:#ffc0cb !important;box-shadow:0 0 20px rgba(255,77,115,.35) !important}
+@media(max-width:900px){
+  .operTable{min-width:1280px}
+  .recordActions{grid-template-columns:repeat(2,minmax(132px,1fr));min-width:290px}
 }
