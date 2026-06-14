@@ -1,6 +1,6 @@
 // =======================================================
-// TopDJs Finanzas CRM v2.1.7
-// Panel limpio + gastos fijos + tarjetas + sincronización CRM + tacómetros
+// TopDJs Finanzas CRM v2.1.8
+// Panel limpio + gastos fijos + tarjetas + sincronización CRM + tacómetros + asistente interno
 // =======================================================
 
 const SUPABASE_URL = window.SUPABASE_URL;
@@ -1500,6 +1500,211 @@ function renderGauge(elementId, percent, valueId, labelId, detailId, label, deta
   if (detailEl) detailEl.textContent = detail;
 }
 
+
+function totalLiquidity() {
+  const balances = calculateBalancesFromAccounts(accountsCache || []);
+  return (
+    Number(balances.bbva || 0) +
+    Number(balances.nu || 0) +
+    Number(balances.manuel || 0) +
+    Number(balances.efectivo || 0)
+  );
+}
+
+function totalCreditCardDebt() {
+  return (creditCardsCache || []).reduce((sum, card) => sum + cardBalance(card), 0);
+}
+
+function totalFixedMonthlyExpenses() {
+  return sortedActiveExpenses().reduce((sum, expense) => sum + expenseMonthlyEstimate(expense), 0);
+}
+
+function totalNoInterestPayments() {
+  return (creditCardsCache || []).reduce((sum, card) => sum + cardNoInterest(card), 0);
+}
+
+function totalMinimumPayments() {
+  return (creditCardsCache || []).reduce((sum, card) => sum + cardMinimum(card), 0);
+}
+
+function highestUsageCard() {
+  const cards = sortedCreditCards();
+  if (!cards.length) return null;
+
+  return [...cards].sort((a, b) => cardUsagePercent(b) - cardUsagePercent(a))[0];
+}
+
+function nextFixedExpense() {
+  const expenses = sortedActiveExpenses();
+  return expenses.length ? expenses[0] : null;
+}
+
+function createStrategy(type, icon, title, message) {
+  return { type, icon, title, message };
+}
+
+function buildInternalStrategies() {
+  const strategies = [];
+
+  const liquidity = totalLiquidity();
+  const fixedMonthly = totalFixedMonthlyExpenses();
+  const cardDebt = totalCreditCardDebt();
+  const monthlyIncome = currentMonthIncomeTotal();
+  const noInterestTotal = totalNoInterestPayments();
+  const minimumTotal = totalMinimumPayments();
+  const topCard = highestUsageCard();
+  const nextExpense = nextFixedExpense();
+
+  const liquidityAfterFixed = liquidity - fixedMonthly;
+  const incomeCoverage = fixedMonthly > 0 ? (monthlyIncome / fixedMonthly) * 100 : 0;
+  const debtPressure = cardDebt > 0 ? (cardDebt / Math.max(cardDebt + liquidity, 1)) * 100 : 0;
+
+  if (liquidity <= 0) {
+    strategies.push(createStrategy(
+      "danger",
+      "🚨",
+      "Sin liquidez disponible",
+      "Antes de pagar tarjetas o gastos no urgentes, sincroniza nuevos pagos del CRM operativo o ingresa liquidez real a una cuenta."
+    ));
+  } else if (liquidityAfterFixed < 0) {
+    strategies.push(createStrategy(
+      "danger",
+      "⚠️",
+      "Liquidez insuficiente para cubrir gastos fijos",
+      `Tu liquidez actual es ${money(liquidity)} y tus gastos fijos estimados del mes son ${money(fixedMonthly)}. Falta aproximadamente ${money(Math.abs(liquidityAfterFixed))}. Prioriza ingresos y pagos mínimos.`
+    ));
+  } else {
+    strategies.push(createStrategy(
+      "success",
+      "✅",
+      "Liquidez suficiente para gastos fijos estimados",
+      `Con ${money(liquidity)} de liquidez y ${money(fixedMonthly)} de gastos fijos estimados, quedarían aproximadamente ${money(liquidityAfterFixed)} después de cubrirlos.`
+    ));
+  }
+
+  if (topCard) {
+    const usage = cardUsagePercent(topCard);
+    if (usage >= 80) {
+      strategies.push(createStrategy(
+        "danger",
+        "💳",
+        "Prioridad alta en tarjeta con mayor uso",
+        `${cardName(topCard)} está usando ${usage.toFixed(0)}% de su línea. Conviene bajarla antes de hacer pagos extra a tarjetas con menor presión.`
+      ));
+    } else if (usage >= 55) {
+      strategies.push(createStrategy(
+        "warning",
+        "💳",
+        "Vigilar uso de línea",
+        `${cardName(topCard)} está en ${usage.toFixed(0)}% de uso. No es crítico, pero conviene no cargar más deuda ahí.`
+      ));
+    } else {
+      strategies.push(createStrategy(
+        "success",
+        "💳",
+        "Uso de tarjetas en zona controlada",
+        `La tarjeta con mayor uso es ${cardName(topCard)} con ${usage.toFixed(0)}%. Mantén pagos mínimos y evita nuevas compras grandes.`
+      ));
+    }
+  }
+
+  if (noInterestTotal > liquidity && noInterestTotal > 0) {
+    strategies.push(createStrategy(
+      "warning",
+      "🧾",
+      "No alcanza para cubrir todos los pagos para no generar intereses",
+      `El total para no generar intereses es ${money(noInterestTotal)} y tu liquidez actual es ${money(liquidity)}. Prioriza pagos mínimos y la tarjeta con mayor presión.`
+    ));
+  } else if (noInterestTotal > 0) {
+    strategies.push(createStrategy(
+      "info",
+      "🧾",
+      "Pagos para no generar intereses cubribles",
+      `El total para no generar intereses es ${money(noInterestTotal)}. Si decides cubrirlo, todavía debes reservar gastos fijos y sueldos.`
+    ));
+  }
+
+  if (minimumTotal > 0) {
+    strategies.push(createStrategy(
+      "info",
+      "📌",
+      "Piso mínimo de seguridad",
+      `Tu mínimo total de tarjetas es ${money(minimumTotal)}. Si la liquidez se aprieta, este es el primer monto que no conviene dejar vencer.`
+    ));
+  }
+
+  if (incomeCoverage < 55 && fixedMonthly > 0) {
+    strategies.push(createStrategy(
+      "warning",
+      "📉",
+      "Ingresos del mes aún bajos contra gastos",
+      `Este mes llevas ${money(monthlyIncome)} sincronizados contra ${money(fixedMonthly)} de gastos fijos estimados. Aún no está cubierto el mes.`
+    ));
+  } else if (incomeCoverage >= 100) {
+    strategies.push(createStrategy(
+      "success",
+      "📈",
+      "Ingresos del mes cubren gastos fijos",
+      `Los ingresos sincronizados del mes son ${money(monthlyIncome)}, suficientes contra ${money(fixedMonthly)} de gastos fijos estimados.`
+    ));
+  }
+
+  if (debtPressure >= 80) {
+    strategies.push(createStrategy(
+      "danger",
+      "🔥",
+      "Presión de deuda alta",
+      `La deuda de tarjetas es ${money(cardDebt)} contra una liquidez de ${money(liquidity)}. Evita nuevos cargos y enfoca pagos a reducir saldo.`
+    ));
+  } else if (debtPressure >= 55) {
+    strategies.push(createStrategy(
+      "warning",
+      "⚖️",
+      "Presión de deuda media",
+      `La deuda aún pesa contra la liquidez. Conviene separar dinero para operación antes de hacer pagos extra.`
+    ));
+  }
+
+  if (nextExpense) {
+    strategies.push(createStrategy(
+      "info",
+      "🗓️",
+      "Siguiente compromiso operativo",
+      `El próximo gasto fijo detectado es ${expenseName(nextExpense)} por ${money(expenseAmount(nextExpense))}, con fecha ${expenseNextPaymentLabel(nextExpense)}.`
+    ));
+  }
+
+  if (!strategies.length) {
+    strategies.push(createStrategy(
+      "info",
+      "🤖",
+      "Sin alertas críticas",
+      "El asistente interno no detectó focos rojos con la información actual. Sigue sincronizando ingresos y registrando pagos para mejorar las recomendaciones."
+    ));
+  }
+
+  return strategies;
+}
+
+function renderInternalStrategies() {
+  const container = document.getElementById("aiStrategyList");
+  if (!container) return;
+
+  const strategies = buildInternalStrategies();
+
+  container.innerHTML = strategies.map((item) => `
+    <article class="ai-strategy-card ${escapeHtml(item.type)}">
+      <div class="ai-strategy-icon">${escapeHtml(item.icon)}</div>
+      <div>
+        <h3>${escapeHtml(item.title)}</h3>
+        <p>${escapeHtml(item.message)}</p>
+      </div>
+    </article>
+  `).join("");
+
+  setStatus("Análisis interno generado con los datos actuales.", "ok");
+}
+
 function renderFinancialGauges() {
   const balances = calculateBalancesFromAccounts(accountsCache || []);
   const liquidityTotal =
@@ -1861,6 +2066,9 @@ async function loadFinance() {
 document.addEventListener("DOMContentLoaded", () => {
   const refreshBtn = document.getElementById("refreshBtn");
   if (refreshBtn) refreshBtn.addEventListener("click", loadFinance);
+
+  const analyzeFinanceBtn = document.getElementById("analyzeFinanceBtn");
+  if (analyzeFinanceBtn) analyzeFinanceBtn.addEventListener("click", renderInternalStrategies);
 
   const syncCrmBtn = document.getElementById("syncCrmBtn");
   if (syncCrmBtn) syncCrmBtn.addEventListener("click", syncCrmPayments);

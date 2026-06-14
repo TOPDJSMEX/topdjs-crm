@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TopDJs Finanzas CRM v2.1.7</title>
-  <link rel="stylesheet" href="finanzas.css?v=217" />
+  <title>TopDJs Finanzas CRM v2.1.8</title>
+  <link rel="stylesheet" href="finanzas.css?v=218" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     window.SUPABASE_URL = "https://xbrsnmbmkbvxyhrtiywy.supabase.co";
@@ -15,10 +15,10 @@
   <div class="app-shell">
     <header class="topbar">
       <div>
-        <p class="eyebrow">TopDJs Finanzas CRM v2.1.7 · Panel limpio</p>
+        <p class="eyebrow">TopDJs Finanzas CRM v2.1.8 · Panel limpio</p>
         <h1>Finanzas TopDJs</h1>
         <p class="subtitle">
-          Panel principal compacto con liquidez, gastos, tarjetas y tacómetros visuales de deudas, ingresos y estado financiero.
+          Panel principal compacto con liquidez, gastos, tarjetas, tacómetros y asistente financiero interno con estrategias.
         </p>
       </div>
 
@@ -188,6 +188,23 @@
         </div>
       </section>
 
+
+      <section class="panel compact-panel ai-panel">
+        <div class="panel-header">
+          <div>
+            <h2>Asistente financiero interno</h2>
+            <p>Mensajes automáticos basados en tus saldos, gastos, tarjetas e ingresos sincronizados.</p>
+          </div>
+          <button id="analyzeFinanceBtn" type="button">Analizar finanzas</button>
+        </div>
+
+        <div id="aiStrategyList" class="ai-strategy-list">
+          <div class="empty-state">
+            Presiona “Analizar finanzas” para generar recomendaciones internas.
+          </div>
+        </div>
+      </section>
+
     </main>
   </div>
 
@@ -264,6 +281,6 @@
     </div>
   </section>
 
-  <script src="finanzas.js?v=217"></script>
+  <script src="finanzas.js?v=218"></script>
 </body>
 </html>
