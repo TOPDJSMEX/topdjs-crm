@@ -1068,7 +1068,6 @@ function dbRecord(r){
     end_time:r.end_time||null,
     amount:r.amount||0,
     paid:r.paid||0,
-    paid_method:r.paid_method||null,
     status:r.status||null,
     notes:r.notes||null,
     quote_catalog:r.quote_catalog||null,
