@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TopDJs Finanzas CRM</title>
+  <link rel="stylesheet" href="finanzas.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div>
+        <h1>TopDJs Finanzas</h1>
+        <p>Control financiero del negocio · No mezcla Aeroméxico</p>
+      </div>
+      <a class="back-link" href="index.html">← CRM Operativo</a>
+    </header>
+
+    <main>
+      <section class="alert-card" id="mainAlert">
+        Cargando estado financiero...
+      </section>
+
+      <section class="dashboard-grid">
+        <div class="metric-card blue">
+          <span>Liquidez total</span>
+          <strong id="totalLiquidity">$0</strong>
+          <small>NU + BBVA + Manuel + Efectivo</small>
+        </div>
+
+        <div class="metric-card blue">
+          <span>BBVA</span>
+          <strong id="balanceBbva">$0</strong>
+          <small>Cuenta principal actual</small>
+        </div>
+
+        <div class="metric-card blue">
+          <span>NU</span>
+          <strong id="balanceNu">$0</strong>
+          <small>Cuenta NU</small>
+        </div>
+
+        <div class="metric-card blue">
+          <span>Manuel</span>
+          <strong id="balanceManuel">$0</strong>
+          <small>Cuenta Manuel</small>
+        </div>
+
+        <div class="metric-card blue">
+          <span>Efectivo</span>
+          <strong id="balanceEfectivo">$0</strong>
+          <small>Caja TopDJs</small>
+        </div>
+
+        <div class="metric-card yellow">
+          <span>Gastos fijos</span>
+          <strong id="monthlyFixed">$0</strong>
+          <small>Base mensual sin nómina</small>
+        </div>
+
+        <div class="metric-card yellow">
+          <span>Nómina semanal</span>
+          <strong id="weeklyPayroll">$0</strong>
+          <small>George + Papá + Vane</small>
+        </div>
+
+        <div class="metric-card red">
+          <span>Tarjetas</span>
+          <strong id="totalCards">$0</strong>
+          <small>Saldo total mixto</small>
+        </div>
+
+        <div class="metric-card red">
+          <span>Mínimos conocidos</span>
+          <strong id="knownMinimums">$0</strong>
+          <small>Falta BBVA Manuel</small>
+        </div>
+
+        <div class="metric-card red">
+          <span>Para no generar intereses</span>
+          <strong id="noInterestTotal">$0</strong>
+          <small>Total tarjetas</small>
+        </div>
+      </section>
+
+      <section class="panel-grid">
+        <div class="panel">
+          <div class="panel-header">
+            <h2>Cuentas</h2>
+            <button onclick="loadFinance()">Actualizar</button>
+          </div>
+          <div id="accountsList" class="table-wrap"></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <h2>Prioridad tarjetas</h2>
+          </div>
+          <div id="cardsList" class="table-wrap"></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <h2>Gastos fijos y recurrentes</h2>
+        </div>
+        <div id="expensesList" class="table-wrap"></div>
+      </section>
+    </main>
+  </div>
+
+  <script src="finanzas.js"></script>
+</body>
+</html>
