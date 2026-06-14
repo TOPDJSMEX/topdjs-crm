@@ -935,3 +935,21 @@ body.modal-open .operTable thead th{
   .calendarJumpSimple{margin-top:12px}
   .calendarJumpSimple button{width:100%}
 }
+
+
+/* TOPDJS CRM v11.4.24 - Calendario anual con navegación de años */
+.calendarJumpSimple{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  align-items:center;
+}
+.calendarJumpSimple button{
+  min-width:110px;
+}
+#yearViewBtn{
+  min-width:190px;
+}
+@media(max-width:720px){
+  .calendarJumpSimple button{min-width:100%;}
+}
