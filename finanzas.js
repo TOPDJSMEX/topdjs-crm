@@ -1,6 +1,6 @@
 // =======================================================
-// TopDJs Finanzas CRM v2.1.6
-// Panel limpio + gastos fijos + tarjetas editables y pagos + sincronización CRM desde 2026-06-15
+// TopDJs Finanzas CRM v2.1.7
+// Panel limpio + gastos fijos + tarjetas + sincronización CRM + tacómetros
 // =======================================================
 
 const SUPABASE_URL = window.SUPABASE_URL;
@@ -12,6 +12,7 @@ let accountsCache = [];
 let fixedExpensesCache = [];
 let paymentsCache = [];
 let creditCardsCache = [];
+let syncedCrmPaymentsCache = [];
 let editingExpenseId = null;
 let payingExpenseId = null;
 let openedExpenseId = null;
@@ -1448,6 +1449,122 @@ function renderCreditCards() {
   }).join("");
 }
 
+
+function currentMonthIncomeTotal() {
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth();
+
+  return (syncedCrmPaymentsCache || []).reduce((sum, row) => {
+    const iso = toIsoDate(firstValue(row, ["payment_date", "created_at", "synced_at"], ""));
+    if (!iso) return sum;
+
+    const date = new Date(`${iso}T00:00:00`);
+    if (Number.isNaN(date.getTime())) return sum;
+    if (date.getFullYear() !== currentYear || date.getMonth() !== currentMonth) return sum;
+
+    return sum + (Number(firstValue(row, ["amount"], 0)) || 0);
+  }, 0);
+}
+
+function gaugeColorByPercent(percent, inverse = false) {
+  const value = Number(percent || 0);
+
+  if (inverse) {
+    if (value >= 80) return "rgba(239, 68, 68, 0.96)";
+    if (value >= 55) return "rgba(250, 204, 21, 0.96)";
+    return "rgba(34, 197, 94, 0.96)";
+  }
+
+  if (value >= 80) return "rgba(34, 197, 94, 0.96)";
+  if (value >= 55) return "rgba(250, 204, 21, 0.96)";
+  return "rgba(239, 68, 68, 0.96)";
+}
+
+function renderGauge(elementId, percent, valueId, labelId, detailId, label, detail, inverse = false) {
+  const gauge = document.getElementById(elementId);
+  const valueEl = document.getElementById(valueId);
+  const labelEl = document.getElementById(labelId);
+  const detailEl = document.getElementById(detailId);
+
+  const safePercent = Math.max(0, Math.min(100, Number(percent || 0)));
+  const color = gaugeColorByPercent(safePercent, inverse);
+
+  if (gauge) {
+    gauge.style.setProperty("--percent", String(safePercent));
+    gauge.style.setProperty("--gauge-color", color);
+  }
+
+  if (valueEl) valueEl.textContent = `${Math.round(safePercent)}%`;
+  if (labelEl) labelEl.textContent = label;
+  if (detailEl) detailEl.textContent = detail;
+}
+
+function renderFinancialGauges() {
+  const balances = calculateBalancesFromAccounts(accountsCache || []);
+  const liquidityTotal =
+    Number(balances.bbva || 0) +
+    Number(balances.nu || 0) +
+    Number(balances.manuel || 0) +
+    Number(balances.efectivo || 0);
+
+  const totalDebt = (creditCardsCache || []).reduce((sum, card) => sum + cardBalance(card), 0);
+  const fixedMonthlyTotal = sortedActiveExpenses().reduce((sum, expense) => sum + expenseMonthlyEstimate(expense), 0);
+  const currentIncome = currentMonthIncomeTotal();
+
+  // Deudas: mientras más bajo, mejor. Se mide la presión de deuda contra la liquidez.
+  const debtPressure = totalDebt > 0 ? (totalDebt / Math.max(totalDebt + liquidityTotal, 1)) * 100 : 0;
+  let debtLabel = "Control";
+  if (debtPressure >= 80) debtLabel = "Alta presión";
+  else if (debtPressure >= 55) debtLabel = "Presión media";
+
+  renderGauge(
+    "debtGauge",
+    debtPressure,
+    "debtGaugeValue",
+    "debtGaugeLabel",
+    "debtGaugeDetail",
+    debtLabel,
+    `Deuda ${money(totalDebt)} vs liquidez ${money(liquidityTotal)}`,
+    true
+  );
+
+  // Ingresos: mientras más alto, mejor. La meta es cubrir 100% del gasto fijo estimado del mes.
+  const incomeCoverage = fixedMonthlyTotal > 0 ? Math.min(100, (currentIncome / fixedMonthlyTotal) * 100) : 0;
+  let incomeLabel = "Bajo";
+  if (incomeCoverage >= 100) incomeLabel = "Cubierto";
+  else if (incomeCoverage >= 55) incomeLabel = "En progreso";
+
+  renderGauge(
+    "incomeGauge",
+    incomeCoverage,
+    "incomeGaugeValue",
+    "incomeGaugeLabel",
+    "incomeGaugeDetail",
+    incomeLabel,
+    `Ingresos del mes ${money(currentIncome)} vs gastos fijos ${money(fixedMonthlyTotal)}`
+  );
+
+  // Estado financiero general
+  const liquidityCoverage = fixedMonthlyTotal > 0 ? Math.min(100, (liquidityTotal / fixedMonthlyTotal) * 100) : 100;
+  const debtHealth = 100 - Math.max(0, Math.min(100, debtPressure));
+  const healthScore = (liquidityCoverage * 0.4) + (incomeCoverage * 0.3) + (debtHealth * 0.3);
+
+  let healthLabel = "Delicado";
+  if (healthScore >= 80) healthLabel = "Fuerte";
+  else if (healthScore >= 55) healthLabel = "Estable";
+
+  renderGauge(
+    "healthGauge",
+    healthScore,
+    "healthGaugeValue",
+    "healthGaugeLabel",
+    "healthGaugeDetail",
+    healthLabel,
+    `Liquidez ${money(liquidityTotal)} · Ingresos mes ${money(currentIncome)}`
+  );
+}
+
 function toIsoDate(value) {
   if (!value) return "";
 
@@ -1673,11 +1790,12 @@ async function syncCrmPayments() {
 async function loadFinance() {
   setStatus("Cargando liquidez, gastos e historial desde Supabase...");
 
-  const [accountsResult, expensesResult, paymentsResult, cardsResult] = await Promise.all([
+  const [accountsResult, expensesResult, paymentsResult, cardsResult, crmSyncResult] = await Promise.all([
     db.from("finance_accounts").select("*"),
     db.from("finance_fixed_expenses").select("*"),
     db.from("finance_fixed_expense_payments").select("*").order("created_at", { ascending: false }).limit(50),
     db.from("finance_credit_cards").select("*"),
+    db.from("finance_crm_payment_sync_log").select("*"),
   ]);
 
   if (accountsResult.error) {
@@ -1723,6 +1841,15 @@ async function loadFinance() {
 
   creditCardsCache = cardsResult.data || [];
   renderCreditCards();
+
+  if (crmSyncResult.error) {
+    console.error("Error cargando sync log del CRM:", crmSyncResult.error);
+    syncedCrmPaymentsCache = [];
+  } else {
+    syncedCrmPaymentsCache = crmSyncResult.data || [];
+  }
+
+  renderFinancialGauges();
 
   if (openedExpenseId) {
     renderExpenseDetail(getExpenseById(openedExpenseId));

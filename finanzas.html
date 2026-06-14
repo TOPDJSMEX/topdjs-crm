@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TopDJs Finanzas CRM v2.1.6</title>
-  <link rel="stylesheet" href="finanzas.css?v=216" />
+  <title>TopDJs Finanzas CRM v2.1.7</title>
+  <link rel="stylesheet" href="finanzas.css?v=217" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     window.SUPABASE_URL = "https://xbrsnmbmkbvxyhrtiywy.supabase.co";
@@ -15,10 +15,10 @@
   <div class="app-shell">
     <header class="topbar">
       <div>
-        <p class="eyebrow">TopDJs Finanzas CRM v2.1.6 · Panel limpio</p>
+        <p class="eyebrow">TopDJs Finanzas CRM v2.1.7 · Panel limpio</p>
         <h1>Finanzas TopDJs</h1>
         <p class="subtitle">
-          Panel principal compacto: liquidez, gastos fijos y tarjetas de crédito. En tarjetas puedes editar mínimo/no intereses y registrar pagos.
+          Panel principal compacto con liquidez, gastos, tarjetas y tacómetros visuales de deudas, ingresos y estado financiero.
         </p>
       </div>
 
@@ -122,6 +122,72 @@
           </div>
         </article>
       </section>
+
+      <section class="panel compact-panel gauges-panel">
+        <div class="panel-header">
+          <div>
+            <h2>Indicadores financieros</h2>
+            <p>Tacómetros visuales para ver rápidamente deudas, ingresos y el estado financiero general.</p>
+          </div>
+        </div>
+
+        <div class="gauge-grid">
+          <article class="gauge-card">
+            <div class="gauge-head">
+              <h3>Deudas</h3>
+              <p>Presión de deuda comparada contra tu liquidez actual.</p>
+            </div>
+            <div class="gauge-shell">
+              <div id="debtGauge" class="gauge-visual">
+                <div class="gauge-inner">
+                  <strong id="debtGaugeValue">0%</strong>
+                  <small id="debtGaugeLabel">Cargando...</small>
+                </div>
+              </div>
+            </div>
+            <div class="gauge-foot">
+              <span id="debtGaugeDetail">-</span>
+            </div>
+          </article>
+
+          <article class="gauge-card">
+            <div class="gauge-head">
+              <h3>Ingresos</h3>
+              <p>Ingresos sincronizados de este mes contra gastos fijos estimados del mes.</p>
+            </div>
+            <div class="gauge-shell">
+              <div id="incomeGauge" class="gauge-visual">
+                <div class="gauge-inner">
+                  <strong id="incomeGaugeValue">0%</strong>
+                  <small id="incomeGaugeLabel">Cargando...</small>
+                </div>
+              </div>
+            </div>
+            <div class="gauge-foot">
+              <span id="incomeGaugeDetail">-</span>
+            </div>
+          </article>
+
+          <article class="gauge-card">
+            <div class="gauge-head">
+              <h3>Estado financiero</h3>
+              <p>Score general basado en liquidez, deudas e ingresos del mes.</p>
+            </div>
+            <div class="gauge-shell">
+              <div id="healthGauge" class="gauge-visual">
+                <div class="gauge-inner">
+                  <strong id="healthGaugeValue">0%</strong>
+                  <small id="healthGaugeLabel">Cargando...</small>
+                </div>
+              </div>
+            </div>
+            <div class="gauge-foot">
+              <span id="healthGaugeDetail">-</span>
+            </div>
+          </article>
+        </div>
+      </section>
+
     </main>
   </div>
 
@@ -198,6 +264,6 @@
     </div>
   </section>
 
-  <script src="finanzas.js?v=216"></script>
+  <script src="finanzas.js?v=217"></script>
 </body>
 </html>
