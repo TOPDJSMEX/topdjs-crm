@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TopDJs Finanzas CRM v2.0.7</title>
-  <link rel="stylesheet" href="finanzas.css?v=207" />
+  <title>TopDJs Finanzas CRM v2.0.8</title>
+  <link rel="stylesheet" href="finanzas.css?v=208" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     window.SUPABASE_URL = "https://xbrsnmbmkbvxyhrtiywy.supabase.co";
@@ -15,7 +15,7 @@
   <div class="app-shell">
     <header class="topbar">
       <div>
-        <p class="eyebrow">TopDJs Finanzas CRM v2.0.7 · Gastos fijos</p>
+        <p class="eyebrow">TopDJs Finanzas CRM v2.0.8 · Gastos fijos</p>
         <h1>Finanzas TopDJs</h1>
         <p class="subtitle">
           Liquidez y gastos fijos del negocio. Los ingresos se alimentan desde el CRM operativo TopDJs.
@@ -69,7 +69,7 @@
         <div class="panel-header">
           <div>
             <h2>Gastos fijos</h2>
-            <p>Agrega gastos mensuales y sueldos semanales. George, Papá y Vane se calculan por lunes.</p>
+            <p>Agrega gastos, calcula sueldos semanales y registra pagos restando el saldo de cada cuenta.</p>
           </div>
 
           <div class="panel-actions">
@@ -83,6 +83,8 @@
 
         <div id="expenseFormHost" class="expense-form-host hidden"></div>
 
+        <div id="paymentFormHost" class="expense-form-host payment-form-host hidden"></div>
+
         <div id="fixedExpensesList" class="expense-list">
           <div class="empty-state">Cargando gastos fijos...</div>
         </div>
@@ -90,6 +92,6 @@
     </main>
   </div>
 
-  <script src="finanzas.js?v=207"></script>
+  <script src="finanzas.js?v=208"></script>
 </body>
 </html>

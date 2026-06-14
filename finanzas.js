@@ -1,7 +1,7 @@
 // =======================================================
-// TopDJs Finanzas CRM v2.0.7
-// Liquidez + gastos fijos + sueldos semanales
-// George, Papá y Vane se calculan como pago semanal cada lunes.
+// TopDJs Finanzas CRM v2.0.8
+// Liquidez + gastos fijos + sueldos semanales + pagar gastos
+// Al pagar, se resta el saldo de la cuenta seleccionada.
 // No se capturan ingresos manualmente en Finanzas.
 // =======================================================
 
@@ -10,14 +10,23 @@ const SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY;
 
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+let accountsCache = [];
 let fixedExpensesCache = [];
 let editingExpenseId = null;
+let payingExpenseId = null;
 
 const ACCOUNT_KEYS = {
   bbva: ["bbva", "cuenta bbva", "cuenta topdjs principal actual"],
   nu: ["nu", "cuenta nu"],
   manuel: ["manuel", "cuenta manuel"],
   efectivo: ["efectivo", "cash", "caja topdjs"],
+};
+
+const ACCOUNT_LABELS = {
+  bbva: "BBVA",
+  nu: "NU",
+  manuel: "Manuel",
+  efectivo: "Efectivo",
 };
 
 const WEEKDAYS = {
@@ -98,6 +107,19 @@ function matchAccount(account, target) {
   });
 }
 
+function findAccountByKey(accountKey) {
+  return accountsCache.find((account) => matchAccount(account, accountKey));
+}
+
+function accountKeyFromLabel(label) {
+  const normalized = normalize(label);
+  if (normalized.includes("bbva")) return "bbva";
+  if (normalized.includes("nu")) return "nu";
+  if (normalized.includes("manuel")) return "manuel";
+  if (normalized.includes("efectivo") || normalized.includes("cash")) return "efectivo";
+  return "";
+}
+
 function calculateBalancesFromAccounts(accounts) {
   const balances = {
     bbva: 0,
@@ -154,7 +176,6 @@ function expenseFrequency(expense) {
   if (frequency === "weekly" || frequency === "semanal") return "weekly";
   if (frequency === "monthly" || frequency === "mensual") return "monthly";
 
-  // Regla especial solicitada: George, Papá y Vane se tratan como sueldos semanales de lunes.
   if (isWeeklySalaryByName(expense)) return "weekly";
 
   return "monthly";
@@ -198,8 +219,11 @@ function dateToYmd(date) {
   });
 }
 
+function isoToday() {
+  return new Date().toISOString().slice(0, 10);
+}
+
 function jsDayToFinanceWeekday(jsDay) {
-  // JS: domingo 0, lunes 1... Finanzas: lunes 1... domingo 7.
   return jsDay === 0 ? 7 : jsDay;
 }
 
@@ -281,6 +305,12 @@ function expenseNextPaymentLabel(expense) {
   return dateToYmd(nextMonthlyDate(day || 1));
 }
 
+function suggestedPaymentAmount(expense) {
+  // Para gastos semanales se paga el monto semanal.
+  // Para gastos mensuales se paga el monto mensual.
+  return expenseAmount(expense);
+}
+
 function sortedActiveExpenses() {
   return fixedExpensesCache
     .filter(isActiveExpense)
@@ -344,6 +374,7 @@ function renderFixedExpenses() {
           </div>
 
           <div class="expense-actions">
+            <button type="button" class="pay" onclick="showPaymentForm('${escapeHtml(expense.id)}')">Pagar</button>
             <button type="button" onclick="editExpense('${escapeHtml(expense.id)}')">Editar</button>
             <button type="button" class="danger" onclick="deleteExpense('${escapeHtml(expense.id)}')">Borrar</button>
           </div>
@@ -373,7 +404,7 @@ function formTemplate(expense = null) {
   const name = isEdit ? expenseName(expense) : "";
   const amount = isEdit ? expenseAmount(expense) : "";
   const frequency = isEdit ? expenseFrequency(expense) : "monthly";
-  const day = isEdit ? expenseDueDay(expense) : (frequency === "weekly" ? 1 : 1);
+  const day = isEdit ? expenseDueDay(expense) : 1;
   const account = isEdit ? expenseAccount(expense) : "BBVA";
 
   return `
@@ -438,6 +469,8 @@ function refreshDaySelector() {
 }
 
 function showExpenseForm(expense = null) {
+  closePaymentForm();
+
   const host = document.getElementById("expenseFormHost");
   if (!host) return;
 
@@ -549,10 +582,156 @@ async function deleteExpense(id) {
 
     setStatus("Gasto fijo borrado correctamente.", "ok");
     closeExpenseForm();
+    closePaymentForm();
     await loadFinance();
   } catch (error) {
     console.error("Error borrando gasto fijo:", error);
     setStatus(error.message || "Error borrando gasto fijo.", "error");
+  }
+}
+
+function paymentFormTemplate(expense) {
+  const suggestedAccount = expenseAccount(expense);
+  const normalizedSuggested = normalize(suggestedAccount);
+  const isFlexible = normalizedSuggested === "flexible" || normalizedSuggested === "";
+  const defaultAccountKey = isFlexible ? "bbva" : (accountKeyFromLabel(suggestedAccount) || "bbva");
+  const amount = suggestedPaymentAmount(expense);
+
+  return `
+    <h3 class="payment-title">Pagar: ${escapeHtml(expenseName(expense))}</h3>
+    <p class="payment-subtitle">
+      Selecciona la cuenta y la cantidad. Al guardar, se restará del saldo superior.
+    </p>
+
+    <form class="payment-form" id="paymentForm" data-id="${escapeHtml(expense.id)}">
+      <div class="form-field">
+        <label>Cuenta de pago</label>
+        <select id="paymentAccount">
+          <option value="bbva" ${defaultAccountKey === "bbva" ? "selected" : ""}>BBVA</option>
+          <option value="nu" ${defaultAccountKey === "nu" ? "selected" : ""}>NU</option>
+          <option value="manuel" ${defaultAccountKey === "manuel" ? "selected" : ""}>Manuel</option>
+          <option value="efectivo" ${defaultAccountKey === "efectivo" ? "selected" : ""}>Efectivo</option>
+        </select>
+      </div>
+
+      <div class="form-field">
+        <label>Cantidad pagada</label>
+        <input id="paymentAmount" type="number" min="0" step="1" value="${escapeHtml(amount)}" required />
+      </div>
+
+      <div class="form-field">
+        <label>Fecha</label>
+        <input id="paymentDate" type="date" value="${isoToday()}" required />
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="pay">Guardar pago</button>
+        <button type="button" class="secondary" onclick="closePaymentForm()">Cancelar</button>
+      </div>
+    </form>
+
+    ${isFlexible ? `<div class="account-warning">Este gasto estaba como Flexible. Aquí debes elegir de qué cuenta salió el pago.</div>` : ""}
+  `;
+}
+
+function showPaymentForm(id) {
+  closeExpenseForm();
+
+  const expense = getExpenseById(id);
+  if (!expense) {
+    setStatus("No encontré ese gasto para pagar.", "error");
+    return;
+  }
+
+  const host = document.getElementById("paymentFormHost");
+  if (!host) return;
+
+  payingExpenseId = id;
+  host.innerHTML = paymentFormTemplate(expense);
+  host.classList.remove("hidden");
+
+  const form = document.getElementById("paymentForm");
+  if (form) form.addEventListener("submit", savePaymentFromForm);
+
+  const amountInput = document.getElementById("paymentAmount");
+  if (amountInput) amountInput.focus();
+}
+
+function closePaymentForm() {
+  const host = document.getElementById("paymentFormHost");
+  if (!host) return;
+
+  payingExpenseId = null;
+  host.innerHTML = "";
+  host.classList.add("hidden");
+}
+
+function getPaymentFormPayload() {
+  const accountKey = document.getElementById("paymentAccount")?.value || "";
+  const amount = Number(document.getElementById("paymentAmount")?.value || 0);
+  const paidAt = document.getElementById("paymentDate")?.value || isoToday();
+
+  if (!accountKey || !ACCOUNT_LABELS[accountKey]) throw new Error("Selecciona una cuenta válida.");
+  if (!Number.isFinite(amount) || amount <= 0) throw new Error("La cantidad pagada debe ser mayor a cero.");
+  if (!paidAt) throw new Error("Selecciona la fecha de pago.");
+
+  return { accountKey, amount, paidAt };
+}
+
+async function tryInsertPaymentLog({ expense, accountKey, amount, paidAt }) {
+  // El log es útil para historial. Si no existe la tabla, no bloquea el pago.
+  try {
+    await db.from("finance_fixed_expense_payments").insert({
+      fixed_expense_id: expense.id,
+      expense_name: expenseName(expense),
+      amount,
+      paid_from_account: ACCOUNT_LABELS[accountKey],
+      paid_at: paidAt,
+      created_at: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.warn("No se pudo guardar historial de pago, pero el saldo ya se ajustó:", error);
+  }
+}
+
+async function savePaymentFromForm(event) {
+  event.preventDefault();
+
+  try {
+    const expense = getExpenseById(payingExpenseId);
+    if (!expense) throw new Error("No encontré el gasto que quieres pagar.");
+
+    const { accountKey, amount, paidAt } = getPaymentFormPayload();
+
+    const account = findAccountByKey(accountKey);
+    if (!account) throw new Error(`No encontré la cuenta ${ACCOUNT_LABELS[accountKey]} en finance_accounts.`);
+
+    const currentBalance = accountBalance(account);
+    const newBalance = currentBalance - amount;
+
+    const confirmed = window.confirm(
+      `Confirmar pago de ${money(amount)} de ${expenseName(expense)} desde ${ACCOUNT_LABELS[accountKey]}.\n\n` +
+      `Saldo actual: ${money(currentBalance)}\n` +
+      `Saldo después del pago: ${money(newBalance)}`
+    );
+
+    if (!confirmed) return;
+
+    const { error: updateError } = await db
+      .from("finance_accounts")
+      .update({ current_balance: newBalance })
+      .eq("id", account.id);
+
+    if (updateError) throw updateError;
+
+    await tryInsertPaymentLog({ expense, accountKey, amount, paidAt });
+
+    setStatus(`Pago guardado. ${ACCOUNT_LABELS[accountKey]} quedó en ${money(newBalance)}.`, "ok");
+    closePaymentForm();
+    await loadFinance();
+  } catch (error) {
+    console.error("Error guardando pago:", error);
+    setStatus(error.message || "Error guardando pago.", "error");
   }
 }
 
@@ -567,11 +746,13 @@ async function loadFinance() {
   if (accountsResult.error) {
     console.error("Error cargando finance_accounts:", accountsResult.error);
     setStatus(`Error cargando finance_accounts: ${accountsResult.error.message}`, "error");
+    accountsCache = [];
     renderBalances({ bbva: 0, nu: 0, manuel: 0, efectivo: 0 });
     return;
   }
 
-  const balances = calculateBalancesFromAccounts(accountsResult.data || []);
+  accountsCache = accountsResult.data || [];
+  const balances = calculateBalancesFromAccounts(accountsCache);
   renderBalances(balances);
 
   if (expensesResult.error) {
