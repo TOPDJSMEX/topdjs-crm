@@ -1,6 +1,6 @@
 // =======================================================
-// TOPDJS FINANZAS CRM v1.0.3
-// Tarjetas limpias: límite capturado, disponible calculado, mínimo editable y sin scroll horizontal
+// TOPDJS FINANZAS CRM v1.0.4
+// Tarjetas en una fila: límite capturado, disponible calculado, mínimo editable y vista completa
 // =======================================================
 
 // IMPORTANTE:
@@ -303,7 +303,7 @@ function renderCards(cards) {
   financeCardsById = new Map(cards.map((card) => [String(card.id), card]));
 
   el.innerHTML = `
-    <div class="cards-board cards-board-clean">
+    <div class="cards-board cards-board-clean cards-board-wide">
       ${cards
         .map((card) => {
           const metrics = calculateCardMetrics(card);
@@ -334,81 +334,73 @@ function renderCards(cards) {
           const availableNegativeClass = metrics.availableCredit !== null && metrics.availableCredit < 0 ? " negative" : "";
 
           return `
-            <article class="finance-card finance-card-clean risk-${riskLevel}" data-card-container="${cardId}">
-              <div class="clean-card-header">
-                <div class="clean-card-title">
+            <article class="finance-card finance-card-clean finance-card-wide risk-${riskLevel}" data-card-container="${cardId}">
+              <div class="card-wide-grid">
+                <section class="wide-identity">
                   <span class="priority-pill">#${priority}</span>
-                  <div>
+                  <div class="wide-title-copy">
                     <h3>${escapeHtml(card.card_name || card.name || "Tarjeta")}</h3>
                     <p>${escapeHtml(bank)} · ${escapeHtml(usageType)}</p>
                   </div>
-                </div>
+                  <div class="wide-badges">
+                    <span class="rate-pill">${escapeHtml(catOrRate)}</span>
+                    <span id="risk-display-${cardId}">${badgeRisk(riskLevel)}</span>
+                  </div>
+                </section>
 
-                <div class="clean-card-badges">
-                  <span class="rate-pill">${escapeHtml(catOrRate)}</span>
-                  <span id="risk-display-${cardId}">${badgeRisk(riskLevel)}</span>
-                </div>
-              </div>
-
-              <div class="clean-card-body">
-                <section class="clean-block debt-block">
+                <section class="wide-block wide-debt">
                   <span>Saldo usado</span>
                   <strong>${money(metrics.balance)}</strong>
                 </section>
 
-                <section class="clean-block input-block">
-                  <div class="input-row-clean">
-                    <label>
-                      <span>Límite de crédito</span>
-                      <input
-                        class="money-input card-limit-input"
-                        type="number"
-                        min="0"
-                        step="1"
-                        id="limit-${cardId}"
-                        data-card-id="${cardId}"
-                        value="${creditLimitValue}"
-                        placeholder="Ej. 100000"
-                      />
-                    </label>
+                <label class="wide-block wide-input-block">
+                  <span>Límite de crédito</span>
+                  <input
+                    class="money-input card-limit-input"
+                    type="number"
+                    min="0"
+                    step="1"
+                    id="limit-${cardId}"
+                    data-card-id="${cardId}"
+                    value="${creditLimitValue}"
+                    placeholder="Ej. 100000"
+                  />
+                </label>
 
-                    <label>
-                      <span>Mínimo a pagar</span>
-                      <input
-                        class="money-input warning"
-                        type="number"
-                        min="0"
-                        step="1"
-                        id="min-${cardId}"
-                        value="${minimumValue}"
-                        placeholder="Captura mínimo"
-                      />
-                    </label>
-                  </div>
+                <label class="wide-block wide-input-block">
+                  <span>Mínimo a pagar</span>
+                  <input
+                    class="money-input warning"
+                    type="number"
+                    min="0"
+                    step="1"
+                    id="min-${cardId}"
+                    value="${minimumValue}"
+                    placeholder="Mínimo"
+                  />
+                </label>
+
+                <section class="wide-block wide-computed">
+                  <span>Disponible calculado</span>
+                  <strong id="available-display-${cardId}" class="computed-money${availableNegativeClass}">${availableText}</strong>
                 </section>
 
-                <section class="clean-block computed-block">
-                  <div class="computed-row">
-                    <span>Disponible calculado</span>
-                    <strong id="available-display-${cardId}" class="computed-money${availableNegativeClass}">${availableText}</strong>
-                  </div>
-
-                  <div class="computed-row">
+                <section class="wide-block wide-usage">
+                  <div class="wide-usage-head">
                     <span>% uso</span>
                     <span id="usage-display-${cardId}" class="usage-pill ${usageClass}">${percentText(metrics.usagePercentage)}</span>
                   </div>
-
                   <div class="usage-progress" aria-hidden="true">
                     <div id="usage-progress-${cardId}" class="usage-progress-fill ${usageClass}" style="width: ${usageProgressWidth(metrics.usagePercentage)}%"></div>
                   </div>
                 </section>
-              </div>
 
-              <div class="card-footer-row clean-footer-row">
-                <small>Disponible = límite de crédito - saldo usado</small>
-                <button class="save-card-btn" type="button" data-card-id="${cardId}">
-                  Guardar tarjeta
-                </button>
+                <section class="wide-actions">
+                  <small>Disponible = límite - saldo</small>
+                  <button class="save-card-btn" type="button" data-card-id="${cardId}">
+                    Guardar
+                  </button>
+                </section>
               </div>
             </article>
           `;

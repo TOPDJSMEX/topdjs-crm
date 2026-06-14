@@ -906,3 +906,270 @@ td.amount {
     width: 100%;
   }
 }
+
+
+/* ================================
+   TARJETAS v1.0.4
+   Una tarjeta por fila, a todo lo ancho y sin información cortada
+================================ */
+#cardsList {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow: visible !important;
+}
+
+/* Si cardsList vive dentro de table-wrap, evitar scroll horizontal en esta sección */
+.table-wrap:has(#cardsList) {
+  overflow-x: visible !important;
+}
+
+.cards-board-wide,
+.cards-board-clean.cards-board-wide {
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  gap: 16px !important;
+  padding: 18px 28px !important;
+  min-width: 0 !important;
+}
+
+.finance-card-wide,
+.finance-card-clean.finance-card-wide {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  overflow: visible !important;
+  padding: 18px 20px !important;
+  border-radius: 22px !important;
+}
+
+.card-wide-grid {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  display: grid;
+  grid-template-columns:
+    minmax(230px, 1.45fr)
+    minmax(145px, 0.85fr)
+    minmax(150px, 0.9fr)
+    minmax(150px, 0.9fr)
+    minmax(160px, 1fr)
+    minmax(140px, 0.75fr)
+    minmax(145px, 0.8fr);
+  gap: 12px;
+  align-items: stretch;
+}
+
+.wide-identity,
+.wide-block,
+.wide-actions {
+  min-width: 0;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 16px;
+  background: rgba(5, 7, 13, 0.42);
+  padding: 14px;
+}
+
+.wide-identity {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  gap: 10px 12px;
+  align-content: center;
+  background:
+    radial-gradient(circle at top right, rgba(0, 170, 255, 0.12), transparent 42%),
+    rgba(5, 7, 13, 0.34);
+}
+
+.wide-identity .priority-pill {
+  grid-row: 1 / span 2;
+  align-self: start;
+  width: 46px;
+  height: 38px;
+  font-size: 14px;
+}
+
+.wide-title-copy {
+  min-width: 0;
+}
+
+.wide-title-copy h3 {
+  margin: 0;
+  font-size: clamp(24px, 2.6vw, 34px);
+  line-height: 1;
+  letter-spacing: -0.045em;
+  overflow-wrap: anywhere;
+}
+
+.wide-title-copy p {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.wide-badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.wide-block > span,
+.wide-input-block > span,
+.wide-actions small,
+.wide-usage-head > span:first-child {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.075em;
+}
+
+.wide-block strong {
+  display: block;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: clamp(20px, 2.1vw, 32px);
+  line-height: 1.04;
+  letter-spacing: -0.04em;
+}
+
+.wide-debt {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border-color: rgba(239, 68, 68, 0.28);
+  background: rgba(239, 68, 68, 0.055);
+}
+
+.wide-computed {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.wide-computed .computed-money {
+  text-align: left;
+  white-space: normal;
+  color: var(--green);
+  font-size: clamp(20px, 2vw, 28px);
+}
+
+.wide-computed .computed-money.negative {
+  color: var(--red);
+}
+
+.wide-input-block {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.wide-input-block .money-input,
+.finance-card-wide .money-input {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  height: 48px !important;
+  font-size: 18px !important;
+  font-weight: 900 !important;
+}
+
+.wide-usage {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+}
+
+.wide-usage-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.wide-usage .usage-pill {
+  min-width: 68px;
+}
+
+.wide-actions {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+}
+
+.wide-actions small {
+  margin-bottom: 0;
+  text-transform: none;
+  letter-spacing: 0;
+  line-height: 1.25;
+}
+
+.wide-actions .save-card-btn {
+  width: 100%;
+  min-width: 0;
+  padding: 12px 14px;
+  font-weight: 900;
+  border-radius: 14px;
+}
+
+@media (max-width: 1280px) {
+  .cards-board-wide,
+  .cards-board-clean.cards-board-wide {
+    padding: 16px !important;
+  }
+
+  .card-wide-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .wide-identity {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 820px) {
+  .card-wide-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .wide-identity,
+  .wide-actions {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 560px) {
+  .cards-board-wide,
+  .cards-board-clean.cards-board-wide {
+    padding: 12px !important;
+  }
+
+  .finance-card-wide,
+  .finance-card-clean.finance-card-wide {
+    padding: 14px !important;
+  }
+
+  .card-wide-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .wide-identity,
+  .wide-actions {
+    grid-column: auto;
+  }
+
+  .wide-identity {
+    grid-template-columns: 1fr;
+  }
+
+  .wide-identity .priority-pill {
+    grid-row: auto;
+  }
+}
