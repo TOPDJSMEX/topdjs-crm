@@ -276,12 +276,13 @@ $("quoteTotal").oninput=updateQuoteBalance;$("quotePaid").oninput=updateQuoteBal
 $("clearQuoteBtn").onclick=()=>{
   if(!confirm("¿LIMPIAR COTIZADOR?"))return;
   ["quoteClient","quoteCompany","quotePhone","quoteEmail","quoteInstagram","quoteProject","quoteDate","quoteVenue","quotePax","quoteServiceHours","quoteSetupHours","quoteSetupTime","quoteStartTime","quoteEndTime","quoteTotal","quoteNotes"].forEach(id=>$(id).value="");
-  $("quotePaid").value=0;$("quoteSetupType").value="MISMO DÍA";clearCatalog();updateQuoteBalance()
+  $("quotePaid").value=0;if($("quotePaidDate"))$("quotePaidDate").value=todayISO();$("quoteSetupType").value="MISMO DÍA";clearCatalog();updateQuoteBalance()
 };
 
 function clearQuoteForm(){
   ["quoteClient","quoteCompany","quotePhone","quoteEmail","quoteInstagram","quoteProject","quoteDate","quoteVenue","quotePax","quoteServiceHours","quoteSetupHours","quoteSetupTime","quoteStartTime","quoteEndTime","quoteTotal","quoteNotes"].forEach(id=>{if($(id))$(id).value=""});
   if($("quotePaid"))$("quotePaid").value=0;
+  if($("quotePaidDate"))$("quotePaidDate").value=todayISO();
   if($("quotePaidMethod"))$("quotePaidMethod").value="";
   if($("quoteSetupType"))$("quoteSetupType").value="MISMO DÍA";
   editingRecordId=null;
@@ -294,7 +295,7 @@ function clearQuoteForm(){
 }
 if($("cancelEditBtn"))$("cancelEditBtn").onclick=()=>clearQuoteForm();
 
-function collectQuoteData(local_id=null){const amount=Number($("quoteTotal").value||0),paid=Number($("quotePaid").value||0);return{local_id:local_id||uid(),type:"COTIZACIÓN ENVIADA",date:$("quoteDate").value,client:$("quoteClient").value,company:$("quoteCompany").value,phone:$("quotePhone").value,email:$("quoteEmail").value,instagram:$("quoteInstagram").value,event_type:$("quoteEventType").value,project:$("quoteProject").value,venue:$("quoteVenue").value,pax:Number($("quotePax").value||0),service_hours:Number($("quoteServiceHours").value||0),setup_type:$("quoteSetupType").value,setup_hours:Number($("quoteSetupHours").value||0),setup_time:$("quoteSetupTime").value,start_time:$("quoteStartTime").value,end_time:$("quoteEndTime").value,amount,paid,paid_method:$("quotePaidMethod")?.value||"",status:paid>=amount&&amount>0?"PAGADO":paid>0?"ANTICIPO RECIBIDO":"EN SEGUIMIENTO",notes:$("quoteNotes").value,quote_catalog:getCatalogSelection(),updated_at:new Date().toISOString(),_dirty:true}}
+function collectQuoteData(local_id=null){const amount=Number($("quoteTotal").value||0),paid=Number($("quotePaid").value||0);return{local_id:local_id||uid(),type:"COTIZACIÓN ENVIADA",date:$("quoteDate").value,client:$("quoteClient").value,company:$("quoteCompany").value,phone:$("quotePhone").value,email:$("quoteEmail").value,instagram:$("quoteInstagram").value,event_type:$("quoteEventType").value,project:$("quoteProject").value,venue:$("quoteVenue").value,pax:Number($("quotePax").value||0),service_hours:Number($("quoteServiceHours").value||0),setup_type:$("quoteSetupType").value,setup_hours:Number($("quoteSetupHours").value||0),setup_time:$("quoteSetupTime").value,start_time:$("quoteStartTime").value,end_time:$("quoteEndTime").value,amount,paid,paid_method:$("quotePaidMethod")?.value||"",paid_date:$("quotePaidDate")?.value||todayISO(),status:paid>=amount&&amount>0?"PAGADO":paid>0?"ANTICIPO RECIBIDO":"EN SEGUIMIENTO",notes:$("quoteNotes").value,quote_catalog:getCatalogSelection(),updated_at:new Date().toISOString(),_dirty:true}}
 $("saveQuoteBtn").onclick=async()=>{
   const amount=Number($("quoteTotal").value||0);
   if(!$("quoteClient").value||!$("quoteDate").value)return alert("AGREGA CLIENTE Y FECHA.");
@@ -342,7 +343,7 @@ function mergeRecordForEdit(local, remote){
   local=normalizeRecord(local||{});
   remote=normalizeRecord(remote||{});
   const out={...local};
-  ["id","local_id","type","date","client","company","phone","email","instagram","event_type","project","venue","pax","service_hours","setup_type","setup_hours","setup_time","start_time","end_time","amount","paid","status","notes","quote_catalog","expenses_jsonb","paid_method","updated_by","updated_at"].forEach(k=>{
+  ["id","local_id","type","date","client","company","phone","email","instagram","event_type","project","venue","pax","service_hours","setup_type","setup_hours","setup_time","start_time","end_time","amount","paid","status","notes","quote_catalog","expenses_jsonb","paid_method","paid_date","updated_by","updated_at"].forEach(k=>{
     out[k]=firstValue(remote[k], local[k]);
   });
   out.quote_catalog=parseMaybeJson(firstValue(remote.quote_catalog, local.quote_catalog));
@@ -391,6 +392,8 @@ function fillEditForm(r){
   setInput("quoteEndTime",r.end_time);
   setInput("quoteTotal",r.amount);
   setInput("quotePaid",r.paid);setInput("quotePaidMethod",r.paid_method||"");
+  const firstPayment=(eventPayments||[]).filter(p=>p.record_local_id===r.local_id).sort((a,b)=>String(a.payment_date||a.created_at).localeCompare(String(b.payment_date||b.created_at)))[0];
+  setInput("quotePaidDate", firstPayment?.payment_date || r.paid_date || todayISO());
   setInput("quoteStatus",r.status||"EN SEGUIMIENTO");
   setInput("quoteNotes",r.notes);
   setCatalogSelection(parseMaybeJson(r.quote_catalog));
@@ -555,7 +558,7 @@ function catalogFlat(qc){
 }
 function diffRecords(oldR,newR){
   oldR=normalizeRecord(oldR||{});newR=normalizeRecord(newR||{});
-  const labels={client:"cliente",company:"empresa",phone:"teléfono",email:"email",instagram:"Instagram",event_type:"tipo de evento",project:"proyecto",date:"fecha",venue:"venue",pax:"PAX",service_hours:"horas de servicio",setup_type:"montaje",setup_hours:"horas de montaje",setup_time:"hora de montaje",start_time:"hora inicio",end_time:"hora término",amount:"monto",paid:"anticipo",status:"estatus",notes:"observaciones"};
+  const labels={client:"cliente",company:"empresa",phone:"teléfono",email:"email",instagram:"Instagram",event_type:"tipo de evento",project:"proyecto",date:"fecha",venue:"venue",pax:"PAX",service_hours:"horas de servicio",setup_type:"montaje",setup_hours:"horas de montaje",setup_time:"hora de montaje",start_time:"hora inicio",end_time:"hora término",amount:"monto",paid:"anticipo",paid_date:"fecha de anticipo",paid_method:"método de anticipo",status:"estatus",notes:"observaciones"};
   const changes=[];
   Object.entries(labels).forEach(([k,label])=>{
     const a=String(oldR[k]??"").trim(),b=String(newR[k]??"").trim();
@@ -722,7 +725,7 @@ async function createInitialAdvancePaymentIfNeeded(rec,actor){
       headers:{"Content-Type":"application/json","Prefer":"return=minimal"},
       body:JSON.stringify({
         record_local_id:rec.local_id,
-        payment_date:todayISO(),
+        payment_date:rec.paid_date||todayISO(),
         amount,
         method,
         note:"Anticipo inicial"
@@ -1048,6 +1051,7 @@ function dbRecord(r){
     end_time:r.end_time||null,
     amount:r.amount||0,
     paid:r.paid||0,
+    paid_method:r.paid_method||null,
     status:r.status||null,
     notes:r.notes||null,
     quote_catalog:r.quote_catalog||null,
@@ -1290,3 +1294,7 @@ if($("clearClientSearch"))$("clearClientSearch").onclick=()=>{$("clientSearch").
 
 renderCatalog();save();renderAll();syncAll();setInterval(syncAll,30000);
 if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js").catch(()=>{})}
+
+
+// TOPDJS CRM v11.4.12 - Fecha de anticipo
+if($("quotePaidDate") && !$("quotePaidDate").value){$("quotePaidDate").value=todayISO()}
