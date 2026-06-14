@@ -679,11 +679,11 @@ async function addPayment(local_id){
   const amount=Number(String(amountRaw).replace(/[$, ]/g,""));
   if(!amount||amount<=0)return alert("Monto inválido. No se guardó el pago.");
 
-  const methodRaw=prompt("Método de pago:
+  const methodRaw=prompt(`Método de pago:
 1 = Efectivo
 2 = NU
 3 = BBVA
-4 = Manuel");
+4 = Manuel`);
   if(methodRaw===null)return alert("Registro de pago cancelado. No se guardó nada.");
   const method=paymentMethodFromInput(methodRaw);
   if(!method)return alert("Método inválido. No se guardó el pago.");
@@ -710,8 +710,7 @@ Fecha: ${date}
 Nota: ${note}`);
     showRecord(local_id);
   }catch(e){
-    showError("ERROR AL REGISTRAR PAGO:
-"+e.message);
+    showError("ERROR AL REGISTRAR PAGO:\n"+e.message);
   }
 }
 async function deletePayment(id,local_id){
@@ -1314,5 +1313,5 @@ renderCatalog();save();renderAll();syncAll();setInterval(syncAll,30000);
 if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js").catch(()=>{})}
 
 
-// TOPDJS CRM v11.4.13 - Fecha de anticipo
+// TOPDJS CRM v11.4.14 - Fecha de anticipo
 if($("quotePaidDate") && !$("quotePaidDate").value){$("quotePaidDate").value=todayISO()}
