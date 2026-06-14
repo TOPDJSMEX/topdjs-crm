@@ -730,3 +730,19 @@ tr.eventUpcoming td{background:rgba(0,184,255,.025) !important}
   .operTable{min-width:1280px}
   .recordActions{grid-template-columns:repeat(2,minmax(132px,1fr));min-width:290px}
 }
+
+
+/* TOPDJS CRM v11.4.18 - Fix modal sobrepuesta */
+#modal,.modal,.overlay{
+  z-index:9999 !important;
+}
+.modalBox,#modal .modalBox,.modal-content,#modal .modal-content{
+  position:relative;
+  z-index:10000 !important;
+}
+.operTable thead th{
+  z-index:0;
+}
+body.modal-open .operTable thead th{
+  position:static;
+}
