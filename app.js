@@ -1004,6 +1004,7 @@ function showRecord(local_id){
 $("closeModal").onclick=()=>$("modal").classList.add("hidden");
 
 const CALENDAR_MONTH_NAMES=["ENERO","FEBRERO","MARZO","ABRIL","MAYO","JUNIO","JULIO","AGOSTO","SEPTIEMBRE","OCTUBRE","NOVIEMBRE","DICIEMBRE"];
+let calendarViewMode="month";
 
 function initCalendarControls(){
   const monthSelect=$("calendarMonthSelect");
@@ -1031,9 +1032,54 @@ function setCalendarDateFromControls(){
   renderCalendar();
 }
 
+function eventsForMonth(year, month){
+  return records.filter(r=>{
+    if(r._deleted||!r.date)return false;
+    const d=new Date(String(r.date)+"T00:00:00");
+    return d.getFullYear()===year && d.getMonth()===month;
+  });
+}
+
+function renderYearOverview(){
+  initCalendarControls();
+  calendarViewMode="year";
+  const grid=$("calendarGrid");grid.innerHTML="";
+  const y=visibleDate.getFullYear();
+  $("monthTitle").textContent=`AÑO ${y}`;
+  updateCalendarControls();
+  grid.className="calendar yearOverview";
+
+  CALENDAR_MONTH_NAMES.forEach((name, m)=>{
+    const monthEvents=eventsForMonth(y,m).map(normalizeRecord).sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+    const card=document.createElement("button");
+    card.type="button";
+    card.className="yearMonthCard";
+    const total=monthEvents.reduce((s,r)=>s+Number(r.amount||0),0);
+    const pending=monthEvents.reduce((s,r)=>s+bal(r),0);
+    const eventsPreview=monthEvents.slice(0,3).map(r=>`<div class="yearEventMini"><strong>${esc(String(r.date).slice(8,10))}</strong> ${esc(r.client||"Evento")} · ${esc(r.project||"")}</div>`).join("");
+    card.innerHTML=`
+      <div class="yearMonthName">${name}</div>
+      <div class="yearMonthStats">
+        <span>${monthEvents.length} evento${monthEvents.length===1?"":"s"}</span>
+        <span>${money(total)} cotizado</span>
+        <span>${money(pending)} pendiente</span>
+      </div>
+      <div class="yearMonthEvents">${eventsPreview || '<em>Sin eventos</em>'}${monthEvents.length>3?`<small>+ ${monthEvents.length-3} más</small>`:""}</div>
+    `;
+    card.onclick=()=>{
+      visibleDate=new Date(y,m,1);
+      calendarViewMode="month";
+      renderCalendar();
+    };
+    grid.appendChild(card);
+  });
+}
+
 function renderCalendar(){
   initCalendarControls();
+  calendarViewMode="month";
   const grid=$("calendarGrid");grid.innerHTML="";
+  grid.className="calendar monthGrid";
   const y=visibleDate.getFullYear(),m=visibleDate.getMonth();
   $("monthTitle").textContent=`${CALENDAR_MONTH_NAMES[m]} ${y}`;
   updateCalendarControls();
@@ -1053,10 +1099,11 @@ function renderCalendar(){
 }
 $("prevMonth").onclick=()=>{visibleDate.setMonth(visibleDate.getMonth()-1);renderCalendar()};
 $("nextMonth").onclick=()=>{visibleDate.setMonth(visibleDate.getMonth()+1);renderCalendar()};
-$("prevYear").onclick=()=>{visibleDate.setFullYear(visibleDate.getFullYear()-1);renderCalendar()};
-$("nextYear").onclick=()=>{visibleDate.setFullYear(visibleDate.getFullYear()+1);renderCalendar()};
+$("prevYear").onclick=()=>{visibleDate.setFullYear(visibleDate.getFullYear()-1);calendarViewMode==="year"?renderYearOverview():renderCalendar()};
+$("nextYear").onclick=()=>{visibleDate.setFullYear(visibleDate.getFullYear()+1);calendarViewMode==="year"?renderYearOverview():renderCalendar()};
 $("goCalendarDate").onclick=()=>setCalendarDateFromControls();
 $("todayCalendar").onclick=()=>{visibleDate=new Date();renderCalendar()};
+if($("yearViewBtn"))$("yearViewBtn").onclick=()=>renderYearOverview();
 if($("calendarMonthSelect"))$("calendarMonthSelect").onchange=()=>setCalendarDateFromControls();
 if($("calendarYearInput"))$("calendarYearInput").onkeydown=e=>{if(e.key==="Enter")setCalendarDateFromControls()};
 

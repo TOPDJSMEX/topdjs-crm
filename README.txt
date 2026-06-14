@@ -1,22 +1,22 @@
-TOPDJS CRM v11.4.21 - CALENDARIO MULTI AÑO
+TOPDJS CRM v11.4.22 - CALENDARIO VISTA ANUAL
 
 Nuevo:
-- Calendario con navegación por mes y por año.
-- Botones: Año anterior, mes anterior, mes siguiente, año siguiente.
-- Selector de mes y año para saltar directo a cualquier fecha.
-- Botón HOY para regresar al mes actual.
-- Permite revisar eventos de años anteriores y años posteriores sin cambiar Supabase.
+- Botón 🗓️ VER AÑO COMPLETO dentro de Calendario.
+- Vista de 12 meses del año seleccionado.
+- Cada mes muestra número de eventos, cotizado, pendiente y próximos eventos.
+- Al hacer clic en un mes, abre ese mes completo para seleccionar/ver fechas.
+- Botones de año anterior/siguiente funcionan también en vista anual.
 
 Mantiene:
-- Base estable v11.4.19
-- Eventos operativos ordenados
-- Monto y saldo neón
-- Gastos por evento
-- Archivo directo
-- Sin botón liquidar
+- Calendario mensual original.
+- Eventos operativos ordenados.
+- Fix modal superpuesta.
+- Monto y saldo neon.
+- Gastos por evento.
+- Archivo directo.
 
 Instalación:
 1. Subir los 7 archivos a GitHub.
-2. Commit: TopDJs CRM v11.4.21 - Calendario multi año
+2. Commit: TopDJs CRM v11.4.22 - Calendario vista anual
 3. Deploy to Production en Vercel.
 4. Recarga fuerte: Option + Command + R.

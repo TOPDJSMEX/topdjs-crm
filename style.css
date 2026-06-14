@@ -811,3 +811,83 @@ body.modal-open .operTable thead th{
   .calendarTopAdvanced > button{min-width:140px;font-size:12px}
   .calendarTitleBox{order:-1;flex-basis:100%}
 }
+
+
+/* TOPDJS CRM v11.4.22 - Calendario vista anual */
+#yearViewBtn{
+  border-color:rgba(0,184,255,.65) !important;
+  color:#fff !important;
+}
+.calendar.yearOverview{
+  display:grid !important;
+  grid-template-columns:repeat(4,minmax(220px,1fr));
+  gap:16px;
+  margin-top:18px;
+}
+.yearMonthCard{
+  text-align:left;
+  min-height:190px;
+  padding:18px !important;
+  border-radius:18px !important;
+  border:1px solid rgba(0,184,255,.55) !important;
+  background:linear-gradient(180deg,rgba(5,11,24,.98),rgba(0,0,0,.98)) !important;
+  color:#fff !important;
+  box-shadow:0 0 18px rgba(0,184,255,.18), inset 0 0 12px rgba(0,184,255,.05) !important;
+  cursor:pointer;
+}
+.yearMonthCard:hover{
+  transform:translateY(-2px);
+  border-color:#35d7ff !important;
+  box-shadow:0 0 26px rgba(0,184,255,.35) !important;
+}
+.yearMonthName{
+  color:#7ee7ff;
+  font-size:20px;
+  font-weight:900;
+  letter-spacing:.08em;
+  margin-bottom:12px;
+}
+.yearMonthStats{
+  display:grid;
+  gap:6px;
+  margin-bottom:12px;
+}
+.yearMonthStats span{
+  display:inline-flex;
+  width:max-content;
+  max-width:100%;
+  padding:5px 8px;
+  border-radius:999px;
+  background:rgba(0,184,255,.08);
+  border:1px solid rgba(0,184,255,.28);
+  color:#cfefff;
+  font-size:12px;
+  font-weight:800;
+}
+.yearMonthEvents{
+  border-top:1px solid rgba(0,184,255,.25);
+  padding-top:10px;
+  display:grid;
+  gap:6px;
+}
+.yearEventMini{
+  color:#b8c7d9;
+  font-size:12px;
+  line-height:1.25;
+}
+.yearEventMini strong{
+  color:#ffe66d;
+}
+.yearMonthEvents em,.yearMonthEvents small{
+  color:#6f8197;
+  font-size:12px;
+}
+@media(max-width:1100px){
+  .calendar.yearOverview{grid-template-columns:repeat(3,minmax(200px,1fr))}
+}
+@media(max-width:800px){
+  .calendar.yearOverview{grid-template-columns:repeat(2,minmax(160px,1fr))}
+}
+@media(max-width:520px){
+  .calendar.yearOverview{grid-template-columns:1fr}
+}
