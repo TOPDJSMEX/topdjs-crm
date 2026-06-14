@@ -1,6 +1,6 @@
 // =======================================================
-// TOPDJS FINANZAS CRM v1.0.5
-// Layout vertical: Cuentas arriba y Prioridad tarjetas abajo, cada tarjeta a todo lo ancho
+// TOPDJS FINANZAS CRM v1.0.6
+// Layout vertical limpio: cuentas arriba y tarjetas compactas en filas completas
 // =======================================================
 
 // IMPORTANTE:
@@ -303,7 +303,7 @@ function renderCards(cards) {
   financeCardsById = new Map(cards.map((card) => [String(card.id), card]));
 
   el.innerHTML = `
-    <div class="cards-board cards-board-clean cards-board-wide">
+    <div class="cards-list-v106">
       ${cards
         .map((card) => {
           const metrics = calculateCardMetrics(card);
@@ -334,27 +334,27 @@ function renderCards(cards) {
           const availableNegativeClass = metrics.availableCredit !== null && metrics.availableCredit < 0 ? " negative" : "";
 
           return `
-            <article class="finance-card finance-card-clean finance-card-wide risk-${riskLevel}" data-card-container="${cardId}">
-              <div class="card-wide-grid">
-                <section class="wide-identity">
-                  <span class="priority-pill">#${priority}</span>
-                  <div class="wide-title-copy">
-                    <h3>${escapeHtml(card.card_name || card.name || "Tarjeta")}</h3>
-                    <p>${escapeHtml(bank)} · ${escapeHtml(usageType)}</p>
-                  </div>
-                  <div class="wide-badges">
-                    <span class="rate-pill">${escapeHtml(catOrRate)}</span>
+            <article class="finance-card-row-v106 risk-${riskLevel}" data-card-container="${cardId}">
+              <section class="card-id-v106">
+                <div class="priority-pill-v106">#${priority}</div>
+                <div class="card-title-v106">
+                  <h3>${escapeHtml(card.card_name || card.name || "Tarjeta")}</h3>
+                  <p>${escapeHtml(bank)} · ${escapeHtml(usageType)}</p>
+                  <div class="card-badges-v106">
+                    <span class="rate-pill-v106">${escapeHtml(catOrRate)}</span>
                     <span id="risk-display-${cardId}">${badgeRisk(riskLevel)}</span>
                   </div>
-                </section>
+                </div>
+              </section>
 
-                <section class="wide-block wide-debt">
+              <section class="card-fields-v106">
+                <div class="card-cell-v106 debt-cell-v106">
                   <span>Saldo usado</span>
                   <strong>${money(metrics.balance)}</strong>
-                </section>
+                </div>
 
-                <label class="wide-block wide-input-block">
-                  <span>Límite de crédito</span>
+                <label class="card-cell-v106 input-cell-v106">
+                  <span>Límite crédito</span>
                   <input
                     class="money-input card-limit-input"
                     type="number"
@@ -367,7 +367,7 @@ function renderCards(cards) {
                   />
                 </label>
 
-                <label class="wide-block wide-input-block">
+                <label class="card-cell-v106 input-cell-v106">
                   <span>Mínimo a pagar</span>
                   <input
                     class="money-input warning"
@@ -380,28 +380,26 @@ function renderCards(cards) {
                   />
                 </label>
 
-                <section class="wide-block wide-computed">
-                  <span>Disponible calculado</span>
-                  <strong id="available-display-${cardId}" class="computed-money${availableNegativeClass}">${availableText}</strong>
-                </section>
+                <div class="card-cell-v106 computed-cell-v106">
+                  <span>Disponible</span>
+                  <strong id="available-display-${cardId}" class="computed-money-v106${availableNegativeClass}">${availableText}</strong>
+                  <small>Límite - saldo</small>
+                </div>
 
-                <section class="wide-block wide-usage">
-                  <div class="wide-usage-head">
+                <div class="card-cell-v106 usage-cell-v106">
+                  <div class="usage-top-v106">
                     <span>% uso</span>
                     <span id="usage-display-${cardId}" class="usage-pill ${usageClass}">${percentText(metrics.usagePercentage)}</span>
                   </div>
-                  <div class="usage-progress" aria-hidden="true">
+                  <div class="usage-progress-v106" aria-hidden="true">
                     <div id="usage-progress-${cardId}" class="usage-progress-fill ${usageClass}" style="width: ${usageProgressWidth(metrics.usagePercentage)}%"></div>
                   </div>
-                </section>
+                </div>
 
-                <section class="wide-actions">
-                  <small>Disponible = límite - saldo</small>
-                  <button class="save-card-btn" type="button" data-card-id="${cardId}">
-                    Guardar
-                  </button>
-                </section>
-              </div>
+                <div class="card-cell-v106 action-cell-v106">
+                  <button class="save-card-btn" type="button" data-card-id="${cardId}">Guardar</button>
+                </div>
+              </section>
             </article>
           `;
         })
@@ -411,7 +409,6 @@ function renderCards(cards) {
 
   wireCardsBoardEvents(el);
 }
-
 function renderExpenses(expenses) {
   const el = document.getElementById("expensesList");
   if (!el) return;

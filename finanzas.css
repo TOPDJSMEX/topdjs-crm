@@ -1349,3 +1349,330 @@ td.amount {
     min-width: 0 !important;
   }
 }
+
+
+/* ================================
+   TOPDJS FINANZAS v1.0.6
+   Layout limpio: Cuentas arriba y Tarjetas abajo.
+   Cada tarjeta en fila completa, compacta, sin recortes ni scroll horizontal.
+================================ */
+
+.panel-grid {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 22px !important;
+  align-items: stretch !important;
+}
+
+.panel-grid > .panel {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+}
+
+#cardsList,
+#cardsList.table-wrap,
+.table-wrap:has(#cardsList) {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  overflow: visible !important;
+}
+
+.cards-list-v106 {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.finance-card-row-v106 {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(210px, 280px) minmax(0, 1fr);
+  gap: 14px;
+  width: 100%;
+  min-width: 0;
+  padding: 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background:
+    radial-gradient(circle at top right, rgba(0, 170, 255, 0.12), transparent 38%),
+    linear-gradient(180deg, rgba(16, 24, 44, 0.95), rgba(7, 10, 20, 0.96));
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.24);
+  overflow: hidden;
+}
+
+.finance-card-row-v106::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: rgba(148, 163, 184, 0.35);
+}
+
+.finance-card-row-v106.risk-critical::before {
+  background: var(--red);
+  box-shadow: var(--shadow-red);
+}
+
+.finance-card-row-v106.risk-high::before {
+  background: #fb7185;
+  box-shadow: 0 0 18px rgba(251, 113, 133, 0.28);
+}
+
+.finance-card-row-v106.risk-medium::before {
+  background: var(--yellow);
+  box-shadow: var(--shadow-yellow);
+}
+
+.finance-card-row-v106.risk-low::before {
+  background: var(--green);
+  box-shadow: 0 0 18px rgba(34, 197, 94, 0.24);
+}
+
+.card-id-v106 {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 16px;
+  background: rgba(0, 170, 255, 0.055);
+}
+
+.priority-pill-v106 {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background: rgba(148, 163, 184, 0.1);
+  color: var(--muted);
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.card-title-v106 {
+  min-width: 0;
+}
+
+.card-title-v106 h3 {
+  margin: 0;
+  font-size: clamp(22px, 1.8vw, 30px);
+  line-height: 1.02;
+  letter-spacing: -0.04em;
+  overflow-wrap: anywhere;
+}
+
+.card-title-v106 p {
+  margin: 4px 0 8px;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 750;
+}
+
+.card-badges-v106 {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.rate-pill-v106 {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 9px;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 170, 255, 0.35);
+  background: rgba(0, 170, 255, 0.09);
+  color: #dbeafe;
+  font-size: 12px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.card-fields-v106 {
+  display: grid;
+  grid-template-columns:
+    minmax(118px, 1fr)
+    minmax(130px, 1fr)
+    minmax(130px, 1fr)
+    minmax(130px, 1fr)
+    minmax(120px, 0.85fr)
+    minmax(96px, 0.7fr);
+  gap: 10px;
+  min-width: 0;
+  width: 100%;
+}
+
+.card-cell-v106 {
+  min-width: 0;
+  min-height: 82px;
+  padding: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  border-radius: 15px;
+  background: rgba(5, 7, 13, 0.45);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.card-cell-v106 > span,
+.input-cell-v106 > span,
+.usage-top-v106 > span:first-child {
+  display: block;
+  margin-bottom: 7px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.075em;
+}
+
+.debt-cell-v106 {
+  border-color: rgba(239, 68, 68, 0.3);
+  background: rgba(239, 68, 68, 0.06);
+}
+
+.card-cell-v106 strong {
+  display: block;
+  min-width: 0;
+  font-size: clamp(19px, 1.65vw, 28px);
+  line-height: 1;
+  letter-spacing: -0.035em;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.input-cell-v106 {
+  gap: 0;
+}
+
+.input-cell-v106 .money-input,
+.finance-card-row-v106 .money-input {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  height: 40px !important;
+  min-height: 40px !important;
+  padding: 8px 10px !important;
+  border-radius: 11px !important;
+  font-size: 16px !important;
+  font-weight: 850 !important;
+}
+
+.computed-money-v106 {
+  color: var(--green);
+}
+
+.computed-money-v106.negative {
+  color: var(--red);
+}
+
+.computed-cell-v106 small {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.usage-cell-v106 {
+  gap: 10px;
+}
+
+.usage-top-v106 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.usage-progress-v106 {
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(148, 163, 184, 0.15);
+}
+
+.usage-progress-v106 .usage-progress-fill {
+  height: 100%;
+  width: 0;
+  border-radius: inherit;
+  transition: width 0.18s ease;
+}
+
+.usage-progress-v106 .usage-progress-fill.positive {
+  background: var(--green);
+}
+
+.usage-progress-v106 .usage-progress-fill.warning {
+  background: var(--yellow);
+}
+
+.usage-progress-v106 .usage-progress-fill.danger {
+  background: var(--red);
+}
+
+.action-cell-v106 {
+  padding: 12px;
+}
+
+.action-cell-v106 .save-card-btn {
+  width: 100%;
+  height: 40px;
+  padding: 8px 10px;
+  border-radius: 11px;
+  font-size: 13px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+@media (max-width: 1180px) {
+  .finance-card-row-v106 {
+    grid-template-columns: 1fr;
+  }
+
+  .card-fields-v106 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .cards-list-v106 {
+    padding: 12px;
+  }
+
+  .finance-card-row-v106 {
+    padding: 12px;
+  }
+
+  .card-fields-v106 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .action-cell-v106 {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 520px) {
+  .card-id-v106 {
+    grid-template-columns: 1fr;
+  }
+
+  .card-fields-v106 {
+    grid-template-columns: 1fr;
+  }
+}
