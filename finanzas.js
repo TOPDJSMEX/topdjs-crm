@@ -1,6 +1,6 @@
 // =======================================================
-// TopDJs Finanzas CRM v2.1.3
-// Panel limpio + gastos fijos + pagos + historial + sincronización CRM desde 2026-06-15
+// TopDJs Finanzas CRM v2.1.4
+// Panel limpio + gastos fijos + tarjetas de crédito + sincronización CRM desde 2026-06-15
 // =======================================================
 
 const SUPABASE_URL = window.SUPABASE_URL;
@@ -11,6 +11,7 @@ const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let accountsCache = [];
 let fixedExpensesCache = [];
 let paymentsCache = [];
+let creditCardsCache = [];
 let editingExpenseId = null;
 let payingExpenseId = null;
 let openedExpenseId = null;
@@ -106,6 +107,22 @@ function closeExpensesWorkspace() {
   closeExpenseDetail();
   closeExpenseForm();
   closePaymentForm();
+  workspace.classList.add("hidden");
+  document.body.classList.remove("workspace-open");
+}
+
+function openCardsWorkspace() {
+  const workspace = document.getElementById("cardsWorkspace");
+  if (!workspace) return;
+
+  workspace.classList.remove("hidden");
+  document.body.classList.add("workspace-open");
+}
+
+function closeCardsWorkspace() {
+  const workspace = document.getElementById("cardsWorkspace");
+  if (!workspace) return;
+
   workspace.classList.add("hidden");
   document.body.classList.remove("workspace-open");
 }
@@ -973,6 +990,178 @@ async function voidPayment(id) {
 }
 
 
+
+function cardName(card) {
+  return firstValue(card, ["card_name", "name", "label"], "Tarjeta");
+}
+
+function cardBank(card) {
+  return firstValue(card, ["bank", "issuer"], "-");
+}
+
+function cardBalance(card) {
+  return Number(firstValue(card, ["balance", "current_balance", "debt"], 0)) || 0;
+}
+
+function cardLimit(card) {
+  return Number(firstValue(card, ["credit_limit", "limit_amount", "limit"], 0)) || 0;
+}
+
+function cardMinimum(card) {
+  return Number(firstValue(card, ["minimum_payment", "min_payment"], 0)) || 0;
+}
+
+function cardNoInterest(card) {
+  return Number(firstValue(card, ["no_interest_payment", "payment_no_interest", "payment_to_avoid_interest"], 0)) || 0;
+}
+
+function cardCutoffDay(card) {
+  return Number(firstValue(card, ["cutoff_day", "statement_day"], 0)) || 0;
+}
+
+function cardDueDay(card) {
+  return Number(firstValue(card, ["payment_due_day", "due_day"], 0)) || 0;
+}
+
+function cardDueNextMonth(card) {
+  const value = firstValue(card, ["payment_due_next_month", "due_next_month"], false);
+  return value === true || value === "true" || value === 1 || value === "1";
+}
+
+function cardPaidFrom(card) {
+  return firstValue(card, ["paid_from_account", "suggested_account", "payment_account"], "Flexible");
+}
+
+function cardAvailable(card) {
+  return cardLimit(card) - cardBalance(card);
+}
+
+function cardUsagePercent(card) {
+  const limit = cardLimit(card);
+  if (!limit) return 0;
+  return Math.max(0, Math.min(999, (cardBalance(card) / limit) * 100));
+}
+
+function cardRiskClass(percent) {
+  if (percent >= 80) return "high";
+  if (percent >= 55) return "medium";
+  return "";
+}
+
+function cardRiskLabel(percent) {
+  if (percent >= 80) return "Alta";
+  if (percent >= 55) return "Media";
+  return "Control";
+}
+
+function nextDateByDay(day, forceNextMonth = false) {
+  const today = new Date();
+  const wantedDay = Number(day) || 1;
+  const year = today.getFullYear();
+  const month = today.getMonth();
+  const targetMonth = forceNextMonth ? month + 1 : month;
+  const lastDay = new Date(year, targetMonth + 1, 0).getDate();
+  let result = new Date(year, targetMonth, Math.min(wantedDay, lastDay));
+
+  if (!forceNextMonth && result < new Date(today.getFullYear(), today.getMonth(), today.getDate())) {
+    const nextLastDay = new Date(year, month + 2, 0).getDate();
+    result = new Date(year, month + 1, Math.min(wantedDay, nextLastDay));
+  }
+  return result;
+}
+
+function cardDueDateLabel(card) {
+  const day = cardDueDay(card);
+  if (!day) return "-";
+  return dateToYmd(nextDateByDay(day, cardDueNextMonth(card)));
+}
+
+function cardCutoffLabel(card) {
+  const day = cardCutoffDay(card);
+  if (!day) return "-";
+  return `Día ${String(day).padStart(2, "0")}`;
+}
+
+function sortedCreditCards() {
+  return [...(creditCardsCache || [])].sort((a, b) => {
+    const usageB = cardUsagePercent(b);
+    const usageA = cardUsagePercent(a);
+    if (usageB !== usageA) return usageB - usageA;
+    return String(cardName(a)).localeCompare(String(cardName(b)));
+  });
+}
+
+function renderCreditCards() {
+  const cards = sortedCreditCards();
+  const container = document.getElementById("creditCardsList");
+
+  const totalDebt = cards.reduce((sum, card) => sum + cardBalance(card), 0);
+  const totalLimit = cards.reduce((sum, card) => sum + cardLimit(card), 0);
+  const totalAvailable = cards.reduce((sum, card) => sum + cardAvailable(card), 0);
+  const totalMinimums = cards.reduce((sum, card) => sum + cardMinimum(card), 0);
+  const totalNoInterest = cards.reduce((sum, card) => sum + cardNoInterest(card), 0);
+
+  setText("tarjetasDeudaTotal", money(totalDebt));
+  setText("tarjetasDisponibleTotal", money(totalAvailable));
+  setText("cardsWindowDebt", money(totalDebt));
+  setText("cardsWindowLimit", money(totalLimit));
+  setText("cardsWindowAvailable", money(totalAvailable));
+  setText("cardsWindowMinimums", money(totalMinimums));
+  setText("cardsWindowNoInterest", money(totalNoInterest));
+
+  if (cards.length) {
+    const nextDue = [...cards].sort((a, b) => {
+      const dateA = nextDateByDay(cardDueDay(a), cardDueNextMonth(a)).getTime();
+      const dateB = nextDateByDay(cardDueDay(b), cardDueNextMonth(b)).getTime();
+      return dateA - dateB;
+    })[0];
+    setText("tarjetasProximoPago", cardDueDateLabel(nextDue));
+  } else {
+    setText("tarjetasProximoPago", "-");
+  }
+
+  if (!container) return;
+
+  if (!cards.length) {
+    container.innerHTML = `<div class="empty-state">No hay tarjetas registradas.</div>`;
+    return;
+  }
+
+  container.innerHTML = cards.map((card) => {
+    const usage = cardUsagePercent(card);
+    const riskClass = cardRiskClass(usage);
+    const riskLabel = cardRiskLabel(usage);
+    const available = cardAvailable(card);
+    const progressWidth = Math.max(0, Math.min(100, usage));
+
+    return `
+      <article class="credit-card-row">
+        <div class="credit-card-header">
+          <div class="credit-card-title">
+            <strong>${escapeHtml(cardName(card))}</strong>
+            <small>${escapeHtml(cardBank(card))} · Se paga desde ${escapeHtml(cardPaidFrom(card))}</small>
+          </div>
+          <div class="card-risk ${riskClass}">${riskLabel} · ${usage.toFixed(0)}%</div>
+        </div>
+
+        <div class="card-metrics-grid">
+          <div class="card-metric"><span>Saldo</span><strong>${money(cardBalance(card))}</strong></div>
+          <div class="card-metric"><span>Límite</span><strong>${money(cardLimit(card))}</strong></div>
+          <div class="card-metric"><span>Disponible</span><strong>${money(available)}</strong></div>
+          <div class="card-metric"><span>Mínimo</span><strong>${money(cardMinimum(card))}</strong></div>
+          <div class="card-metric"><span>No intereses</span><strong>${money(cardNoInterest(card))}</strong></div>
+          <div class="card-metric"><span>Pago</span><strong>${escapeHtml(cardDueDateLabel(card))}</strong></div>
+        </div>
+
+        <div class="card-note">
+          Corte: ${escapeHtml(cardCutoffLabel(card))}. Uso de línea: ${usage.toFixed(1)}%.
+          <div class="card-progress"><div style="width: ${progressWidth}%"></div></div>
+        </div>
+      </article>
+    `;
+  }).join("");
+}
+
 function toIsoDate(value) {
   if (!value) return "";
 
@@ -1198,10 +1387,11 @@ async function syncCrmPayments() {
 async function loadFinance() {
   setStatus("Cargando liquidez, gastos e historial desde Supabase...");
 
-  const [accountsResult, expensesResult, paymentsResult] = await Promise.all([
+  const [accountsResult, expensesResult, paymentsResult, cardsResult] = await Promise.all([
     db.from("finance_accounts").select("*"),
     db.from("finance_fixed_expenses").select("*"),
     db.from("finance_fixed_expense_payments").select("*").order("created_at", { ascending: false }).limit(50),
+    db.from("finance_credit_cards").select("*"),
   ]);
 
   if (accountsResult.error) {
@@ -1237,11 +1427,22 @@ async function loadFinance() {
   paymentsCache = paymentsResult.data || [];
   renderPaymentHistory();
 
+  if (cardsResult.error) {
+    console.error("Error cargando tarjetas de crédito:", cardsResult.error);
+    creditCardsCache = [];
+    renderCreditCards();
+    setStatus(`Datos cargados, pero hubo error en tarjetas: ${cardsResult.error.message}`, "error");
+    return;
+  }
+
+  creditCardsCache = cardsResult.data || [];
+  renderCreditCards();
+
   if (openedExpenseId) {
     renderExpenseDetail(getExpenseById(openedExpenseId));
   }
 
-  setStatus("Liquidez, gastos e historial cargados correctamente desde Supabase.", "ok");
+  setStatus("Liquidez, gastos, tarjetas e historial cargados correctamente desde Supabase.", "ok");
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -1257,6 +1458,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const closeExpensesBtn = document.getElementById("closeExpensesBtn");
   if (closeExpensesBtn) closeExpensesBtn.addEventListener("click", closeExpensesWorkspace);
 
+  const openCardsBtn = document.getElementById("openCardsBtn");
+  if (openCardsBtn) openCardsBtn.addEventListener("click", openCardsWorkspace);
+
+  const closeCardsBtn = document.getElementById("closeCardsBtn");
+  if (closeCardsBtn) closeCardsBtn.addEventListener("click", closeCardsWorkspace);
+
   const addExpenseBtn = document.getElementById("addExpenseBtn");
   if (addExpenseBtn) addExpenseBtn.addEventListener("click", () => showExpenseForm());
 
@@ -1264,7 +1471,10 @@ document.addEventListener("DOMContentLoaded", () => {
   if (workspaceAddExpenseBtn) workspaceAddExpenseBtn.addEventListener("click", () => showExpenseForm());
 
   document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") closeExpensesWorkspace();
+    if (event.key === "Escape") {
+      closeExpensesWorkspace();
+      closeCardsWorkspace();
+    }
   });
 
   loadFinance();

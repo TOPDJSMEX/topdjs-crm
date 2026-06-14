@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TopDJs Finanzas CRM v2.1.3</title>
-  <link rel="stylesheet" href="finanzas.css?v=213" />
+  <title>TopDJs Finanzas CRM v2.1.4</title>
+  <link rel="stylesheet" href="finanzas.css?v=214" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     window.SUPABASE_URL = "https://xbrsnmbmkbvxyhrtiywy.supabase.co";
@@ -15,10 +15,10 @@
   <div class="app-shell">
     <header class="topbar">
       <div>
-        <p class="eyebrow">TopDJs Finanzas CRM v2.1.3 · Panel limpio</p>
+        <p class="eyebrow">TopDJs Finanzas CRM v2.1.4 · Panel limpio</p>
         <h1>Finanzas TopDJs</h1>
         <p class="subtitle">
-          Panel principal compacto. La sincronización del CRM operativo solo toma pagos desde el 15-jun-2026 para no duplicar anticipos anteriores.
+          Panel principal compacto: liquidez, gastos fijos y tarjetas de crédito en módulos para mantener espacio limpio.
         </p>
       </div>
 
@@ -95,14 +95,30 @@
           </div>
         </article>
 
-        <article class="module-card placeholder">
+        <article class="module-card">
           <div>
-            <span class="module-eyebrow">Siguiente</span>
+            <span class="module-eyebrow">Módulo</span>
             <h2>Tarjetas de crédito</h2>
-            <p>Espacio reservado para agregar tarjetas, límites, cortes, pagos y prioridades.</p>
+            <p>Resumen compacto de deuda, crédito disponible, mínimos y pagos para no generar intereses.</p>
           </div>
+
+          <div class="module-stats">
+            <div>
+              <span>Deuda total</span>
+              <strong id="tarjetasDeudaTotal">$0</strong>
+            </div>
+            <div>
+              <span>Disponible total</span>
+              <strong id="tarjetasDisponibleTotal">$0</strong>
+            </div>
+            <div>
+              <span>Próximo pago</span>
+              <strong id="tarjetasProximoPago">-</strong>
+            </div>
+          </div>
+
           <div class="module-actions">
-            <button type="button" class="secondary" disabled>Próximamente</button>
+            <button id="openCardsBtn" type="button">Abrir tarjetas</button>
           </div>
         </article>
       </section>
@@ -150,6 +166,35 @@
     </div>
   </section>
 
-  <script src="finanzas.js?v=213"></script>
+
+  <section id="cardsWorkspace" class="workspace-overlay hidden" aria-label="Ventana de tarjetas de crédito">
+    <div class="workspace-card">
+      <div class="workspace-header">
+        <div>
+          <span class="module-eyebrow">Tarjetas de crédito</span>
+          <h2>Administración de tarjetas</h2>
+          <p>Revisa deuda, límite, disponible, corte, fecha de pago, mínimo y pago para no generar intereses.</p>
+        </div>
+
+        <div class="workspace-actions">
+          <button id="closeCardsBtn" type="button" class="secondary">Cerrar</button>
+        </div>
+      </div>
+
+      <div class="cards-summary-strip">
+        <div><span>Deuda total</span><strong id="cardsWindowDebt">$0</strong></div>
+        <div><span>Límite total</span><strong id="cardsWindowLimit">$0</strong></div>
+        <div><span>Disponible</span><strong id="cardsWindowAvailable">$0</strong></div>
+        <div><span>Mínimos</span><strong id="cardsWindowMinimums">$0</strong></div>
+        <div><span>No intereses</span><strong id="cardsWindowNoInterest">$0</strong></div>
+      </div>
+
+      <div id="creditCardsList" class="cards-list">
+        <div class="empty-state">Cargando tarjetas...</div>
+      </div>
+    </div>
+  </section>
+
+  <script src="finanzas.js?v=214"></script>
 </body>
 </html>
