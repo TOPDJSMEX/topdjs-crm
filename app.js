@@ -606,6 +606,20 @@ function todayISO(){
   const day=String(d.getDate()).padStart(2,"0");
   return `${y}-${m}-${day}`;
 }
+
+function formatDateDMY(dateStr){
+  if(!dateStr)return "";
+  const s=String(dateStr).slice(0,10);
+  const parts=s.split("-");
+  if(parts.length===3)return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  try{
+    const d=new Date(dateStr);
+    const day=String(d.getDate()).padStart(2,"0");
+    const m=String(d.getMonth()+1).padStart(2,"0");
+    const y=d.getFullYear();
+    return `${day}/${m}/${y}`;
+  }catch(e){return dateStr}
+}
 function isPastEvent(r){
   if(!r.date)return false;
   return String(r.date) < todayISO();
@@ -769,7 +783,7 @@ function renderRecords(){
     const paid=paidForRecord(r);
     let tr=document.createElement("tr");
     tr.className=`operRow ${op.cls}`;
-    tr.innerHTML=`<td><div class="evtDateCell"><strong>${esc(r.date)}</strong></div></td><td><div class="evtClientBlock"><strong class="evtClientName">${esc(r.client)}</strong><small class="evtClientCompany">${esc(r.company)}</small><span class="eventBadge ${op.cls}">${op.label}</span></div></td><td><div class="evtTextBlock"><strong>${esc(r.project)}</strong></div></td><td><div class="evtMiniData">${esc(r.pax||"")}</div></td><td><div class="evtMiniData">${esc(r.service_hours||"")}</div></td><td><div class="evtTextBlock">${esc(r.setup_type||"")}</div></td><td><div class="recordMoneyBox recordMoneyAmount"><strong>${money(r.amount)}</strong><small>Recibido</small><small class="moneySubValue">${money(paid)}</small></div></td><td><div class="recordMoneyBox recordMoneyBalance"><strong>${money(bal(r))}</strong></div></td><td><div class="evtSyncBlock"><span class="evtSyncBadge ${r._dirty?"syncPending":"syncOk"}">${r._dirty?"PENDIENTE":"OK"}</span>${fileCount?`<small class="evtFileCount">📎 ${fileCount} archivo${fileCount===1?"":"s"}</small>`:""}<small class="evtUpdatedBy">${esc(r.updated_by||"—")}</small><small class="evtUpdatedAt">${esc(fmtAuditDate(r.updated_at||""))}</small></div></td><td><div class="recordActions"><button class="actionBtn actionViewBtn" onclick="showRecord('${r.local_id}')">👁️ VER</button><button class="actionBtn expensesBtn" onclick="showExpensesOnly('${r.local_id}')">💸 GASTOS</button><button class="actionBtn uploadFileBtn" onclick="openFilePicker('${r.local_id}')">📎 ARCHIVO</button><button class="actionBtn editBtn" onclick="editRecord('${r.local_id}')">✏️ EDITAR</button><button class="actionBtn warehouseBtn" onclick="generateWarehouseOrderPdf('${r.local_id}')">📦 PEDIDO BODEGA</button><button class="actionBtn payBtn" onclick="addPayment('${r.local_id}')">💳 REGISTRAR PAGO</button><button class="actionBtn delete" onclick="delRecord('${r.local_id}')">🗑️ BORRAR</button></div></td>`;
+    tr.innerHTML=`<td><div class="evtDateCell"><strong>${esc(formatDateDMY(r.date))}</strong></div></td><td><div class="evtClientBlock"><strong class="evtClientName">${esc(r.client)}</strong><small class="evtClientCompany">${esc(r.company)}</small><span class="eventBadge ${op.cls}">${op.label}</span></div></td><td><div class="evtTextBlock"><strong>${esc(r.project)}</strong></div></td><td><div class="evtMiniData">${esc(r.pax||"")}</div></td><td><div class="evtMiniData">${esc(r.service_hours||"")}</div></td><td><div class="evtTextBlock">${esc(r.setup_type||"")}</div></td><td><div class="recordMoneyBox recordMoneyAmount"><strong>${money(r.amount)}</strong><small>Recibido</small><small class="moneySubValue">${money(paid)}</small></div></td><td><div class="recordMoneyBox recordMoneyBalance"><strong>${money(bal(r))}</strong></div></td><td><div class="evtSyncBlock"><span class="evtSyncBadge ${r._dirty?"syncPending":"syncOk"}">${r._dirty?"PENDIENTE":"OK"}</span>${fileCount?`<small class="evtFileCount">📎 ${fileCount} archivo${fileCount===1?"":"s"}</small>`:""}<small class="evtUpdatedBy">${esc(r.updated_by||"—")}</small><small class="evtUpdatedAt">${esc(fmtAuditDate(r.updated_at||""))}</small></div></td><td><div class="recordActions"><button class="actionBtn actionViewBtn" onclick="showRecord('${r.local_id}')">👁️ VER</button><button class="actionBtn expensesBtn" onclick="showExpensesOnly('${r.local_id}')">💸 GASTOS</button><button class="actionBtn uploadFileBtn" onclick="openFilePicker('${r.local_id}')">📎 ARCHIVO</button><button class="actionBtn editBtn" onclick="editRecord('${r.local_id}')">✏️ EDITAR</button><button class="actionBtn warehouseBtn" onclick="generateWarehouseOrderPdf('${r.local_id}')">📦 PEDIDO BODEGA</button><button class="actionBtn payBtn" onclick="addPayment('${r.local_id}')">💳 REGISTRAR PAGO</button><button class="actionBtn delete" onclick="delRecord('${r.local_id}')">🗑️ BORRAR</button></div></td>`;
     tb.appendChild(tr);
   });
   $("sumQuoted").textContent=money(visible.reduce((s,r)=>s+Number(r.amount||0),0));

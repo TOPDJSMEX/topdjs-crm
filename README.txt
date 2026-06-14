@@ -1,20 +1,21 @@
-TOPDJS CRM v11.4.25 - CLIENTES ACCIONES ALINEADAS
+TOPDJS CRM v11.4.26 - FECHA DÍA MES AÑO
 
-Corrección:
-- En la sección Clientes / Historial, los botones VER y EDITAR ya no se descuadran.
-- Se creó una estructura propia para las acciones de clientes.
-- Se ajustaron anchos de columnas y scroll horizontal para mantener la tabla ordenada.
+Cambio:
+- En Cotizaciones / Eventos → Eventos Operativos, la fecha ahora se muestra como DD/MM/AAAA.
+- Ejemplo: 2026-10-17 ahora se ve como 17/10/2026.
 
 Mantiene:
+- Clientes acciones alineadas
 - Calendario anual con años
 - Eventos operativos ordenados
 - Monto y saldo neon
-- Fix sync paid_method
+- Fix modal superpuesta
 - Gastos por evento
 - Archivo directo
+- Sin botón liquidar
 
 Instalación:
 1. Subir los 7 archivos a GitHub.
-2. Commit: TopDJs CRM v11.4.25 - Clientes acciones alineadas
+2. Commit: TopDJs CRM v11.4.26 - Fecha día mes año
 3. Deploy to Production en Vercel.
 4. Recarga fuerte: Option + Command + R.
