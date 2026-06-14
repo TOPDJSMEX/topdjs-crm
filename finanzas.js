@@ -1,7 +1,8 @@
 // =======================================================
-// TopDJs Finanzas CRM v2.0.8
+// TopDJs Finanzas CRM v2.0.9
 // Liquidez + gastos fijos + sueldos semanales + pagar gastos
-// Al pagar, se resta el saldo de la cuenta seleccionada.
+// Historial de pagos + anulación segura.
+// Al anular, se regresa el dinero a la cuenta original.
 // No se capturan ingresos manualmente en Finanzas.
 // =======================================================
 
@@ -12,6 +13,7 @@ const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let accountsCache = [];
 let fixedExpensesCache = [];
+let paymentsCache = [];
 let editingExpenseId = null;
 let payingExpenseId = null;
 
@@ -212,6 +214,21 @@ function getExpenseById(id) {
   return fixedExpensesCache.find((expense) => String(expense.id) === String(id));
 }
 
+function getPaymentById(id) {
+  return paymentsCache.find((payment) => String(payment.id) === String(id));
+}
+
+function dateToShortLabel(dateValue) {
+  const date = dateValue ? new Date(`${dateValue}T00:00:00`) : new Date();
+
+  if (Number.isNaN(date.getTime())) return String(dateValue || "-");
+
+  return date.toLocaleDateString("es-MX", {
+    day: "2-digit",
+    month: "short",
+  });
+}
+
 function dateToYmd(date) {
   return date.toLocaleDateString("es-MX", {
     day: "2-digit",
@@ -306,8 +323,6 @@ function expenseNextPaymentLabel(expense) {
 }
 
 function suggestedPaymentAmount(expense) {
-  // Para gastos semanales se paga el monto semanal.
-  // Para gastos mensuales se paga el monto mensual.
   return expenseAmount(expense);
 }
 
@@ -377,6 +392,71 @@ function renderFixedExpenses() {
             <button type="button" class="pay" onclick="showPaymentForm('${escapeHtml(expense.id)}')">Pagar</button>
             <button type="button" onclick="editExpense('${escapeHtml(expense.id)}')">Editar</button>
             <button type="button" class="danger" onclick="deleteExpense('${escapeHtml(expense.id)}')">Borrar</button>
+          </div>
+        </article>
+      `;
+    })
+    .join("");
+}
+
+function renderPaymentHistory() {
+  const container = document.getElementById("paymentsHistoryList");
+  if (!container) return;
+
+  const payments = [...(paymentsCache || [])].sort((a, b) => {
+    const dateA = new Date(firstValue(a, ["created_at", "paid_at"], "1970-01-01")).getTime();
+    const dateB = new Date(firstValue(b, ["created_at", "paid_at"], "1970-01-01")).getTime();
+    return dateB - dateA;
+  });
+
+  if (!payments.length) {
+    container.innerHTML = `<div class="empty-state">Aún no hay pagos registrados.</div>`;
+    return;
+  }
+
+  container.innerHTML = payments
+    .map((payment) => {
+      const voided = Boolean(payment.voided);
+      const expense = firstValue(payment, ["expense_name"], "Gasto fijo");
+      const amount = Number(firstValue(payment, ["amount"], 0)) || 0;
+      const account = firstValue(payment, ["paid_from_account"], "-");
+      const paidAt = firstValue(payment, ["paid_at"], "");
+      const createdAt = firstValue(payment, ["created_at"], "");
+      const statusLabel = voided ? "Anulado" : "Activo";
+
+      return `
+        <article class="payment-row ${voided ? "voided" : ""}">
+          <div class="payment-main">
+            <strong>${escapeHtml(expense)}</strong>
+            <small>${createdAt ? `Registrado ${escapeHtml(dateToShortLabel(String(createdAt).slice(0, 10)))}` : "Pago registrado"}</small>
+          </div>
+
+          <div class="payment-meta">
+            <span>Cantidad</span>
+            <strong class="amount">${money(amount)}</strong>
+          </div>
+
+          <div class="payment-meta">
+            <span>Cuenta</span>
+            <strong>${escapeHtml(account)}</strong>
+          </div>
+
+          <div class="payment-meta">
+            <span>Fecha pago</span>
+            <strong>${escapeHtml(dateToShortLabel(paidAt))}</strong>
+          </div>
+
+          <div class="payment-meta">
+            <span>Estado</span>
+            <strong><span class="status-pill ${voided ? "voided" : ""}">${statusLabel}</span></strong>
+          </div>
+
+          <div class="payment-actions">
+            ${
+              voided
+                ? `<button type="button" class="secondary" disabled>Anulado</button>`
+                : `<button type="button" class="danger" onclick="voidPayment('${escapeHtml(payment.id)}')">Anular</button>`
+            }
           </div>
         </article>
       `;
@@ -678,20 +758,23 @@ function getPaymentFormPayload() {
   return { accountKey, amount, paidAt };
 }
 
-async function tryInsertPaymentLog({ expense, accountKey, amount, paidAt }) {
-  // El log es útil para historial. Si no existe la tabla, no bloquea el pago.
-  try {
-    await db.from("finance_fixed_expense_payments").insert({
-      fixed_expense_id: expense.id,
+async function insertPaymentLog({ expense, accountKey, amount, paidAt }) {
+  const { data, error } = await db
+    .from("finance_fixed_expense_payments")
+    .insert({
+      fixed_expense_id: String(expense.id),
       expense_name: expenseName(expense),
       amount,
       paid_from_account: ACCOUNT_LABELS[accountKey],
       paid_at: paidAt,
+      voided: false,
       created_at: new Date().toISOString(),
-    });
-  } catch (error) {
-    console.warn("No se pudo guardar historial de pago, pero el saldo ya se ajustó:", error);
-  }
+    })
+    .select("*")
+    .single();
+
+  if (error) throw error;
+  return data;
 }
 
 async function savePaymentFromForm(event) {
@@ -724,7 +807,7 @@ async function savePaymentFromForm(event) {
 
     if (updateError) throw updateError;
 
-    await tryInsertPaymentLog({ expense, accountKey, amount, paidAt });
+    await insertPaymentLog({ expense, accountKey, amount, paidAt });
 
     setStatus(`Pago guardado. ${ACCOUNT_LABELS[accountKey]} quedó en ${money(newBalance)}.`, "ok");
     closePaymentForm();
@@ -735,12 +818,76 @@ async function savePaymentFromForm(event) {
   }
 }
 
-async function loadFinance() {
-  setStatus("Cargando liquidez y gastos fijos desde Supabase...");
+async function voidPayment(id) {
+  const payment = getPaymentById(id);
 
-  const [accountsResult, expensesResult] = await Promise.all([
+  if (!payment) {
+    setStatus("No encontré ese pago para anular.", "error");
+    return;
+  }
+
+  if (payment.voided) {
+    setStatus("Ese pago ya estaba anulado.", "error");
+    return;
+  }
+
+  const amount = Number(payment.amount || 0);
+  const accountKey = accountKeyFromLabel(payment.paid_from_account);
+  const account = findAccountByKey(accountKey);
+
+  if (!accountKey || !account) {
+    setStatus("No encontré la cuenta original del pago para regresar el dinero.", "error");
+    return;
+  }
+
+  const currentBalance = accountBalance(account);
+  const newBalance = currentBalance + amount;
+
+  const confirmed = window.confirm(
+    `¿Anular este pago?\n\n` +
+    `${payment.expense_name}: ${money(amount)}\n` +
+    `Cuenta original: ${ACCOUNT_LABELS[accountKey]}\n\n` +
+    `Se regresarán ${money(amount)} a ${ACCOUNT_LABELS[accountKey]}.\n` +
+    `Saldo actual: ${money(currentBalance)}\n` +
+    `Saldo después de anular: ${money(newBalance)}`
+  );
+
+  if (!confirmed) return;
+
+  try {
+    const { error: accountError } = await db
+      .from("finance_accounts")
+      .update({ current_balance: newBalance })
+      .eq("id", account.id);
+
+    if (accountError) throw accountError;
+
+    const { error: paymentError } = await db
+      .from("finance_fixed_expense_payments")
+      .update({
+        voided: true,
+        voided_at: new Date().toISOString(),
+        void_reason: "Anulado desde TopDJs Finanzas CRM",
+      })
+      .eq("id", id);
+
+    if (paymentError) throw paymentError;
+
+    setStatus(`Pago anulado. ${ACCOUNT_LABELS[accountKey]} regresó a ${money(newBalance)}.`, "ok");
+    await loadFinance();
+  } catch (error) {
+    console.error("Error anulando pago:", error);
+    setStatus(error.message || "Error anulando pago.", "error");
+  }
+}
+
+async function loadFinance() {
+  setStatus("Cargando liquidez, gastos e historial desde Supabase...");
+
+  const [accountsResult, expensesResult, paymentsResult] = await Promise.all([
     db.from("finance_accounts").select("*"),
     db.from("finance_fixed_expenses").select("*"),
+    db.from("finance_fixed_expense_payments").select("*").order("created_at", { ascending: false }).limit(50),
   ]);
 
   if (accountsResult.error) {
@@ -766,7 +913,18 @@ async function loadFinance() {
   fixedExpensesCache = expensesResult.data || [];
   renderFixedExpenses();
 
-  setStatus("Liquidez y gastos fijos cargados correctamente desde Supabase.", "ok");
+  if (paymentsResult.error) {
+    console.error("Error cargando historial de pagos:", paymentsResult.error);
+    paymentsCache = [];
+    renderPaymentHistory();
+    setStatus(`Gastos cargados, pero hubo error en historial: ${paymentsResult.error.message}`, "error");
+    return;
+  }
+
+  paymentsCache = paymentsResult.data || [];
+  renderPaymentHistory();
+
+  setStatus("Liquidez, gastos e historial cargados correctamente desde Supabase.", "ok");
 }
 
 document.addEventListener("DOMContentLoaded", () => {
