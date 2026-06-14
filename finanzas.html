@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TopDJs Finanzas CRM v2.1.0</title>
-  <link rel="stylesheet" href="finanzas.css?v=210" />
+  <title>TopDJs Finanzas CRM v2.1.1</title>
+  <link rel="stylesheet" href="finanzas.css?v=211" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     window.SUPABASE_URL = "https://xbrsnmbmkbvxyhrtiywy.supabase.co";
@@ -15,10 +15,10 @@
   <div class="app-shell">
     <header class="topbar">
       <div>
-        <p class="eyebrow">TopDJs Finanzas CRM v2.1.0 · Gastos compactos</p>
+        <p class="eyebrow">TopDJs Finanzas CRM v2.1.1 · Panel limpio</p>
         <h1>Finanzas TopDJs</h1>
         <p class="subtitle">
-          Panel principal más limpio: los gastos fijos se muestran compactos y al dar click se abre la vista completa para pagar, editar o borrar.
+          Panel principal compacto: liquidez arriba y accesos por módulos para dejar espacio a tarjetas de crédito.
         </p>
       </div>
 
@@ -65,46 +65,90 @@
         </article>
       </section>
 
-      <section class="panel compact-panel">
-        <div class="panel-header">
+      <section class="module-grid" aria-label="Módulos de finanzas">
+        <article class="module-card">
           <div>
+            <span class="module-eyebrow">Módulo</span>
             <h2>Gastos fijos</h2>
-            <p>Vista compacta. Da click en cualquier gasto para abrir la ficha completa.</p>
+            <p>Resumen compacto. Abre la ventana completa para pagar, editar, borrar o anular pagos.</p>
           </div>
 
-          <div class="panel-actions">
-            <div class="panel-total">
+          <div class="module-stats">
+            <div>
               <span>Total mensual estimado</span>
               <strong id="gastosFijosTotal">$0</strong>
             </div>
-            <button id="addExpenseBtn" type="button">+ Agregar gasto fijo</button>
+            <div>
+              <span>Registros activos</span>
+              <strong id="gastosFijosCount">0</strong>
+            </div>
+            <div>
+              <span>Próximo pago</span>
+              <strong id="gastosFijosNext">-</strong>
+            </div>
           </div>
-        </div>
 
-        <div id="expenseDetailHost" class="detail-host hidden"></div>
-        <div id="expenseFormHost" class="expense-form-host hidden"></div>
-        <div id="paymentFormHost" class="expense-form-host payment-form-host hidden"></div>
+          <div class="module-actions">
+            <button id="openExpensesBtn" type="button">Abrir gastos fijos</button>
+            <button id="addExpenseBtn" type="button" class="secondary">+ Agregar</button>
+          </div>
+        </article>
 
-        <div id="fixedExpensesList" class="expense-compact-list">
-          <div class="empty-state">Cargando gastos fijos...</div>
-        </div>
-      </section>
-
-      <section class="panel compact-panel">
-        <div class="panel-header">
+        <article class="module-card placeholder">
           <div>
-            <h2>Historial de pagos</h2>
-            <p>Pagos realizados de gastos fijos. Si hubo error, usa Anular para regresar el saldo a la cuenta.</p>
+            <span class="module-eyebrow">Siguiente</span>
+            <h2>Tarjetas de crédito</h2>
+            <p>Espacio reservado para agregar tarjetas, límites, cortes, pagos y prioridades.</p>
           </div>
-        </div>
-
-        <div id="paymentsHistoryList" class="payment-history-list">
-          <div class="empty-state">Cargando historial de pagos...</div>
-        </div>
+          <div class="module-actions">
+            <button type="button" class="secondary" disabled>Próximamente</button>
+          </div>
+        </article>
       </section>
     </main>
   </div>
 
-  <script src="finanzas.js?v=210"></script>
+  <section id="expensesWorkspace" class="workspace-overlay hidden" aria-label="Ventana de gastos fijos">
+    <div class="workspace-card">
+      <div class="workspace-header">
+        <div>
+          <span class="module-eyebrow">Gastos fijos</span>
+          <h2>Administración completa</h2>
+          <p>Paga, edita, borra y revisa el historial sin ocupar espacio en el panel principal.</p>
+        </div>
+
+        <div class="workspace-actions">
+          <button id="workspaceAddExpenseBtn" type="button">+ Agregar gasto fijo</button>
+          <button id="closeExpensesBtn" type="button" class="secondary">Cerrar</button>
+        </div>
+      </div>
+
+      <div id="expenseDetailHost" class="detail-host hidden"></div>
+      <div id="expenseFormHost" class="expense-form-host hidden"></div>
+      <div id="paymentFormHost" class="expense-form-host payment-form-host hidden"></div>
+
+      <div class="workspace-section">
+        <div class="workspace-section-title">
+          <h3>Gastos activos</h3>
+          <p>Da click en un gasto para abrir su ficha completa.</p>
+        </div>
+        <div id="fixedExpensesList" class="expense-compact-list">
+          <div class="empty-state">Cargando gastos fijos...</div>
+        </div>
+      </div>
+
+      <div class="workspace-section">
+        <div class="workspace-section-title">
+          <h3>Historial de pagos</h3>
+          <p>Si hubo error, usa Anular para regresar el saldo a la cuenta original.</p>
+        </div>
+        <div id="paymentsHistoryList" class="payment-history-list">
+          <div class="empty-state">Cargando historial de pagos...</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script src="finanzas.js?v=211"></script>
 </body>
 </html>

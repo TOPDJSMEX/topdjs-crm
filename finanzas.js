@@ -1,6 +1,6 @@
 // =======================================================
-// TopDJs Finanzas CRM v2.1.0
-// Gastos fijos compactos + ficha completa + pagos + historial
+// TopDJs Finanzas CRM v2.1.1
+// Panel limpio + gastos fijos en ventana completa + pagos + historial
 // =======================================================
 
 const SUPABASE_URL = window.SUPABASE_URL;
@@ -87,6 +87,25 @@ function setStatus(message, type = "") {
   if (!element) return;
   element.className = `status-box ${type}`.trim();
   element.textContent = message;
+}
+
+function openExpensesWorkspace() {
+  const workspace = document.getElementById("expensesWorkspace");
+  if (!workspace) return;
+
+  workspace.classList.remove("hidden");
+  document.body.classList.add("workspace-open");
+}
+
+function closeExpensesWorkspace() {
+  const workspace = document.getElementById("expensesWorkspace");
+  if (!workspace) return;
+
+  closeExpenseDetail();
+  closeExpenseForm();
+  closePaymentForm();
+  workspace.classList.add("hidden");
+  document.body.classList.remove("workspace-open");
 }
 
 function accountName(account) {
@@ -324,11 +343,19 @@ function sortedActiveExpenses() {
 
 function renderFixedExpenses() {
   const container = document.getElementById("fixedExpensesList");
-  if (!container) return;
-
   const expenses = sortedActiveExpenses();
   const total = expenses.reduce((sum, expense) => sum + expenseMonthlyEstimate(expense), 0);
+
   setText("gastosFijosTotal", money(total));
+  setText("gastosFijosCount", String(expenses.length));
+
+  if (expenses.length) {
+    setText("gastosFijosNext", expenseNextPaymentLabel(expenses[0]));
+  } else {
+    setText("gastosFijosNext", "-");
+  }
+
+  if (!container) return;
 
   if (!expenses.length) {
     container.innerHTML = `<div class="empty-state">No hay gastos fijos registrados. Usa “Agregar gasto fijo”.</div>`;
@@ -444,6 +471,7 @@ function renderExpenseDetail(expense) {
 }
 
 function showExpenseDetail(id) {
+  openExpensesWorkspace();
   closeExpenseForm();
   closePaymentForm();
   openedExpenseId = id;
@@ -601,6 +629,7 @@ function refreshDaySelector() {
 }
 
 function showExpenseForm(expense = null) {
+  openExpensesWorkspace();
   closePaymentForm();
   closeExpenseDetail();
 
@@ -769,6 +798,7 @@ function paymentFormTemplate(expense) {
 }
 
 function showPaymentForm(id) {
+  openExpensesWorkspace();
   closeExpenseForm();
   closeExpenseDetail();
 
@@ -989,8 +1019,21 @@ document.addEventListener("DOMContentLoaded", () => {
   const refreshBtn = document.getElementById("refreshBtn");
   if (refreshBtn) refreshBtn.addEventListener("click", loadFinance);
 
+  const openExpensesBtn = document.getElementById("openExpensesBtn");
+  if (openExpensesBtn) openExpensesBtn.addEventListener("click", openExpensesWorkspace);
+
+  const closeExpensesBtn = document.getElementById("closeExpensesBtn");
+  if (closeExpensesBtn) closeExpensesBtn.addEventListener("click", closeExpensesWorkspace);
+
   const addExpenseBtn = document.getElementById("addExpenseBtn");
   if (addExpenseBtn) addExpenseBtn.addEventListener("click", () => showExpenseForm());
+
+  const workspaceAddExpenseBtn = document.getElementById("workspaceAddExpenseBtn");
+  if (workspaceAddExpenseBtn) workspaceAddExpenseBtn.addEventListener("click", () => showExpenseForm());
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") closeExpensesWorkspace();
+  });
 
   loadFinance();
 });

@@ -631,3 +631,171 @@ main {
     flex-direction: column;
   }
 }
+
+
+/* ================================
+   v2.1.1 · Panel principal limpio
+================================ */
+
+.module-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.module-card {
+  min-height: 168px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: rgba(11, 16, 32, 0.88);
+}
+
+.module-card.placeholder {
+  opacity: 0.78;
+}
+
+.module-eyebrow {
+  display: block;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 1.35px;
+  text-transform: uppercase;
+}
+
+.module-card h2,
+.workspace-header h2,
+.workspace-section-title h3 {
+  margin: 5px 0 0;
+  font-size: 20px;
+  letter-spacing: -0.3px;
+}
+
+.module-card p,
+.workspace-header p,
+.workspace-section-title p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.module-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.module-stats div {
+  padding: 10px 11px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 13px;
+  background: rgba(5, 10, 20, 0.48);
+}
+
+.module-stats span {
+  display: block;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 1.1px;
+  text-transform: uppercase;
+}
+
+.module-stats strong {
+  display: block;
+  margin-top: 5px;
+  font-size: 17px;
+  line-height: 1;
+}
+
+.module-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+
+/* Ventana completa de gastos */
+.workspace-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  padding: 18px;
+  background: rgba(2, 6, 14, 0.84);
+  backdrop-filter: blur(14px);
+  overflow: auto;
+}
+
+.workspace-card {
+  width: min(1280px, 100%);
+  margin: 0 auto;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at top left, rgba(0, 170, 255, 0.12), transparent 34%),
+    rgba(8, 13, 26, 0.98);
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+}
+
+.workspace-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  padding: 18px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.workspace-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.workspace-section {
+  border-top: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.workspace-section-title {
+  padding: 14px 18px 10px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.workspace-section-title h3 {
+  font-size: 17px;
+}
+
+.workspace-section-title p {
+  font-size: 12px;
+}
+
+@media (max-width: 1100px) {
+  .module-grid,
+  .module-stats {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 700px) {
+  .workspace-overlay {
+    padding: 9px;
+  }
+
+  .workspace-header,
+  .workspace-actions,
+  .module-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .workspace-card {
+    border-radius: 14px;
+  }
+}
