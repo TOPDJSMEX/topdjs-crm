@@ -3,118 +3,94 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TopDJs Finanzas CRM</title>
-  <link rel="stylesheet" href="finanzas.css?v=111" />
+  <title>TopDJs Finanzas CRM v2.0</title>
+  <link rel="stylesheet" href="finanzas.css?v=200" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-window.TOPDJS_CATALOG={"🔊 AUDIO": ["MARTIN TORUS T1215", "MARTIN TORUS T1230", "MARTIN SUB SXP218", "MARTIN FLEXPOINT FP8", "AXIOM TOP AX12C", "AXIOM TOP AX6C", "AXIOM SUB SW2100A", "BOSE L1 PRO 8", "HK ELEMENTS", "HK CT108", "CONSOLA YAMAHA DM3", "CONSOLA MIDAS M32", "CONSOLA SOUND MASTER 12CH", "MICRÓFONO INALÁMBRICO", "MICRÓFONO DIADEMA", "MICRÓFONO LAVALIER"], "🎧 CABINA Y DJ": ["DJ", "CONTROLADOR PIONEER XDJ-AZ", "MONITOR HK LUCAS PERFORMER", "MONITOR LD DAVE", "DJ BOOTH"], "💡 ILUMINACIÓN": ["ADJ FOCUS BEAM LED", "MARTIN SPOT MH5", "RUBIK WASH", "ALEDA B-EYE K10 WASH", "DAZE RGB", "ADJ BLINDER", "ADJ IKON PROFILE", "EZ-BAR", "SUNSTAR COLOR SIX", "PIXEL PANEL 5", "SUNSTAR ORACLE LASER RGB", "FOG HAZE MAGMATIC", "CONSOLA MA COMMAND WING", "INTERFASE MA DOT2", "CONSOLA ADJ WOLFMIX"], "📺 VIDEO": ["PANTALLA LED PITCH 3.9 5X3", "PANTALLA LED PITCH 3.9 4X3", "PANTALLA LED PITCH 3.9 3X2", "MÓDULOS LED PITCH 3.9 96 X 96", "PROCESADOR NOVA STAR", "PROCESADOR TAURUS", "SWITCHER ROLAND", "VJ ARENA", "PANTALLA LG 70”"], "⚡ ADICIONALES": ["PLANTA DE LUZ", "TRUSS MK", "STAGE SET SOPORTE", "BAZOOKA CO2"], "👷 STAFF": ["ING. AUDIO", "ING ILUMINACION/VIDEO", "STAGE HANDS"], "🚚 TRANSPORTE": ["CDMX", "FORANEO"]};
-window.SUPABASE_URL="https://xbrsnmbmkbvxyhrtiywy.supabase.co";
-window.SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhicnNubWJta2J2eHlocnRpeXd5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEyMTUwMzYsImV4cCI6MjA5Njc5MTAzNn0.ULJh4UYoaNLsirKnRQ4TmIbv-L5kzWwWWEFwIsFI02Y";
-</script>
+    window.SUPABASE_URL = "https://xbrsnmbmkbvxyhrtiywy.supabase.co";
+    window.SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJIUzI1NiIsInJlZiI6InhicnNubWJta2J2eHlocnRpeXd5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEyMTUwMzYsImV4cCI6MjA5Njc5MTAzNn0.ULJh4UYoaNLsirKnRQ4TmIbv-L5kzWwWWEFwIsFI02Y";
+  </script>
 </head>
 <body>
   <div class="app-shell">
     <header class="topbar">
       <div>
-        <h1>TopDJs Finanzas</h1>
-        <p>Control financiero del negocio · No mezcla Aeroméxico</p>
+        <p class="eyebrow">TopDJs Finanzas CRM v2.0 · Paso 1</p>
+        <h1>Liquidez TopDJs</h1>
+        <p class="subtitle">
+          Lee los ingresos del CRM operativo TopDJs y los muestra por destino: BBVA, NU, Manuel y Efectivo.
+        </p>
       </div>
+
       <a class="back-link" href="index.html">← CRM Operativo</a>
     </header>
 
     <main>
-      <section class="alert-card" id="mainAlert">
-        Cargando estado financiero...
+      <section id="statusBox" class="status-box">
+        Cargando liquidez desde Supabase...
       </section>
 
-      <section class="dashboard-grid">
-        <div class="metric-card blue">
+      <section class="liquidity-grid" aria-label="Resumen de liquidez">
+        <article class="liquidity-card total">
           <span>Liquidez total</span>
-          <strong id="totalLiquidity">$0</strong>
-          <small>NU + BBVA + Manuel + Efectivo</small>
-        </div>
+          <strong id="liquidezTotal">$0</strong>
+          <small>BBVA + NU + Manuel + Efectivo</small>
+        </article>
 
-        <div class="metric-card blue">
+        <article class="liquidity-card">
           <span>BBVA</span>
-          <strong id="balanceBbva">$0</strong>
-          <small>Cuenta principal actual</small>
-        </div>
+          <strong id="saldoBbva">$0</strong>
+          <small>Cuenta principal TopDJs</small>
+        </article>
 
-        <div class="metric-card blue">
+        <article class="liquidity-card">
           <span>NU</span>
-          <strong id="balanceNu">$0</strong>
-          <small>Cuenta NU</small>
-        </div>
+          <strong id="saldoNu">$0</strong>
+          <small>Cuenta NU TopDJs</small>
+        </article>
 
-        <div class="metric-card blue">
+        <article class="liquidity-card">
           <span>Manuel</span>
-          <strong id="balanceManuel">$0</strong>
+          <strong id="saldoManuel">$0</strong>
           <small>Cuenta Manuel</small>
-        </div>
+        </article>
 
-        <div class="metric-card blue">
+        <article class="liquidity-card">
           <span>Efectivo</span>
-          <strong id="balanceEfectivo">$0</strong>
+          <strong id="saldoEfectivo">$0</strong>
           <small>Caja TopDJs</small>
-        </div>
-
-        <div class="metric-card yellow">
-          <span>Gastos fijos</span>
-          <strong id="monthlyFixed">$0</strong>
-          <small>Base mensual sin nómina</small>
-        </div>
-
-        <div class="metric-card yellow">
-          <span>Nómina semanal</span>
-          <strong id="weeklyPayroll">$0</strong>
-          <small>George + Papá + Vane</small>
-        </div>
-
-        <div class="metric-card red">
-          <span>Tarjetas</span>
-          <strong id="totalCards">$0</strong>
-          <small>Saldo total mixto</small>
-        </div>
-
-        <div class="metric-card red">
-          <span>Mínimos conocidos</span>
-          <strong id="knownMinimums">$0</strong>
-          <small>Falta BBVA Manuel</small>
-        </div>
-
-        <div class="metric-card red">
-          <span>Para no generar intereses</span>
-          <strong id="noInterestTotal">$0</strong>
-          <small>Total tarjetas</small>
-        </div>
-      </section>
-
-      <section class="panel-grid">
-        <div class="panel">
-          <div class="panel-header">
-            <h2>Cuentas</h2>
-            <button onclick="loadFinance()">Actualizar</button>
-          </div>
-          <div id="accountsList" class="table-wrap"></div>
-        </div>
-
-        <div class="panel">
-          <div class="panel-header">
-            <h2>Prioridad tarjetas</h2>
-          </div>
-          <div id="cardsList" class="table-wrap"></div>
-        </div>
+        </article>
       </section>
 
       <section class="panel">
         <div class="panel-header">
-          <h2>Gastos fijos y recurrentes</h2>
+          <div>
+            <h2>Fuente de datos</h2>
+            <p>
+              Finanzas no captura ingresos manualmente. Esta pantalla usa los saldos de Finanzas y deja preparada la lectura de pagos del CRM operativo TopDJs.
+            </p>
+          </div>
+          <button id="refreshBtn" type="button">Actualizar</button>
         </div>
-        <div id="expensesList" class="table-wrap"></div>
+
+        <div class="source-list">
+          <div>
+            <span>Fuente principal</span>
+            <strong>finance_accounts</strong>
+          </div>
+          <div>
+            <span>Fuente operativa</span>
+            <strong>Pagos del CRM TopDJs</strong>
+          </div>
+          <div>
+            <span>Regla</span>
+            <strong>Liquidez total = BBVA + NU + Manuel + Efectivo</strong>
+          </div>
+        </div>
       </section>
     </main>
   </div>
 
-  <script src="finanzas.js?v=111"></script>
+  <script src="finanzas.js?v=200"></script>
 </body>
 </html>

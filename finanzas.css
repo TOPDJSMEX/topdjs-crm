@@ -5,26 +5,28 @@
 :root {
   --bg: #05070d;
   --panel: #0b1020;
-  --panel-soft: #10182c;
-  --text: #f4f7fb;
+  --panel-soft: #101827;
+  --text: #f8fafc;
   --muted: #94a3b8;
+  --border: rgba(148, 163, 184, 0.22);
   --blue: #00aaff;
   --green: #22c55e;
   --yellow: #facc15;
   --red: #ef4444;
-  --border: rgba(148, 163, 184, 0.22);
-  --border-strong: rgba(148, 163, 184, 0.34);
-  --shadow-blue: 0 0 22px rgba(0, 170, 255, 0.26);
-  --shadow-red: 0 0 22px rgba(239, 68, 68, 0.24);
-  --shadow-yellow: 0 0 22px rgba(250, 204, 21, 0.16);
+}
+
+html {
+  min-height: 100%;
+  background: var(--bg);
 }
 
 body {
   margin: 0;
+  min-height: 100%;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   background:
-    radial-gradient(circle at top left, rgba(0, 170, 255, 0.18), transparent 28%),
-    radial-gradient(circle at top right, rgba(239, 68, 68, 0.12), transparent 24%),
+    radial-gradient(circle at top left, rgba(0, 170, 255, 0.22), transparent 30%),
+    radial-gradient(circle at top right, rgba(239, 68, 68, 0.13), transparent 28%),
     var(--bg);
   color: var(--text);
 }
@@ -35,25 +37,17 @@ input {
 }
 
 button {
-  border: 1px solid rgba(0, 170, 255, 0.7);
+  border: 1px solid rgba(0, 170, 255, 0.65);
   border-radius: 14px;
   padding: 10px 16px;
   background: rgba(0, 170, 255, 0.12);
   color: var(--text);
   font-weight: 800;
   cursor: pointer;
-  transition: 0.18s ease;
 }
 
-button:hover:not(:disabled) {
+button:hover {
   background: rgba(0, 170, 255, 0.2);
-  box-shadow: var(--shadow-blue);
-  transform: translateY(-1px);
-}
-
-button:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
 }
 
 a {
@@ -62,8 +56,8 @@ a {
 }
 
 .app-shell {
-  width: min(1480px, calc(100% - 32px));
-  margin: 20px auto 40px;
+  width: min(1360px, calc(100% - 32px));
+  margin: 22px auto 44px;
 }
 
 .topbar {
@@ -71,491 +65,217 @@ a {
   align-items: center;
   justify-content: space-between;
   gap: 24px;
-  padding: 30px;
+  padding: 26px;
   border: 1px solid var(--border);
-  border-radius: 22px;
+  border-radius: 24px;
   background: rgba(11, 16, 32, 0.92);
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.28);
+}
+
+.eyebrow {
+  margin: 0 0 8px;
+  color: var(--blue);
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
 }
 
 .topbar h1 {
   margin: 0;
   font-size: clamp(34px, 4vw, 52px);
   letter-spacing: -2px;
+  line-height: 1;
 }
 
-.topbar p {
-  margin: 6px 0 0;
+.subtitle {
+  max-width: 720px;
+  margin: 10px 0 0;
   color: var(--muted);
   font-size: 17px;
+  line-height: 1.45;
 }
 
 .back-link {
-  border: 1px solid rgba(0, 170, 255, 0.7);
+  flex: 0 0 auto;
+  border: 1px solid rgba(0, 170, 255, 0.68);
   border-radius: 999px;
-  padding: 12px 20px;
+  padding: 12px 18px;
   background: rgba(0, 170, 255, 0.1);
   font-weight: 800;
-  white-space: nowrap;
 }
 
 main {
-  margin-top: 24px;
+  margin-top: 22px;
 }
 
-.alert-card {
-  padding: 20px 22px;
+.status-box {
+  padding: 16px 18px;
+  border: 1px solid rgba(250, 204, 21, 0.65);
   border-radius: 18px;
-  border: 1px solid rgba(250, 204, 21, 0.7);
   background: rgba(250, 204, 21, 0.07);
-  color: #fff7d1;
+  color: #fff4bf;
   font-weight: 800;
-  line-height: 1.55;
 }
 
-.alert-card.green {
-  border-color: rgba(34, 197, 94, 0.7);
-  background: rgba(34, 197, 94, 0.09);
-  color: #dcffe9;
+.status-box.ok {
+  border-color: rgba(34, 197, 94, 0.65);
+  background: rgba(34, 197, 94, 0.08);
+  color: #ddffe8;
 }
 
-.alert-card.red {
+.status-box.error {
   border-color: rgba(239, 68, 68, 0.72);
   background: rgba(239, 68, 68, 0.09);
-  color: #ffe2e2;
+  color: #ffe1e1;
 }
 
-.dashboard-grid {
+.liquidity-grid {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 18px;
-  margin: 24px 0;
+  gap: 16px;
+  margin: 22px 0;
 }
 
-.metric-card {
-  min-height: 138px;
-  padding: 22px;
-  border: 1px solid var(--border);
+.liquidity-card {
+  min-height: 132px;
+  padding: 20px;
+  border: 1px solid rgba(0, 170, 255, 0.35);
   border-radius: 20px;
-  background: linear-gradient(180deg, rgba(16, 24, 44, 0.92), rgba(8, 13, 26, 0.92));
+  background:
+    linear-gradient(180deg, rgba(16, 24, 44, 0.94), rgba(8, 13, 26, 0.94));
 }
 
-.metric-card.blue {
-  border-color: rgba(0, 170, 255, 0.45);
+.liquidity-card.total {
+  border-color: rgba(34, 197, 94, 0.55);
+  box-shadow: 0 0 28px rgba(34, 197, 94, 0.08);
 }
 
-.metric-card.yellow {
-  border-color: rgba(250, 204, 21, 0.45);
-}
-
-.metric-card.red {
-  border-color: rgba(239, 68, 68, 0.45);
-}
-
-.metric-card span {
+.liquidity-card span {
   display: block;
   color: var(--muted);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 900;
+  letter-spacing: 1.6px;
   text-transform: uppercase;
-  letter-spacing: 1.8px;
 }
 
-.metric-card strong {
+.liquidity-card strong {
   display: block;
-  margin: 18px 0 12px;
-  font-size: 36px;
-  letter-spacing: -1px;
+  margin: 16px 0 10px;
+  font-size: clamp(30px, 3vw, 42px);
+  letter-spacing: -1.4px;
+  line-height: 1;
 }
 
-.metric-card small {
+.liquidity-card small {
   color: var(--muted);
-  font-size: 15px;
-  font-weight: 600;
-}
-
-.panel-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 24px;
-  margin: 24px 0;
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.35;
 }
 
 .panel {
-  overflow: hidden;
   border: 1px solid var(--border);
   border-radius: 22px;
   background: rgba(11, 16, 32, 0.88);
+  overflow: hidden;
 }
 
 .panel-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  padding: 22px 24px;
+  gap: 18px;
+  padding: 22px;
   border-bottom: 1px solid var(--border);
 }
 
 .panel-header h2 {
   margin: 0;
-  font-size: 25px;
-  letter-spacing: -0.6px;
+  font-size: 24px;
+  letter-spacing: -0.4px;
 }
 
-.table-wrap {
-  padding: 0;
-}
-
-.responsive-table {
-  overflow-x: auto;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-th,
-td {
-  padding: 18px 20px;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.17);
-  text-align: left;
-  vertical-align: middle;
-}
-
-th {
+.panel-header p {
+  max-width: 840px;
+  margin: 6px 0 0;
   color: var(--muted);
-  font-size: 13px;
+  line-height: 1.45;
+}
+
+.source-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+}
+
+.source-list div {
+  padding: 20px 22px;
+  border-right: 1px solid rgba(148, 163, 184, 0.15);
+}
+
+.source-list div:last-child {
+  border-right: 0;
+}
+
+.source-list span {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
   font-weight: 900;
+  letter-spacing: 1.5px;
   text-transform: uppercase;
-  letter-spacing: 1.8px;
 }
 
-td {
-  font-size: 16px;
-  font-weight: 650;
-}
-
-.amount {
-  font-size: 20px;
-  font-weight: 900;
-}
-
-.empty-state {
-  padding: 24px;
-  color: var(--muted);
-  font-weight: 800;
-}
-
-.finance-card-list {
-  display: grid;
-  gap: 18px;
-  padding: 24px;
-}
-
-.finance-card {
-  position: relative;
-  overflow: hidden;
-  padding: 22px;
-  border: 1px solid var(--border);
-  border-radius: 24px;
-  background:
-    linear-gradient(90deg, rgba(11, 16, 32, 0.96), rgba(10, 27, 48, 0.94)),
-    var(--panel);
-}
-
-.finance-card::before {
-  content: "";
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: 6px;
-  background: var(--green);
-}
-
-.finance-card.risk-critical::before {
-  background: var(--red);
-}
-
-.finance-card.risk-high::before {
-  background: #fb7185;
-}
-
-.finance-card.risk-medium::before {
-  background: var(--yellow);
-}
-
-.finance-card-top {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 18px;
-  margin-bottom: 18px;
-}
-
-.card-title-block {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  min-width: 0;
-}
-
-.priority-pill {
-  display: grid;
-  place-items: center;
-  min-width: 52px;
-  height: 52px;
-  padding: 0 12px;
-  border: 1px solid rgba(148, 163, 184, 0.34);
-  border-radius: 999px;
-  background: rgba(148, 163, 184, 0.1);
-  color: var(--muted);
-  font-size: 18px;
-  font-weight: 950;
-}
-
-.card-title-block h3 {
-  margin: 0;
-  font-size: clamp(27px, 2.3vw, 38px);
-  line-height: 1.02;
-  letter-spacing: -1.2px;
-}
-
-.card-title-block p {
-  margin: 8px 0 0;
-  color: var(--muted);
-  font-size: 18px;
-  font-weight: 800;
-}
-
-.card-badges {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 10px;
-}
-
-.cat-badge,
-.risk-badge {
-  display: inline-flex;
-  align-items: center;
-  min-height: 38px;
-  padding: 8px 14px;
-  border-radius: 999px;
-  font-weight: 950;
-  white-space: nowrap;
-}
-
-.cat-badge {
-  border: 1px solid rgba(0, 170, 255, 0.5);
-  background: rgba(0, 170, 255, 0.12);
-}
-
-.risk-badge.critical,
-.risk-badge.high {
-  border: 1px solid rgba(239, 68, 68, 0.65);
-  background: rgba(239, 68, 68, 0.16);
-  color: #ffd3d3;
-}
-
-.risk-badge.medium {
-  border: 1px solid rgba(250, 204, 21, 0.65);
-  background: rgba(250, 204, 21, 0.12);
-  color: #fff4bb;
-}
-
-.risk-badge.low {
-  border: 1px solid rgba(34, 197, 94, 0.65);
-  background: rgba(34, 197, 94, 0.12);
-  color: #d7ffe3;
-}
-
-.card-data-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(185px, 1fr));
-  gap: 14px;
-}
-
-.card-field {
-  min-height: 124px;
-  padding: 17px;
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  border-radius: 18px;
-  background: rgba(5, 10, 20, 0.64);
-}
-
-.card-field.featured {
-  border-color: rgba(239, 68, 68, 0.45);
-  background: linear-gradient(180deg, rgba(239, 68, 68, 0.10), rgba(5, 10, 20, 0.64));
-}
-
-.card-field.positive {
-  border-color: rgba(34, 197, 94, 0.4);
-}
-
-.card-field span {
+.source-list strong {
   display: block;
-  color: var(--muted);
-  font-size: 13px;
-  font-weight: 950;
-  text-transform: uppercase;
-  letter-spacing: 1.6px;
+  margin-top: 8px;
+  font-size: 17px;
 }
 
-.card-field strong {
-  display: block;
-  margin-top: 12px;
-  font-size: clamp(22px, 2.1vw, 34px);
-  line-height: 1.08;
-  letter-spacing: -0.8px;
-}
-
-.card-field small {
-  display: block;
-  margin-top: 9px;
-  color: var(--muted);
-  font-weight: 750;
-  line-height: 1.25;
-}
-
-.payment-field {
-  min-height: 144px;
-}
-
-.money-input {
-  width: 100%;
-  min-height: 48px;
-  margin-top: 12px;
-  padding: 10px 14px;
-  border-radius: 14px;
-  border: 1px solid rgba(0, 170, 255, 0.7);
-  background: rgba(3, 7, 16, 0.92);
-  color: var(--text);
-  font-size: 22px;
-  font-weight: 950;
-  outline: none;
-}
-
-.money-input.warning {
-  border-color: rgba(250, 204, 21, 0.72);
-}
-
-.money-input.positive {
-  border-color: rgba(34, 197, 94, 0.72);
-}
-
-.money-input:disabled {
-  opacity: 0.58;
-  cursor: not-allowed;
-  border-color: rgba(148, 163, 184, 0.24);
-}
-
-.usage-bar {
-  width: 100%;
-  height: 10px;
-  margin-top: 18px;
-  overflow: hidden;
-  border-radius: 999px;
-  background: rgba(148, 163, 184, 0.18);
-}
-
-.usage-bar i {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: var(--green);
-}
-
-.usage-bar.medium i {
-  background: var(--blue);
-}
-
-.usage-bar.warning i {
-  background: var(--yellow);
-}
-
-.usage-bar.danger i {
-  background: var(--red);
-}
-
-.finance-card-actions {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin-top: 18px;
-  padding-top: 18px;
-  border-top: 1px solid rgba(148, 163, 184, 0.16);
-}
-
-.finance-card-actions p {
-  margin: 0;
-  color: var(--muted);
-  font-weight: 800;
-}
-
-.finance-card-actions button {
-  min-width: 160px;
-}
-
-@media (max-width: 1150px) {
-  .dashboard-grid {
+@media (max-width: 1100px) {
+  .liquidity-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .finance-card-top,
-  .finance-card-actions {
-    align-items: flex-start;
-    flex-direction: column;
+  .liquidity-card.total {
+    grid-column: 1 / -1;
   }
 
-  .card-badges {
-    justify-content: flex-start;
+  .source-list {
+    grid-template-columns: 1fr;
   }
 
-  .finance-card-actions button {
-    width: 100%;
+  .source-list div {
+    border-right: 0;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+  }
+
+  .source-list div:last-child {
+    border-bottom: 0;
   }
 }
 
-@media (max-width: 720px) {
+@media (max-width: 700px) {
   .app-shell {
     width: min(100% - 18px, 100%);
     margin-top: 10px;
   }
 
-  .topbar {
-    flex-direction: column;
-    align-items: flex-start;
-    padding: 22px;
-  }
-
-  .dashboard-grid {
-    grid-template-columns: 1fr;
-  }
-
+  .topbar,
   .panel-header {
     flex-direction: column;
     align-items: flex-start;
   }
 
-  .finance-card-list {
-    padding: 14px;
-  }
-
-  .finance-card {
-    padding: 18px;
-  }
-
-  .card-title-block {
-    align-items: flex-start;
-  }
-
-  .card-data-grid {
+  .liquidity-grid {
     grid-template-columns: 1fr;
   }
 
-  .money-input {
-    font-size: 20px;
+  .back-link,
+  button {
+    width: 100%;
+    text-align: center;
   }
 }
