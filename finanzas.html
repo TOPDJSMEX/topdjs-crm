@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TopDJs Finanzas CRM v2.0</title>
-  <link rel="stylesheet" href="finanzas.css?v=203" />
+  <title>TopDJs Finanzas CRM v2.0.5</title>
+  <link rel="stylesheet" href="finanzas.css?v=205" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     window.SUPABASE_URL = "https://xbrsnmbmkbvxyhrtiywy.supabase.co";
@@ -15,10 +15,10 @@
   <div class="app-shell">
     <header class="topbar">
       <div>
-        <p class="eyebrow">TopDJs Finanzas CRM v2.0.3 · Paso 1</p>
-        <h1>Liquidez TopDJs</h1>
+        <p class="eyebrow">TopDJs Finanzas CRM v2.0.5 · Gastos fijos</p>
+        <h1>Finanzas TopDJs</h1>
         <p class="subtitle">
-          Lee los ingresos del CRM operativo TopDJs y los muestra por destino: BBVA, NU, Manuel y Efectivo.
+          Liquidez y gastos fijos del negocio. Los ingresos se alimentan desde el CRM operativo TopDJs.
         </p>
       </div>
 
@@ -28,7 +28,7 @@
     <main>
       <div class="status-row">
         <section id="statusBox" class="status-box">
-          Cargando liquidez desde Supabase...
+          Cargando liquidez y gastos fijos desde Supabase...
         </section>
         <button id="refreshBtn" type="button">Actualizar</button>
       </div>
@@ -64,9 +64,32 @@
           <small>Caja TopDJs</small>
         </article>
       </section>
-</main>
+
+      <section class="panel compact-panel">
+        <div class="panel-header">
+          <div>
+            <h2>Gastos fijos</h2>
+            <p>Agrega, guarda, edita o borra cada gasto fijo mensual.</p>
+          </div>
+
+          <div class="panel-actions">
+            <div class="panel-total">
+              <span>Total mensual</span>
+              <strong id="gastosFijosTotal">$0</strong>
+            </div>
+            <button id="addExpenseBtn" type="button">+ Agregar gasto fijo</button>
+          </div>
+        </div>
+
+        <div id="expenseFormHost" class="expense-form-host hidden"></div>
+
+        <div id="fixedExpensesList" class="expense-list">
+          <div class="empty-state">Cargando gastos fijos...</div>
+        </div>
+      </section>
+    </main>
   </div>
 
-  <script src="finanzas.js?v=203"></script>
+  <script src="finanzas.js?v=205"></script>
 </body>
 </html>
