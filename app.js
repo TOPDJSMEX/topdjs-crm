@@ -673,27 +673,45 @@ async function updateRecordPaidFromPayments(local_id,actor,detail){
 async function addPayment(local_id){
   const r=records.find(x=>x.local_id===local_id);
   if(!r)return alert("No encontré este evento.");
-  const actor=askActor("registrar pago");
-  if(!actor)return;
+
   const amountRaw=prompt("Monto del pago:");
-  if(amountRaw===null)return;
+  if(amountRaw===null)return alert("Registro de pago cancelado. No se guardó nada.");
   const amount=Number(String(amountRaw).replace(/[$, ]/g,""));
-  if(!amount||amount<=0)return alert("Monto inválido.");
-  const methodRaw=prompt("Método de pago:\n1 = Efectivo\n2 = NU\n3 = BBVA\n4 = Manuel");
-  if(methodRaw===null)return;
+  if(!amount||amount<=0)return alert("Monto inválido. No se guardó el pago.");
+
+  const methodRaw=prompt("Método de pago:
+1 = Efectivo
+2 = NU
+3 = BBVA
+4 = Manuel");
+  if(methodRaw===null)return alert("Registro de pago cancelado. No se guardó nada.");
   const method=paymentMethodFromInput(methodRaw);
-  if(!method)return alert("Método inválido.");
+  if(!method)return alert("Método inválido. No se guardó el pago.");
+
   const date=prompt("Fecha del pago (YYYY-MM-DD):",todayISO());
-  if(date===null)return;
-  const note=prompt("Nota del pago:", paidForRecord(r)>0?"Pago adicional":"Anticipo")||"";
+  if(date===null)return alert("Registro de pago cancelado. No se guardó nada.");
+
+  const defaultNote=paidForRecord(r)>0?"Pago adicional":"Anticipo";
+  const noteRaw=prompt("Nota del pago:", defaultNote);
+  if(noteRaw===null)return alert("Registro de pago cancelado. No se guardó nada.");
+  const note=noteRaw || defaultNote;
+
+  const actor=askActor("registrar pago");
+  if(!actor)return alert("Registro de pago cancelado. No se guardó nada.");
+
   try{
     if(!navigator.onLine)return alert("Necesitas internet para registrar pagos.");
     await api("event_payments",{method:"POST",headers:{"Content-Type":"application/json","Prefer":"return=minimal"},body:JSON.stringify({record_local_id:local_id,payment_date:date,amount,method,note})});
     await loadEventPayments();
-    await updateRecordPaidFromPayments(local_id,actor,`Registró pago:\n${money(amount)}\nMétodo: ${method}\nNota: ${note}`);
+    await updateRecordPaidFromPayments(local_id,actor,`Registró pago:
+${money(amount)}
+Método: ${method}
+Fecha: ${date}
+Nota: ${note}`);
     showRecord(local_id);
   }catch(e){
-    showError("ERROR AL REGISTRAR PAGO:\n"+e.message);
+    showError("ERROR AL REGISTRAR PAGO:
+"+e.message);
   }
 }
 async function deletePayment(id,local_id){
@@ -1296,5 +1314,5 @@ renderCatalog();save();renderAll();syncAll();setInterval(syncAll,30000);
 if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js").catch(()=>{})}
 
 
-// TOPDJS CRM v11.4.12 - Fecha de anticipo
+// TOPDJS CRM v11.4.13 - Fecha de anticipo
 if($("quotePaidDate") && !$("quotePaidDate").value){$("quotePaidDate").value=todayISO()}
