@@ -953,3 +953,51 @@ body.modal-open .operTable thead th{
 @media(max-width:720px){
   .calendarJumpSimple button{min-width:100%;}
 }
+
+
+/* TOPDJS CRM v11.4.25 - Clientes acciones alineadas */
+.clientEventsWrap{
+  width:100%;
+  overflow-x:auto;
+  margin-top:14px;
+}
+.clientHistoryTable{
+  width:100%;
+  min-width:1180px;
+  table-layout:fixed;
+}
+.clientHistoryTable th,.clientHistoryTable td{
+  padding:12px 14px !important;
+  vertical-align:middle !important;
+}
+.clientHistoryTable th:nth-child(1),.clientHistoryTable td:nth-child(1){width:120px}
+.clientHistoryTable th:nth-child(2),.clientHistoryTable td:nth-child(2){width:170px}
+.clientHistoryTable th:nth-child(3),.clientHistoryTable td:nth-child(3){width:260px}
+.clientHistoryTable th:nth-child(4),.clientHistoryTable td:nth-child(4){width:190px}
+.clientHistoryTable th:nth-child(5),.clientHistoryTable td:nth-child(5),
+.clientHistoryTable th:nth-child(6),.clientHistoryTable td:nth-child(6),
+.clientHistoryTable th:nth-child(7),.clientHistoryTable td:nth-child(7){width:140px}
+.clientHistoryTable th:nth-child(8),.clientHistoryTable td:nth-child(8){width:290px}
+.clientActions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  width:100%;
+  align-items:center;
+}
+.clientActionBtn{
+  margin-top:0 !important;
+  width:100%;
+  min-width:0 !important;
+  padding:10px 12px !important;
+  border-radius:12px !important;
+  display:inline-flex;
+  justify-content:center;
+  align-items:center;
+  gap:7px;
+  font-weight:900 !important;
+}
+@media(max-width:900px){
+  .clientHistoryTable{min-width:980px}
+  .clientHistoryTable th:nth-child(8),.clientHistoryTable td:nth-child(8){width:240px}
+}

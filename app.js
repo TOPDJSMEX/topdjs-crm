@@ -1355,7 +1355,7 @@ function renderClientHistory(){
         <td>${money(r.amount)}</td>
         <td>${money(r.paid)}</td>
         <td>${money(bal(r))}</td>
-        <td><div class="recordActions"><button class="actionBtn actionViewBtn" onclick="showRecord('${r.local_id}')">👁️ VER</button><button class="actionBtn editBtn" onclick="editRecord('${r.local_id}')">✏️ EDITAR</button></div></td>
+        <td><div class="clientActions"><button class="clientActionBtn actionViewBtn" onclick="showRecord('${r.local_id}')">👁️ VER</button><button class="clientActionBtn editBtn" onclick="editRecord('${r.local_id}')">✏️ EDITAR</button></div></td>
       </tr>
     `).join("");
     return `
@@ -1372,10 +1372,10 @@ function renderClientHistory(){
             <strong>${money(g.balance)}</strong><span>SALDO PENDIENTE</span>
           </div>
         </div>
-        <table>
+        <div class="clientEventsWrap"><table class="clientHistoryTable">
           <thead><tr><th>FECHA</th><th>EVENTO</th><th>VENUE</th><th>ESTATUS</th><th>TOTAL</th><th>PAGADO</th><th>SALDO</th><th>ACCIÓN</th></tr></thead>
           <tbody>${events}</tbody>
-        </table>
+        </table></div>
       </div>
     `;
   }).join("");
