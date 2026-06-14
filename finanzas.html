@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TopDJs Finanzas CRM v2.1.4</title>
-  <link rel="stylesheet" href="finanzas.css?v=214" />
+  <title>TopDJs Finanzas CRM v2.1.6</title>
+  <link rel="stylesheet" href="finanzas.css?v=216" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     window.SUPABASE_URL = "https://xbrsnmbmkbvxyhrtiywy.supabase.co";
@@ -15,10 +15,10 @@
   <div class="app-shell">
     <header class="topbar">
       <div>
-        <p class="eyebrow">TopDJs Finanzas CRM v2.1.4 · Panel limpio</p>
+        <p class="eyebrow">TopDJs Finanzas CRM v2.1.6 · Panel limpio</p>
         <h1>Finanzas TopDJs</h1>
         <p class="subtitle">
-          Panel principal compacto: liquidez, gastos fijos y tarjetas de crédito en módulos para mantener espacio limpio.
+          Panel principal compacto: liquidez, gastos fijos y tarjetas de crédito. En tarjetas puedes editar mínimo/no intereses y registrar pagos.
         </p>
       </div>
 
@@ -189,12 +189,15 @@
         <div><span>No intereses</span><strong id="cardsWindowNoInterest">$0</strong></div>
       </div>
 
+      <div id="cardFormHost" class="expense-form-host card-form-host hidden"></div>
+      <div id="cardPaymentFormHost" class="expense-form-host card-payment-form-host hidden"></div>
+
       <div id="creditCardsList" class="cards-list">
         <div class="empty-state">Cargando tarjetas...</div>
       </div>
     </div>
   </section>
 
-  <script src="finanzas.js?v=214"></script>
+  <script src="finanzas.js?v=216"></script>
 </body>
 </html>

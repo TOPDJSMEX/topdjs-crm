@@ -1003,3 +1003,143 @@ body.workspace-open {
     width: 100%;
   }
 }
+
+
+/* ================================
+   v2.1.5 · Editar tarjetas
+================================ */
+
+.card-form-host {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+  background: rgba(0, 170, 255, 0.045);
+}
+
+.card-edit-title {
+  margin: 0 0 12px;
+  font-size: 15px;
+  font-weight: 950;
+  letter-spacing: -0.2px;
+}
+
+.card-edit-subtitle {
+  margin: -8px 0 14px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.card-edit-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.card-edit-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.card-edit-warning {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px solid rgba(250, 204, 21, 0.45);
+  border-radius: 12px;
+  background: rgba(250, 204, 21, 0.06);
+  color: #fff4bf;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.credit-card-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 900px) {
+  .card-edit-form {
+    grid-template-columns: 1fr;
+  }
+
+  .card-edit-actions,
+  .credit-card-actions {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 700px) {
+  .card-edit-actions,
+  .credit-card-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+
+/* ================================
+   v2.1.6 · Pagar tarjetas
+================================ */
+
+.card-payment-form-host {
+  border-bottom: 1px solid rgba(34, 197, 94, 0.24);
+  background: rgba(34, 197, 94, 0.045);
+}
+
+.card-payment-title {
+  margin: 0 0 12px;
+  font-size: 15px;
+  font-weight: 950;
+  letter-spacing: -0.2px;
+}
+
+.card-payment-subtitle {
+  margin: -8px 0 14px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.card-payment-form {
+  display: grid;
+  grid-template-columns: 1fr 0.85fr 0.85fr auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.card-payment-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.card-payment-warning {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px solid rgba(34, 197, 94, 0.42);
+  border-radius: 12px;
+  background: rgba(34, 197, 94, 0.06);
+  color: #ddffe8;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+@media (max-width: 900px) {
+  .card-payment-form {
+    grid-template-columns: 1fr;
+  }
+
+  .card-payment-actions {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 700px) {
+  .card-payment-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

@@ -1,6 +1,6 @@
 // =======================================================
-// TopDJs Finanzas CRM v2.1.4
-// Panel limpio + gastos fijos + tarjetas de crédito + sincronización CRM desde 2026-06-15
+// TopDJs Finanzas CRM v2.1.6
+// Panel limpio + gastos fijos + tarjetas editables y pagos + sincronización CRM desde 2026-06-15
 // =======================================================
 
 const SUPABASE_URL = window.SUPABASE_URL;
@@ -15,6 +15,8 @@ let creditCardsCache = [];
 let editingExpenseId = null;
 let payingExpenseId = null;
 let openedExpenseId = null;
+let editingCardId = null;
+let payingCardId = null;
 
 const CRM_SYNC_START_DATE = "2026-06-15";
 
@@ -123,6 +125,8 @@ function closeCardsWorkspace() {
   const workspace = document.getElementById("cardsWorkspace");
   if (!workspace) return;
 
+  closeCardEditForm();
+  closeCardPaymentForm();
   workspace.classList.add("hidden");
   document.body.classList.remove("workspace-open");
 }
@@ -1032,6 +1036,283 @@ function cardPaidFrom(card) {
   return firstValue(card, ["paid_from_account", "suggested_account", "payment_account"], "Flexible");
 }
 
+function getCardById(id) {
+  return creditCardsCache.find((card) => String(card.id) === String(id));
+}
+
+function closeCardEditForm() {
+  const host = document.getElementById("cardFormHost");
+  if (!host) return;
+
+  editingCardId = null;
+  host.innerHTML = "";
+  host.classList.add("hidden");
+}
+
+function cardEditTemplate(card) {
+  return `
+    <h3 class="card-edit-title">Editar: ${escapeHtml(cardName(card))}</h3>
+    <p class="card-edit-subtitle">
+      Solo se permite modificar el mínimo a pagar y el pago para no generar intereses.
+    </p>
+
+    <form class="card-edit-form" id="cardEditForm" data-id="${escapeHtml(card.id)}">
+      <div class="form-field">
+        <label>Mínimo a pagar</label>
+        <input id="cardMinimumPayment" type="number" min="0" step="1" value="${escapeHtml(cardMinimum(card))}" required />
+      </div>
+
+      <div class="form-field">
+        <label>Pago para no generar intereses</label>
+        <input id="cardNoInterestPayment" type="number" min="0" step="1" value="${escapeHtml(cardNoInterest(card))}" required />
+      </div>
+
+      <div class="card-edit-actions">
+        <button type="submit">Guardar</button>
+        <button type="button" class="secondary" onclick="closeCardEditForm()">Cancelar</button>
+      </div>
+    </form>
+
+    <div class="card-edit-warning">
+      No se modifica el saldo, límite, corte ni fecha de pago. Esos datos quedan fijos.
+    </div>
+  `;
+}
+
+function showCardEditForm(id) {
+  openCardsWorkspace();
+
+  const card = getCardById(id);
+  if (!card) {
+    setStatus("No encontré esa tarjeta para editar.", "error");
+    return;
+  }
+
+  const host = document.getElementById("cardFormHost");
+  if (!host) return;
+
+  editingCardId = id;
+  host.innerHTML = cardEditTemplate(card);
+  host.classList.remove("hidden");
+
+  const form = document.getElementById("cardEditForm");
+  if (form) form.addEventListener("submit", saveCardEditFromForm);
+
+  const input = document.getElementById("cardMinimumPayment");
+  if (input) input.focus();
+
+  host.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function getCardEditPayload() {
+  const minimumPayment = Number(document.getElementById("cardMinimumPayment")?.value || 0);
+  const noInterestPayment = Number(document.getElementById("cardNoInterestPayment")?.value || 0);
+
+  if (!Number.isFinite(minimumPayment) || minimumPayment < 0) {
+    throw new Error("El mínimo a pagar debe ser una cantidad válida.");
+  }
+
+  if (!Number.isFinite(noInterestPayment) || noInterestPayment < 0) {
+    throw new Error("El pago para no generar intereses debe ser una cantidad válida.");
+  }
+
+  return {
+    minimum_payment: minimumPayment,
+    no_interest_payment: noInterestPayment,
+  };
+}
+
+async function saveCardEditFromForm(event) {
+  event.preventDefault();
+
+  try {
+    if (!editingCardId) throw new Error("No hay tarjeta seleccionada.");
+
+    const payload = getCardEditPayload();
+
+    const { error } = await db
+      .from("finance_credit_cards")
+      .update(payload)
+      .eq("id", editingCardId);
+
+    if (error) throw error;
+
+    setStatus("Tarjeta actualizada correctamente.", "ok");
+    closeCardEditForm();
+    await loadFinance();
+  } catch (error) {
+    console.error("Error actualizando tarjeta:", error);
+    setStatus(error.message || "Error actualizando tarjeta.", "error");
+  }
+}
+
+function closeCardPaymentForm() {
+  const host = document.getElementById("cardPaymentFormHost");
+  if (!host) return;
+
+  payingCardId = null;
+  host.innerHTML = "";
+  host.classList.add("hidden");
+}
+
+function cardPaymentTemplate(card) {
+  const suggestedAccount = cardPaidFrom(card);
+  const normalizedSuggested = normalize(suggestedAccount);
+  const isFlexible = normalizedSuggested === "flexible" || normalizedSuggested === "";
+  const defaultAccountKey = isFlexible ? "bbva" : (accountKeyFromLabel(suggestedAccount) || "bbva");
+  const defaultAmount = cardNoInterest(card) || cardMinimum(card) || 0;
+
+  return `
+    <h3 class="card-payment-title">Pagar tarjeta: ${escapeHtml(cardName(card))}</h3>
+    <p class="card-payment-subtitle">
+      Registra la cantidad, fecha y cuenta desde donde se pagó. Al guardar, baja el saldo de la tarjeta y baja el saldo de la cuenta.
+    </p>
+
+    <form class="card-payment-form" id="cardPaymentForm" data-id="${escapeHtml(card.id)}">
+      <div class="form-field">
+        <label>Cuenta de pago</label>
+        <select id="cardPaymentAccount">
+          <option value="bbva" ${defaultAccountKey === "bbva" ? "selected" : ""}>BBVA</option>
+          <option value="nu" ${defaultAccountKey === "nu" ? "selected" : ""}>NU</option>
+          <option value="manuel" ${defaultAccountKey === "manuel" ? "selected" : ""}>Manuel</option>
+          <option value="efectivo" ${defaultAccountKey === "efectivo" ? "selected" : ""}>Efectivo</option>
+        </select>
+      </div>
+
+      <div class="form-field">
+        <label>Cantidad pagada</label>
+        <input id="cardPaymentAmount" type="number" min="0" step="1" value="${escapeHtml(defaultAmount)}" required />
+      </div>
+
+      <div class="form-field">
+        <label>Fecha</label>
+        <input id="cardPaymentDate" type="date" value="${isoToday()}" required />
+      </div>
+
+      <div class="card-payment-actions">
+        <button type="submit" class="pay">Guardar pago</button>
+        <button type="button" class="secondary" onclick="closeCardPaymentForm()">Cancelar</button>
+      </div>
+    </form>
+
+    <div class="card-payment-warning">
+      Este pago resta dinero de la cuenta seleccionada y reduce el saldo pendiente de la tarjeta.
+    </div>
+  `;
+}
+
+function showCardPaymentForm(id) {
+  openCardsWorkspace();
+  closeCardEditForm();
+
+  const card = getCardById(id);
+  if (!card) {
+    setStatus("No encontré esa tarjeta para pagar.", "error");
+    return;
+  }
+
+  const host = document.getElementById("cardPaymentFormHost");
+  if (!host) return;
+
+  payingCardId = id;
+  host.innerHTML = cardPaymentTemplate(card);
+  host.classList.remove("hidden");
+
+  const form = document.getElementById("cardPaymentForm");
+  if (form) form.addEventListener("submit", saveCardPaymentFromForm);
+
+  const input = document.getElementById("cardPaymentAmount");
+  if (input) input.focus();
+
+  host.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function getCardPaymentFormPayload() {
+  const accountKey = document.getElementById("cardPaymentAccount")?.value || "";
+  const amount = Number(document.getElementById("cardPaymentAmount")?.value || 0);
+  const paidAt = document.getElementById("cardPaymentDate")?.value || isoToday();
+
+  if (!accountKey || !ACCOUNT_LABELS[accountKey]) throw new Error("Selecciona una cuenta válida.");
+  if (!Number.isFinite(amount) || amount <= 0) throw new Error("La cantidad pagada debe ser mayor a cero.");
+  if (!paidAt) throw new Error("Selecciona la fecha de pago.");
+
+  return { accountKey, amount, paidAt };
+}
+
+async function insertCardPaymentLog({ card, accountKey, amount, paidAt }) {
+  const { data, error } = await db
+    .from("finance_credit_card_payments")
+    .insert({
+      credit_card_id: String(card.id),
+      card_name: cardName(card),
+      amount,
+      paid_from_account: ACCOUNT_LABELS[accountKey],
+      paid_at: paidAt,
+      voided: false,
+      created_at: new Date().toISOString(),
+    })
+    .select("*")
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+async function saveCardPaymentFromForm(event) {
+  event.preventDefault();
+
+  try {
+    const card = getCardById(payingCardId);
+    if (!card) throw new Error("No encontré la tarjeta que quieres pagar.");
+
+    const { accountKey, amount, paidAt } = getCardPaymentFormPayload();
+
+    const account = findAccountByKey(accountKey);
+    if (!account) throw new Error(`No encontré la cuenta ${ACCOUNT_LABELS[accountKey]} en finance_accounts.`);
+
+    const currentAccountBalance = accountBalance(account);
+    const newAccountBalance = currentAccountBalance - amount;
+
+    const currentCardBalance = cardBalance(card);
+    const newCardBalance = Math.max(0, currentCardBalance - amount);
+
+    const confirmed = window.confirm(
+      `Confirmar pago de ${money(amount)} a ${cardName(card)} desde ${ACCOUNT_LABELS[accountKey]}.\n\n` +
+      `Cuenta ${ACCOUNT_LABELS[accountKey]}:\n` +
+      `${money(currentAccountBalance)} → ${money(newAccountBalance)}\n\n` +
+      `Saldo tarjeta:\n` +
+      `${money(currentCardBalance)} → ${money(newCardBalance)}`
+    );
+
+    if (!confirmed) return;
+
+    await insertCardPaymentLog({ card, accountKey, amount, paidAt });
+
+    const { error: accountError } = await db
+      .from("finance_accounts")
+      .update({ current_balance: newAccountBalance })
+      .eq("id", account.id);
+
+    if (accountError) throw accountError;
+
+    const { error: cardError } = await db
+      .from("finance_credit_cards")
+      .update({ balance: newCardBalance })
+      .eq("id", card.id);
+
+    if (cardError) throw cardError;
+
+    setStatus(`Pago de tarjeta guardado. ${cardName(card)} quedó en ${money(newCardBalance)}.`, "ok");
+    closeCardPaymentForm();
+    await loadFinance();
+  } catch (error) {
+    console.error("Error guardando pago de tarjeta:", error);
+    setStatus(error.message || "Error guardando pago de tarjeta.", "error");
+  }
+}
+
+
+
 function cardAvailable(card) {
   return cardLimit(card) - cardBalance(card);
 }
@@ -1141,7 +1422,12 @@ function renderCreditCards() {
             <strong>${escapeHtml(cardName(card))}</strong>
             <small>${escapeHtml(cardBank(card))} · Se paga desde ${escapeHtml(cardPaidFrom(card))}</small>
           </div>
-          <div class="card-risk ${riskClass}">${riskLabel} · ${usage.toFixed(0)}%</div>
+
+          <div class="credit-card-actions">
+            <div class="card-risk ${riskClass}">${riskLabel} · ${usage.toFixed(0)}%</div>
+            <button type="button" class="pay" onclick="showCardPaymentForm('${escapeHtml(card.id)}')">Pagar</button>
+            <button type="button" onclick="showCardEditForm('${escapeHtml(card.id)}')">Editar</button>
+          </div>
         </div>
 
         <div class="card-metrics-grid">
