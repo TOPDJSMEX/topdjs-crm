@@ -107,6 +107,131 @@ function renderCards(cards) {
     el.innerHTML = `<div class="empty-state">No hay tarjetas registradas.</div>`;
     return;
   }
+async function updateCardFinanceFields(cardId) {
+  const minimumInput = document.getElementById(`min-${cardId}`);
+  const limitInput = document.getElementById(`limit-${cardId}`);
+
+  const minimumRaw = minimumInput ? minimumInput.value : "";
+  const limitRaw = limitInput ? limitInput.value : "";
+
+  const minimumPayment =
+    minimumRaw === "" || minimumRaw === null ? null : Number(minimumRaw);
+
+  const creditLimit =
+    limitRaw === "" || limitRaw === null ? null : Number(limitRaw);
+
+  const payload = {
+    minimum_payment: minimumPayment,
+    minimum_payment_status: minimumPayment === null ? "pending_app" : "known",
+    credit_limit: creditLimit,
+    credit_limit_status: creditLimit === null ? "pending" : "known",
+  };
+
+  const { error } = await db
+    .from("finance_credit_cards")
+    .update(payload)
+    .eq("id", cardId);
+
+  if (error) {
+    alert("No se pudo guardar la tarjeta: " + error.message);
+    return;
+  }
+
+  await loadFinance();
+}
+  el.innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>Prioridad</th>
+          <th>Tarjeta</th>
+          <th>Saldo</th>
+          <th>Límite</th>
+          <th>Disponible</th>
+          <th>Mínimo editable</th>
+          <th>CAT / Tasa</th>
+          <th>Riesgo</th>
+          <th>Guardar</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${cards
+          .map((card) => {
+            const catOrRate = card.cat
+              ? `CAT ${card.cat}%`
+              : card.interest_rate
+              ? `${card.interest_rate}%`
+              : "-";
+
+            const minimumValue =
+              card.minimum_payment_status === "pending_app" ||
+              card.minimum_payment === null
+                ? ""
+                : Number(card.minimum_payment || 0);
+
+            const creditLimitValue =
+              card.credit_limit === null || card.credit_limit === undefined
+                ? ""
+                : Number(card.credit_limit || 0);
+
+            const available =
+              card.available_credit === null || card.available_credit === undefined
+                ? "Pendiente"
+                : money(card.available_credit);
+
+            return `
+              <tr>
+                <td>${card.priority || "-"}</td>
+                <td>
+                  <strong>${card.card_name}</strong><br>
+                  <small>${card.bank} · ${card.usage_type || "Mixta"}</small>
+                </td>
+                <td class="amount">${money(card.current_balance)}</td>
+                <td>
+                  <input
+                    class="money-input"
+                    type="number"
+                    min="0"
+                    step="1"
+                    id="limit-${card.id}"
+                    value="${creditLimitValue}"
+                    placeholder="Límite"
+                  />
+                </td>
+                <td class="amount">${available}</td>
+                <td>
+                  <input
+                    class="money-input"
+                    type="number"
+                    min="0"
+                    step="1"
+                    id="min-${card.id}"
+                    value="${minimumValue}"
+                    placeholder="Mínimo"
+                  />
+                </td>
+                <td>${catOrRate}</td>
+                <td>${badgeRisk(card.risk_level)}</td>
+                <td>
+                  <button onclick="updateCardFinanceFields('${card.id}')">
+                    Guardar
+                  </button>
+                </td>
+              </tr>
+            `;
+          })
+          .join("")}
+      </tbody>
+    </table>
+  `;
+}
+function renderCards(cards) {
+  const el = document.getElementById("cardsList");
+
+  if (!cards || !cards.length) {
+    el.innerHTML = `<div class="empty-state">No hay tarjetas registradas.</div>`;
+    return;
+  }
 
   el.innerHTML = `
     <table>
