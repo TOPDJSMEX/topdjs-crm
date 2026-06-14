@@ -1,7 +1,7 @@
 // =======================================================
-// TopDJs Finanzas CRM v2.0.6
-// Liquidez + CRUD de gastos fijos
-// Fix: editar guarda sobre las columnas reales usadas por Finanzas.
+// TopDJs Finanzas CRM v2.0.7
+// Liquidez + gastos fijos + sueldos semanales
+// George, Papá y Vane se calculan como pago semanal cada lunes.
 // No se capturan ingresos manualmente en Finanzas.
 // =======================================================
 
@@ -19,6 +19,18 @@ const ACCOUNT_KEYS = {
   manuel: ["manuel", "cuenta manuel"],
   efectivo: ["efectivo", "cash", "caja topdjs"],
 };
+
+const WEEKDAYS = {
+  1: "Lunes",
+  2: "Martes",
+  3: "Miércoles",
+  4: "Jueves",
+  5: "Viernes",
+  6: "Sábado",
+  7: "Domingo",
+};
+
+const WEEKLY_SALARY_NAMES = ["george", "papa", "papá", "vane"];
 
 function money(value) {
   const number = Number(value || 0);
@@ -120,9 +132,6 @@ function renderBalances(balances) {
   setText("saldoEfectivo", money(balances.efectivo));
 }
 
-// Columnas reales/preferidas de finance_fixed_expenses:
-// name, amount, frequency, due_day, suggested_account, category, is_active.
-// También se leen nombres anteriores por compatibilidad.
 function expenseName(expense) {
   return firstValue(expense, ["name", "expense_name", "concept", "description", "label"], "-");
 }
@@ -131,8 +140,37 @@ function expenseAmount(expense) {
   return Number(firstValue(expense, ["amount", "monthly_amount", "payment_amount", "monto"], 0)) || 0;
 }
 
-function expenseDay(expense) {
-  return firstValue(expense, ["due_day", "payment_day", "day", "day_of_month", "cutoff_day"], "");
+function expenseRawDay(expense) {
+  return Number(firstValue(expense, ["due_day", "payment_day", "day", "day_of_month", "cutoff_day"], 0)) || 0;
+}
+
+function isWeeklySalaryByName(expense) {
+  const name = normalize(expenseName(expense));
+  return WEEKLY_SALARY_NAMES.some((salaryName) => name.includes(normalize(salaryName)));
+}
+
+function expenseFrequency(expense) {
+  const frequency = normalize(firstValue(expense, ["frequency", "payment_frequency"], ""));
+  if (frequency === "weekly" || frequency === "semanal") return "weekly";
+  if (frequency === "monthly" || frequency === "mensual") return "monthly";
+
+  // Regla especial solicitada: George, Papá y Vane se tratan como sueldos semanales de lunes.
+  if (isWeeklySalaryByName(expense)) return "weekly";
+
+  return "monthly";
+}
+
+function expenseDueDay(expense) {
+  const frequency = expenseFrequency(expense);
+  const day = expenseRawDay(expense);
+
+  if (frequency === "weekly") {
+    if (day >= 1 && day <= 7) return day;
+    return 1;
+  }
+
+  if (day >= 1 && day <= 31) return day;
+  return "";
 }
 
 function expenseAccount(expense) {
@@ -140,6 +178,7 @@ function expenseAccount(expense) {
 }
 
 function expenseCategory(expense) {
+  if (expenseFrequency(expense) === "weekly") return "Sueldo semanal";
   return firstValue(expense, ["category", "type", "expense_type"], "Fijo");
 }
 
@@ -152,13 +191,108 @@ function getExpenseById(id) {
   return fixedExpensesCache.find((expense) => String(expense.id) === String(id));
 }
 
+function dateToYmd(date) {
+  return date.toLocaleDateString("es-MX", {
+    day: "2-digit",
+    month: "short",
+  });
+}
+
+function jsDayToFinanceWeekday(jsDay) {
+  // JS: domingo 0, lunes 1... Finanzas: lunes 1... domingo 7.
+  return jsDay === 0 ? 7 : jsDay;
+}
+
+function countWeekdayInCurrentMonth(weekday) {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = today.getMonth();
+  let count = 0;
+
+  const cursor = new Date(year, month, 1);
+  while (cursor.getMonth() === month) {
+    if (jsDayToFinanceWeekday(cursor.getDay()) === Number(weekday)) count += 1;
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  return count;
+}
+
+function nextWeeklyDate(weekday) {
+  const today = new Date();
+  const target = Number(weekday) || 1;
+  const todayFinanceDay = jsDayToFinanceWeekday(today.getDay());
+  let daysToAdd = target - todayFinanceDay;
+  if (daysToAdd < 0) daysToAdd += 7;
+
+  const result = new Date(today);
+  result.setDate(today.getDate() + daysToAdd);
+  return result;
+}
+
+function nextMonthlyDate(dayOfMonth) {
+  const today = new Date();
+  const day = Number(dayOfMonth) || 1;
+  const year = today.getFullYear();
+  const month = today.getMonth();
+
+  const lastDayThisMonth = new Date(year, month + 1, 0).getDate();
+  let result = new Date(year, month, Math.min(day, lastDayThisMonth));
+
+  if (result < new Date(today.getFullYear(), today.getMonth(), today.getDate())) {
+    const lastDayNextMonth = new Date(year, month + 2, 0).getDate();
+    result = new Date(year, month + 1, Math.min(day, lastDayNextMonth));
+  }
+
+  return result;
+}
+
+function expenseMonthlyEstimate(expense) {
+  const amount = expenseAmount(expense);
+  const frequency = expenseFrequency(expense);
+
+  if (frequency === "weekly") {
+    const weekday = expenseDueDay(expense) || 1;
+    return amount * countWeekdayInCurrentMonth(weekday);
+  }
+
+  return amount;
+}
+
+function expenseDateLabel(expense) {
+  const frequency = expenseFrequency(expense);
+  const day = expenseDueDay(expense);
+
+  if (frequency === "weekly") {
+    return WEEKDAYS[day || 1] || "Lunes";
+  }
+
+  return day ? `Día ${String(day).padStart(2, "0")}` : "Pendiente";
+}
+
+function expenseNextPaymentLabel(expense) {
+  const frequency = expenseFrequency(expense);
+  const day = expenseDueDay(expense);
+
+  if (frequency === "weekly") {
+    return dateToYmd(nextWeeklyDate(day || 1));
+  }
+
+  return dateToYmd(nextMonthlyDate(day || 1));
+}
+
 function sortedActiveExpenses() {
   return fixedExpensesCache
     .filter(isActiveExpense)
     .sort((a, b) => {
-      const dayA = Number(expenseDay(a) || 99);
-      const dayB = Number(expenseDay(b) || 99);
+      const freqA = expenseFrequency(a) === "weekly" ? 0 : 1;
+      const freqB = expenseFrequency(b) === "weekly" ? 0 : 1;
+      if (freqA !== freqB) return freqA - freqB;
+
+      const dayA = Number(expenseDueDay(a) || 99);
+      const dayB = Number(expenseDueDay(b) || 99);
       if (dayA !== dayB) return dayA - dayB;
+
       return String(expenseName(a)).localeCompare(String(expenseName(b)));
     });
 }
@@ -168,7 +302,7 @@ function renderFixedExpenses() {
   if (!container) return;
 
   const expenses = sortedActiveExpenses();
-  const total = expenses.reduce((sum, expense) => sum + expenseAmount(expense), 0);
+  const total = expenses.reduce((sum, expense) => sum + expenseMonthlyEstimate(expense), 0);
   setText("gastosFijosTotal", money(total));
 
   if (!expenses.length) {
@@ -178,34 +312,35 @@ function renderFixedExpenses() {
 
   container.innerHTML = expenses
     .map((expense) => {
-      const day = expenseDay(expense);
-      const dayLabel = day ? `Día ${String(day).padStart(2, "0")}` : "Pendiente";
+      const frequency = expenseFrequency(expense);
+      const amountLabel = frequency === "weekly" ? "Monto semanal" : "Monto mensual";
+      const estimate = expenseMonthlyEstimate(expense);
 
       return `
         <article class="expense-row">
           <div class="expense-main">
             <strong>${escapeHtml(expenseName(expense))}</strong>
-            <small>Gasto fijo mensual</small>
+            <small>${frequency === "weekly" ? "Se calcula cada semana" : "Gasto fijo mensual"}</small>
           </div>
 
           <div class="expense-meta">
-            <span>Cantidad</span>
+            <span>${amountLabel}</span>
             <strong class="amount">${money(expenseAmount(expense))}</strong>
           </div>
 
           <div class="expense-meta">
-            <span>Fecha pago</span>
-            <strong>${escapeHtml(dayLabel)}</strong>
+            <span>Pago</span>
+            <strong>${escapeHtml(expenseDateLabel(expense))}</strong>
           </div>
 
           <div class="expense-meta">
-            <span>Cuenta</span>
-            <strong>${escapeHtml(expenseAccount(expense))}</strong>
+            <span>Próximo</span>
+            <strong>${escapeHtml(expenseNextPaymentLabel(expense))}</strong>
           </div>
 
           <div class="expense-meta">
-            <span>Categoría</span>
-            <strong>${escapeHtml(expenseCategory(expense))}</strong>
+            <span>Est. mes</span>
+            <strong>${money(estimate)}</strong>
           </div>
 
           <div class="expense-actions">
@@ -218,19 +353,34 @@ function renderFixedExpenses() {
     .join("");
 }
 
+function dayOptions(selectedDay, frequency) {
+  if (frequency === "weekly") {
+    return Object.entries(WEEKDAYS)
+      .map(([value, label]) => `<option value="${value}" ${Number(selectedDay) === Number(value) ? "selected" : ""}>${label}</option>`)
+      .join("");
+  }
+
+  let options = "";
+  for (let day = 1; day <= 31; day++) {
+    options += `<option value="${day}" ${Number(selectedDay) === day ? "selected" : ""}>Día ${String(day).padStart(2, "0")}</option>`;
+  }
+  return options;
+}
+
 function formTemplate(expense = null) {
   const isEdit = Boolean(expense);
   const id = isEdit ? expense.id : "";
   const name = isEdit ? expenseName(expense) : "";
   const amount = isEdit ? expenseAmount(expense) : "";
-  const day = isEdit ? expenseDay(expense) : "";
+  const frequency = isEdit ? expenseFrequency(expense) : "monthly";
+  const day = isEdit ? expenseDueDay(expense) : (frequency === "weekly" ? 1 : 1);
   const account = isEdit ? expenseAccount(expense) : "BBVA";
 
   return `
     <form class="expense-form" id="expenseForm" data-id="${escapeHtml(id)}">
       <div class="form-field">
         <label>Gasto fijo</label>
-        <input id="expenseName" type="text" value="${escapeHtml(name)}" placeholder="Ej. Hipotecario" required />
+        <input id="expenseName" type="text" value="${escapeHtml(name)}" placeholder="Ej. George" required />
       </div>
 
       <div class="form-field">
@@ -239,8 +389,18 @@ function formTemplate(expense = null) {
       </div>
 
       <div class="form-field">
-        <label>Fecha pago</label>
-        <input id="expenseDay" type="number" min="1" max="31" step="1" value="${escapeHtml(day)}" placeholder="Día" required />
+        <label>Frecuencia</label>
+        <select id="expenseFrequency">
+          <option value="monthly" ${frequency === "monthly" ? "selected" : ""}>Mensual</option>
+          <option value="weekly" ${frequency === "weekly" ? "selected" : ""}>Semanal</option>
+        </select>
+      </div>
+
+      <div class="form-field">
+        <label id="expenseDayLabel">${frequency === "weekly" ? "Día semanal" : "Fecha pago"}</label>
+        <select id="expenseDay">
+          ${dayOptions(day, frequency)}
+        </select>
       </div>
 
       <div class="form-field">
@@ -262,6 +422,21 @@ function formTemplate(expense = null) {
   `;
 }
 
+function refreshDaySelector() {
+  const frequencySelect = document.getElementById("expenseFrequency");
+  const daySelect = document.getElementById("expenseDay");
+  const dayLabel = document.getElementById("expenseDayLabel");
+
+  if (!frequencySelect || !daySelect || !dayLabel) return;
+
+  const frequency = frequencySelect.value;
+  const currentDay = Number(daySelect.value || 1);
+  const nextDay = frequency === "weekly" ? Math.min(Math.max(currentDay, 1), 7) : Math.min(Math.max(currentDay, 1), 31);
+
+  dayLabel.textContent = frequency === "weekly" ? "Día semanal" : "Fecha pago";
+  daySelect.innerHTML = dayOptions(nextDay, frequency);
+}
+
 function showExpenseForm(expense = null) {
   const host = document.getElementById("expenseFormHost");
   if (!host) return;
@@ -272,6 +447,9 @@ function showExpenseForm(expense = null) {
 
   const form = document.getElementById("expenseForm");
   if (form) form.addEventListener("submit", saveExpenseFromForm);
+
+  const frequencySelect = document.getElementById("expenseFrequency");
+  if (frequencySelect) frequencySelect.addEventListener("change", refreshDaySelector);
 
   const input = document.getElementById("expenseName");
   if (input) input.focus();
@@ -289,20 +467,26 @@ function closeExpenseForm() {
 function getExpenseFormPayload() {
   const name = document.getElementById("expenseName")?.value?.trim();
   const amount = Number(document.getElementById("expenseAmount")?.value || 0);
+  const frequency = document.getElementById("expenseFrequency")?.value || "monthly";
   const day = Number(document.getElementById("expenseDay")?.value || 0);
   const account = document.getElementById("expenseAccount")?.value || "BBVA";
 
   if (!name) throw new Error("Escribe el nombre del gasto fijo.");
   if (!Number.isFinite(amount) || amount <= 0) throw new Error("La cantidad debe ser mayor a cero.");
-  if (!Number.isFinite(day) || day < 1 || day > 31) throw new Error("La fecha de pago debe ser un día entre 1 y 31.");
+
+  if (frequency === "weekly") {
+    if (!Number.isFinite(day) || day < 1 || day > 7) throw new Error("El día semanal debe ser válido.");
+  } else {
+    if (!Number.isFinite(day) || day < 1 || day > 31) throw new Error("La fecha de pago debe ser un día entre 1 y 31.");
+  }
 
   return {
     name,
     amount,
-    frequency: "monthly",
+    frequency,
     due_day: day,
     suggested_account: account,
-    category: "Fijo",
+    category: frequency === "weekly" ? "Sueldo semanal" : "Fijo",
     is_active: true,
   };
 }
