@@ -1,9 +1,6 @@
 // =======================================================
-// TopDJs Finanzas CRM v2.0.9
-// Liquidez + gastos fijos + sueldos semanales + pagar gastos
-// Historial de pagos + anulación segura.
-// Al anular, se regresa el dinero a la cuenta original.
-// No se capturan ingresos manualmente en Finanzas.
+// TopDJs Finanzas CRM v2.1.0
+// Gastos fijos compactos + ficha completa + pagos + historial
 // =======================================================
 
 const SUPABASE_URL = window.SUPABASE_URL;
@@ -16,6 +13,7 @@ let fixedExpensesCache = [];
 let paymentsCache = [];
 let editingExpenseId = null;
 let payingExpenseId = null;
+let openedExpenseId = null;
 
 const ACCOUNT_KEYS = {
   bbva: ["bbva", "cuenta bbva", "cuenta topdjs principal actual"],
@@ -177,9 +175,7 @@ function expenseFrequency(expense) {
   const frequency = normalize(firstValue(expense, ["frequency", "payment_frequency"], ""));
   if (frequency === "weekly" || frequency === "semanal") return "weekly";
   if (frequency === "monthly" || frequency === "mensual") return "monthly";
-
   if (isWeeklySalaryByName(expense)) return "weekly";
-
   return "monthly";
 }
 
@@ -220,20 +216,12 @@ function getPaymentById(id) {
 
 function dateToShortLabel(dateValue) {
   const date = dateValue ? new Date(`${dateValue}T00:00:00`) : new Date();
-
   if (Number.isNaN(date.getTime())) return String(dateValue || "-");
-
-  return date.toLocaleDateString("es-MX", {
-    day: "2-digit",
-    month: "short",
-  });
+  return date.toLocaleDateString("es-MX", { day: "2-digit", month: "short" });
 }
 
 function dateToYmd(date) {
-  return date.toLocaleDateString("es-MX", {
-    day: "2-digit",
-    month: "short",
-  });
+  return date.toLocaleDateString("es-MX", { day: "2-digit", month: "short" });
 }
 
 function isoToday() {
@@ -303,22 +291,14 @@ function expenseMonthlyEstimate(expense) {
 function expenseDateLabel(expense) {
   const frequency = expenseFrequency(expense);
   const day = expenseDueDay(expense);
-
-  if (frequency === "weekly") {
-    return WEEKDAYS[day || 1] || "Lunes";
-  }
-
+  if (frequency === "weekly") return WEEKDAYS[day || 1] || "Lunes";
   return day ? `Día ${String(day).padStart(2, "0")}` : "Pendiente";
 }
 
 function expenseNextPaymentLabel(expense) {
   const frequency = expenseFrequency(expense);
   const day = expenseDueDay(expense);
-
-  if (frequency === "weekly") {
-    return dateToYmd(nextWeeklyDate(day || 1));
-  }
-
+  if (frequency === "weekly") return dateToYmd(nextWeeklyDate(day || 1));
   return dateToYmd(nextMonthlyDate(day || 1));
 }
 
@@ -352,51 +332,129 @@ function renderFixedExpenses() {
 
   if (!expenses.length) {
     container.innerHTML = `<div class="empty-state">No hay gastos fijos registrados. Usa “Agregar gasto fijo”.</div>`;
+    closeExpenseDetail();
     return;
   }
 
-  container.innerHTML = expenses
-    .map((expense) => {
-      const frequency = expenseFrequency(expense);
-      const amountLabel = frequency === "weekly" ? "Monto semanal" : "Monto mensual";
-      const estimate = expenseMonthlyEstimate(expense);
+  container.innerHTML = expenses.map((expense) => {
+    const frequency = expenseFrequency(expense);
+    const nextLabel = expenseNextPaymentLabel(expense);
+    const estimate = expenseMonthlyEstimate(expense);
 
-      return `
-        <article class="expense-row">
-          <div class="expense-main">
-            <strong>${escapeHtml(expenseName(expense))}</strong>
-            <small>${frequency === "weekly" ? "Se calcula cada semana" : "Gasto fijo mensual"}</small>
-          </div>
+    return `
+      <article class="expense-compact-row" onclick="showExpenseDetail('${escapeHtml(expense.id)}')">
+        <div class="expense-main">
+          <strong>${escapeHtml(expenseName(expense))}</strong>
+          <small>${frequency === "weekly" ? "Semanal" : "Mensual"} · ${escapeHtml(expenseDateLabel(expense))}</small>
+        </div>
 
-          <div class="expense-meta">
-            <span>${amountLabel}</span>
-            <strong class="amount">${money(expenseAmount(expense))}</strong>
-          </div>
+        <div class="expense-meta">
+          <span>Monto</span>
+          <strong class="amount">${money(expenseAmount(expense))}</strong>
+        </div>
 
-          <div class="expense-meta">
-            <span>Pago</span>
-            <strong>${escapeHtml(expenseDateLabel(expense))}</strong>
-          </div>
+        <div class="expense-meta">
+          <span>Próximo</span>
+          <strong>${escapeHtml(nextLabel)}</strong>
+        </div>
 
-          <div class="expense-meta">
-            <span>Próximo</span>
-            <strong>${escapeHtml(expenseNextPaymentLabel(expense))}</strong>
-          </div>
+        <div class="expense-meta">
+          <span>Est. mes</span>
+          <strong>${money(estimate)}</strong>
+        </div>
 
-          <div class="expense-meta">
-            <span>Est. mes</span>
-            <strong>${money(estimate)}</strong>
-          </div>
+        <div class="open-link">Abrir →</div>
+      </article>
+    `;
+  }).join("");
 
-          <div class="expense-actions">
-            <button type="button" class="pay" onclick="showPaymentForm('${escapeHtml(expense.id)}')">Pagar</button>
-            <button type="button" onclick="editExpense('${escapeHtml(expense.id)}')">Editar</button>
-            <button type="button" class="danger" onclick="deleteExpense('${escapeHtml(expense.id)}')">Borrar</button>
-          </div>
-        </article>
-      `;
-    })
-    .join("");
+  if (openedExpenseId && !getExpenseById(openedExpenseId)) {
+    closeExpenseDetail();
+  }
+}
+
+function renderExpenseDetail(expense) {
+  const host = document.getElementById("expenseDetailHost");
+  if (!host) return;
+
+  if (!expense) {
+    host.innerHTML = "";
+    host.classList.add("hidden");
+    return;
+  }
+
+  const frequency = expenseFrequency(expense);
+  const amountLabel = frequency === "weekly" ? "Monto semanal" : "Monto mensual";
+  const nextLabel = expenseNextPaymentLabel(expense);
+  const estimate = expenseMonthlyEstimate(expense);
+
+  host.innerHTML = `
+    <div class="detail-titlebar">
+      <div class="detail-title">
+        <h3>${escapeHtml(expenseName(expense))}</h3>
+        <p>Ficha completa del gasto seleccionado.</p>
+      </div>
+      <button type="button" class="secondary" onclick="closeExpenseDetail()">Cerrar</button>
+    </div>
+
+    <div class="detail-grid">
+      <div class="detail-card">
+        <span>Tipo</span>
+        <strong>${escapeHtml(expenseCategory(expense))}</strong>
+      </div>
+      <div class="detail-card">
+        <span>${amountLabel}</span>
+        <strong>${money(expenseAmount(expense))}</strong>
+      </div>
+      <div class="detail-card">
+        <span>Pago</span>
+        <strong>${escapeHtml(expenseDateLabel(expense))}</strong>
+      </div>
+      <div class="detail-card">
+        <span>Próximo pago</span>
+        <strong>${escapeHtml(nextLabel)}</strong>
+      </div>
+      <div class="detail-card">
+        <span>Est. mes</span>
+        <strong>${money(estimate)}</strong>
+      </div>
+      <div class="detail-card">
+        <span>Cuenta sugerida</span>
+        <strong>${escapeHtml(expenseAccount(expense))}</strong>
+      </div>
+      <div class="detail-card">
+        <span>Frecuencia</span>
+        <strong>${frequency === "weekly" ? "Semanal" : "Mensual"}</strong>
+      </div>
+      <div class="detail-card">
+        <span>Estatus</span>
+        <strong><span class="status-chip">Activo</span></strong>
+      </div>
+    </div>
+
+    <div class="detail-actions">
+      <button type="button" class="pay" onclick="showPaymentForm('${escapeHtml(expense.id)}')">Pagar</button>
+      <button type="button" onclick="editExpense('${escapeHtml(expense.id)}')">Editar</button>
+      <button type="button" class="danger" onclick="deleteExpense('${escapeHtml(expense.id)}')">Borrar</button>
+    </div>
+  `;
+
+  host.classList.remove("hidden");
+  host.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function showExpenseDetail(id) {
+  closeExpenseForm();
+  closePaymentForm();
+  openedExpenseId = id;
+
+  const expense = getExpenseById(id);
+  renderExpenseDetail(expense);
+}
+
+function closeExpenseDetail() {
+  openedExpenseId = null;
+  renderExpenseDetail(null);
 }
 
 function renderPaymentHistory() {
@@ -414,54 +472,48 @@ function renderPaymentHistory() {
     return;
   }
 
-  container.innerHTML = payments
-    .map((payment) => {
-      const voided = Boolean(payment.voided);
-      const expense = firstValue(payment, ["expense_name"], "Gasto fijo");
-      const amount = Number(firstValue(payment, ["amount"], 0)) || 0;
-      const account = firstValue(payment, ["paid_from_account"], "-");
-      const paidAt = firstValue(payment, ["paid_at"], "");
-      const createdAt = firstValue(payment, ["created_at"], "");
-      const statusLabel = voided ? "Anulado" : "Activo";
+  container.innerHTML = payments.map((payment) => {
+    const voided = Boolean(payment.voided);
+    const expense = firstValue(payment, ["expense_name"], "Gasto fijo");
+    const amount = Number(firstValue(payment, ["amount"], 0)) || 0;
+    const account = firstValue(payment, ["paid_from_account"], "-");
+    const paidAt = firstValue(payment, ["paid_at"], "");
+    const createdAt = firstValue(payment, ["created_at"], "");
+    const statusLabel = voided ? "Anulado" : "Activo";
 
-      return `
-        <article class="payment-row ${voided ? "voided" : ""}">
-          <div class="payment-main">
-            <strong>${escapeHtml(expense)}</strong>
-            <small>${createdAt ? `Registrado ${escapeHtml(dateToShortLabel(String(createdAt).slice(0, 10)))}` : "Pago registrado"}</small>
-          </div>
+    return `
+      <article class="payment-row ${voided ? "voided" : ""}">
+        <div class="payment-main">
+          <strong>${escapeHtml(expense)}</strong>
+          <small>${createdAt ? `Registrado ${escapeHtml(dateToShortLabel(String(createdAt).slice(0, 10)))}` : "Pago registrado"}</small>
+        </div>
 
-          <div class="payment-meta">
-            <span>Cantidad</span>
-            <strong class="amount">${money(amount)}</strong>
-          </div>
+        <div class="payment-meta">
+          <span>Cantidad</span>
+          <strong class="amount">${money(amount)}</strong>
+        </div>
 
-          <div class="payment-meta">
-            <span>Cuenta</span>
-            <strong>${escapeHtml(account)}</strong>
-          </div>
+        <div class="payment-meta">
+          <span>Cuenta</span>
+          <strong>${escapeHtml(account)}</strong>
+        </div>
 
-          <div class="payment-meta">
-            <span>Fecha pago</span>
-            <strong>${escapeHtml(dateToShortLabel(paidAt))}</strong>
-          </div>
+        <div class="payment-meta">
+          <span>Fecha pago</span>
+          <strong>${escapeHtml(dateToShortLabel(paidAt))}</strong>
+        </div>
 
-          <div class="payment-meta">
-            <span>Estado</span>
-            <strong><span class="status-pill ${voided ? "voided" : ""}">${statusLabel}</span></strong>
-          </div>
+        <div class="payment-meta">
+          <span>Estado</span>
+          <strong><span class="status-pill ${voided ? "voided" : ""}">${statusLabel}</span></strong>
+        </div>
 
-          <div class="payment-actions">
-            ${
-              voided
-                ? `<button type="button" class="secondary" disabled>Anulado</button>`
-                : `<button type="button" class="danger" onclick="voidPayment('${escapeHtml(payment.id)}')">Anular</button>`
-            }
-          </div>
-        </article>
-      `;
-    })
-    .join("");
+        <div class="payment-actions">
+          ${voided ? `<button type="button" class="secondary" disabled>Anulado</button>` : `<button type="button" class="danger" onclick="voidPayment('${escapeHtml(payment.id)}')">Anular</button>`}
+        </div>
+      </article>
+    `;
+  }).join("");
 }
 
 function dayOptions(selectedDay, frequency) {
@@ -550,6 +602,7 @@ function refreshDaySelector() {
 
 function showExpenseForm(expense = null) {
   closePaymentForm();
+  closeExpenseDetail();
 
   const host = document.getElementById("expenseFormHost");
   if (!host) return;
@@ -566,6 +619,8 @@ function showExpenseForm(expense = null) {
 
   const input = document.getElementById("expenseName");
   if (input) input.focus();
+
+  host.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function closeExpenseForm() {
@@ -661,6 +716,7 @@ async function deleteExpense(id) {
     if (error) throw error;
 
     setStatus("Gasto fijo borrado correctamente.", "ok");
+    closeExpenseDetail();
     closeExpenseForm();
     closePaymentForm();
     await loadFinance();
@@ -679,9 +735,7 @@ function paymentFormTemplate(expense) {
 
   return `
     <h3 class="payment-title">Pagar: ${escapeHtml(expenseName(expense))}</h3>
-    <p class="payment-subtitle">
-      Selecciona la cuenta y la cantidad. Al guardar, se restará del saldo superior.
-    </p>
+    <p class="payment-subtitle">Selecciona la cuenta y la cantidad. Al guardar, se restará del saldo superior.</p>
 
     <form class="payment-form" id="paymentForm" data-id="${escapeHtml(expense.id)}">
       <div class="form-field">
@@ -716,6 +770,7 @@ function paymentFormTemplate(expense) {
 
 function showPaymentForm(id) {
   closeExpenseForm();
+  closeExpenseDetail();
 
   const expense = getExpenseById(id);
   if (!expense) {
@@ -735,6 +790,8 @@ function showPaymentForm(id) {
 
   const amountInput = document.getElementById("paymentAmount");
   if (amountInput) amountInput.focus();
+
+  host.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function closePaymentForm() {
@@ -785,7 +842,6 @@ async function savePaymentFromForm(event) {
     if (!expense) throw new Error("No encontré el gasto que quieres pagar.");
 
     const { accountKey, amount, paidAt } = getPaymentFormPayload();
-
     const account = findAccountByKey(accountKey);
     if (!account) throw new Error(`No encontré la cuenta ${ACCOUNT_LABELS[accountKey]} en finance_accounts.`);
 
@@ -820,7 +876,6 @@ async function savePaymentFromForm(event) {
 
 async function voidPayment(id) {
   const payment = getPaymentById(id);
-
   if (!payment) {
     setStatus("No encontré ese pago para anular.", "error");
     return;
@@ -899,8 +954,7 @@ async function loadFinance() {
   }
 
   accountsCache = accountsResult.data || [];
-  const balances = calculateBalancesFromAccounts(accountsCache);
-  renderBalances(balances);
+  renderBalances(calculateBalancesFromAccounts(accountsCache));
 
   if (expensesResult.error) {
     console.error("Error cargando finance_fixed_expenses:", expensesResult.error);
@@ -923,6 +977,10 @@ async function loadFinance() {
 
   paymentsCache = paymentsResult.data || [];
   renderPaymentHistory();
+
+  if (openedExpenseId) {
+    renderExpenseDetail(getExpenseById(openedExpenseId));
+  }
 
   setStatus("Liquidez, gastos e historial cargados correctamente desde Supabase.", "ok");
 }

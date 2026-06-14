@@ -5,7 +5,6 @@
 :root {
   --bg: #05070d;
   --panel: #0b1020;
-  --panel-deep: #070b16;
   --text: #f8fafc;
   --muted: #94a3b8;
   --border: rgba(148, 163, 184, 0.2);
@@ -64,6 +63,15 @@ button.danger:hover {
 button.secondary {
   border-color: rgba(148, 163, 184, 0.38);
   background: rgba(148, 163, 184, 0.08);
+}
+
+button.pay {
+  border-color: rgba(34, 197, 94, 0.66);
+  background: rgba(34, 197, 94, 0.12);
+}
+
+button.pay:hover {
+  background: rgba(34, 197, 94, 0.22);
 }
 
 a {
@@ -246,7 +254,7 @@ main {
 }
 
 .panel-total {
-  min-width: 150px;
+  min-width: 170px;
   padding: 9px 11px;
   border: 1px solid rgba(34, 197, 94, 0.35);
   border-radius: 14px;
@@ -274,15 +282,171 @@ main {
   display: none !important;
 }
 
+/* Gastos compactos */
+.expense-compact-list {
+  display: grid;
+}
+
+.expense-compact-row {
+  display: grid;
+  grid-template-columns: 1.35fr 0.85fr 0.9fr 0.8fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 18px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+  cursor: pointer;
+}
+
+.expense-compact-row:hover {
+  background: rgba(0, 170, 255, 0.05);
+}
+
+.expense-compact-row:last-child {
+  border-bottom: 0;
+}
+
+.expense-main strong {
+  display: block;
+  font-size: 14px;
+  letter-spacing: -0.2px;
+}
+
+.expense-main small {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.expense-meta span,
+.payment-meta span,
+.detail-card span {
+  display: block;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 1.15px;
+  text-transform: uppercase;
+}
+
+.expense-meta strong,
+.payment-meta strong,
+.detail-card strong {
+  display: block;
+  margin-top: 3px;
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.expense-meta .amount,
+.payment-meta .amount {
+  font-size: 16px;
+  font-weight: 950;
+}
+
+.open-link {
+  color: #d7f3ff;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+/* Ficha completa de gasto */
+.detail-host {
+  padding: 16px 18px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+  background: rgba(0, 170, 255, 0.05);
+}
+
+.detail-titlebar {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.detail-title h3 {
+  margin: 0;
+  font-size: 18px;
+  letter-spacing: -0.3px;
+}
+
+.detail-title p {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.detail-card {
+  padding: 11px 12px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 12px;
+  background: rgba(5, 10, 20, 0.55);
+}
+
+.detail-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 900;
+  border: 1px solid rgba(0, 170, 255, 0.45);
+  background: rgba(0, 170, 255, 0.1);
+}
+
+/* Formularios */
 .expense-form-host {
   padding: 16px 18px;
   border-bottom: 1px solid rgba(148, 163, 184, 0.16);
   background: rgba(5, 7, 13, 0.36);
 }
 
+.payment-form-host {
+  border-bottom-color: rgba(34, 197, 94, 0.24);
+  background: rgba(34, 197, 94, 0.045);
+}
+
 .expense-form {
   display: grid;
   grid-template-columns: 1.2fr 0.7fr 0.75fr 0.75fr 0.85fr auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.payment-title {
+  margin: 0 0 12px;
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: -0.2px;
+}
+
+.payment-subtitle {
+  margin: -8px 0 14px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.payment-form {
+  display: grid;
+  grid-template-columns: 1fr 0.75fr 0.85fr auto;
   gap: 10px;
   align-items: end;
 }
@@ -322,168 +486,6 @@ main {
   justify-content: flex-end;
 }
 
-.expense-list {
-  display: grid;
-}
-
-.expense-row {
-  display: grid;
-  grid-template-columns: 1.35fr 0.75fr 0.8fr 0.85fr 0.8fr auto;
-  gap: 12px;
-  align-items: center;
-  padding: 13px 18px;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.14);
-}
-
-.expense-row:last-child {
-  border-bottom: 0;
-}
-
-.expense-main strong {
-  display: block;
-  font-size: 14px;
-  letter-spacing: -0.2px;
-}
-
-.expense-main small {
-  display: block;
-  margin-top: 3px;
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 650;
-}
-
-.expense-meta span {
-  display: block;
-  color: var(--muted);
-  font-size: 10px;
-  font-weight: 900;
-  letter-spacing: 1.15px;
-  text-transform: uppercase;
-}
-
-.expense-meta strong {
-  display: block;
-  margin-top: 3px;
-  font-size: 13px;
-  font-weight: 850;
-}
-
-.expense-meta .amount {
-  font-size: 16px;
-  font-weight: 950;
-}
-
-.expense-actions {
-  display: flex;
-  gap: 8px;
-  justify-content: flex-end;
-}
-
-.empty-state {
-  padding: 16px 18px;
-  color: var(--muted);
-  font-size: 13px;
-  font-weight: 750;
-}
-
-@media (max-width: 1100px) {
-  .liquidity-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .liquidity-card.total {
-    grid-column: 1 / -1;
-  }
-
-  .expense-form,
-  .expense-row {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .form-actions,
-  .expense-actions {
-    justify-content: flex-start;
-  }
-}
-
-@media (max-width: 700px) {
-  .app-shell {
-    width: min(100% - 18px, 100%);
-    margin-top: 10px;
-  }
-
-  .topbar,
-  .panel-header,
-  .status-row,
-  .panel-actions {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .liquidity-grid,
-  .expense-form,
-  .expense-row {
-    grid-template-columns: 1fr;
-  }
-
-  .back-link,
-  button {
-    width: 100%;
-    text-align: center;
-  }
-
-  .panel-total {
-    width: 100%;
-    text-align: left;
-  }
-
-  .form-actions,
-  .expense-actions {
-    flex-direction: column;
-  }
-}
-
-
-/* ================================
-   v2.0.8 · Pago de gastos
-================================ */
-
-button.pay {
-  border-color: rgba(34, 197, 94, 0.66);
-  background: rgba(34, 197, 94, 0.12);
-}
-
-button.pay:hover {
-  background: rgba(34, 197, 94, 0.22);
-}
-
-.payment-form-host {
-  border-bottom-color: rgba(34, 197, 94, 0.24);
-  background: rgba(34, 197, 94, 0.045);
-}
-
-.payment-title {
-  margin: 0 0 12px;
-  font-size: 15px;
-  font-weight: 900;
-  letter-spacing: -0.2px;
-}
-
-.payment-subtitle {
-  margin: -8px 0 14px;
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.payment-form {
-  display: grid;
-  grid-template-columns: 1fr 0.75fr 0.85fr auto;
-  gap: 10px;
-  align-items: end;
-}
-
 .account-warning {
   margin-top: 10px;
   padding: 10px 12px;
@@ -495,23 +497,7 @@ button.pay:hover {
   font-weight: 800;
 }
 
-@media (max-width: 1100px) {
-  .payment-form {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-
-@media (max-width: 700px) {
-  .payment-form {
-    grid-template-columns: 1fr;
-  }
-}
-
-
-/* ================================
-   v2.0.9 · Historial y anulación
-================================ */
-
+/* Historial */
 .payment-history-list {
   display: grid;
 }
@@ -548,27 +534,6 @@ button.pay:hover {
   font-weight: 650;
 }
 
-.payment-meta span {
-  display: block;
-  color: var(--muted);
-  font-size: 10px;
-  font-weight: 900;
-  letter-spacing: 1.15px;
-  text-transform: uppercase;
-}
-
-.payment-meta strong {
-  display: block;
-  margin-top: 3px;
-  font-size: 13px;
-  font-weight: 850;
-}
-
-.payment-meta .amount {
-  font-size: 16px;
-  font-weight: 950;
-}
-
 .status-pill {
   display: inline-flex;
   align-items: center;
@@ -595,22 +560,74 @@ button.pay:hover {
   justify-content: flex-end;
 }
 
+.empty-state {
+  padding: 16px 18px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 750;
+}
+
 @media (max-width: 1100px) {
-  .payment-row {
+  .liquidity-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .liquidity-card.total {
+    grid-column: 1 / -1;
+  }
+
+  .expense-compact-row,
+  .expense-form,
+  .payment-form,
+  .payment-row,
+  .detail-grid {
     grid-template-columns: 1fr 1fr;
   }
 
+  .form-actions,
   .payment-actions {
     justify-content: flex-start;
   }
 }
 
 @media (max-width: 700px) {
-  .payment-row {
+  .app-shell {
+    width: min(100% - 18px, 100%);
+    margin-top: 10px;
+  }
+
+  .topbar,
+  .panel-header,
+  .status-row,
+  .panel-actions,
+  .detail-titlebar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .liquidity-grid,
+  .expense-compact-row,
+  .expense-form,
+  .payment-form,
+  .payment-row,
+  .detail-grid {
     grid-template-columns: 1fr;
   }
 
-  .payment-actions {
+  .back-link,
+  button {
+    width: 100%;
+    text-align: center;
+  }
+
+  .panel-total {
+    width: 100%;
+    text-align: left;
+  }
+
+  .form-actions,
+  .payment-actions,
+  .detail-actions {
     flex-direction: column;
   }
 }
