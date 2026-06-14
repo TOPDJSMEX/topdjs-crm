@@ -849,10 +849,10 @@ function renderRecords(){
   const confirmedNoPay=visible.filter(r=>normalizeCommercialStatus(r.status)==="CONFIRMADO SIN ANTICIPO");
   const confirmedWithPay=visible.filter(r=>normalizeCommercialStatus(r.status)==="CONFIRMADO CON ANTICIPO");
   const confirmed=visible.filter(r=>isConfirmedStatus(r.status));
-  const balanceWithAdvance=confirmedWithPay.filter(r=>bal(r)>0);
-  $("sumQuoted").textContent=money(quotedOpen.reduce((s,r)=>s+Number(r.amount||0),0));
+  $("sumQuoted").textContent=money(visible.reduce((s,r)=>s+Number(r.amount||0),0));
   $("sumPaid").textContent=money(visible.reduce((s,r)=>s+paidForRecord(r),0));
-  $("sumBalance").textContent=money(balanceWithAdvance.reduce((s,r)=>s+bal(r),0));
+  $("sumBalance").textContent=money(quotedOpen.reduce((s,r)=>s+bal(r),0));
+  if($("pendingCount"))$("pendingCount").textContent=`${quotedOpen.length} evento${quotedOpen.length===1?"":"s"}`;
   if($("sumConfirmedNoPay"))$("sumConfirmedNoPay").textContent=money(confirmedNoPay.reduce((s,r)=>s+Number(r.amount||0),0));
   if($("confirmedNoPayCount"))$("confirmedNoPayCount").textContent=`${confirmedNoPay.length} evento${confirmedNoPay.length===1?"":"s"}`;
   if($("sumConfirmedWithPay"))$("sumConfirmedWithPay").textContent=money(confirmedWithPay.reduce((s,r)=>s+Number(r.amount||0),0));
