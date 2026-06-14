@@ -1097,11 +1097,11 @@ function renderCalendar(){
     grid.appendChild(cell)
   }
 }
-$("prevMonth").onclick=()=>{visibleDate.setMonth(visibleDate.getMonth()-1);renderCalendar()};
-$("nextMonth").onclick=()=>{visibleDate.setMonth(visibleDate.getMonth()+1);renderCalendar()};
-$("prevYear").onclick=()=>{visibleDate.setFullYear(visibleDate.getFullYear()-1);calendarViewMode==="year"?renderYearOverview():renderCalendar()};
-$("nextYear").onclick=()=>{visibleDate.setFullYear(visibleDate.getFullYear()+1);calendarViewMode==="year"?renderYearOverview():renderCalendar()};
-$("goCalendarDate").onclick=()=>setCalendarDateFromControls();
+if($("prevMonth"))$("prevMonth").onclick=()=>{visibleDate.setMonth(visibleDate.getMonth()-1);renderCalendar()};
+if($("nextMonth"))$("nextMonth").onclick=()=>{visibleDate.setMonth(visibleDate.getMonth()+1);renderCalendar()};
+if($("prevYear"))$("prevYear").onclick=()=>{visibleDate.setFullYear(visibleDate.getFullYear()-1);calendarViewMode==="year"?renderYearOverview():renderCalendar()};
+if($("nextYear"))$("nextYear").onclick=()=>{visibleDate.setFullYear(visibleDate.getFullYear()+1);calendarViewMode==="year"?renderYearOverview():renderCalendar()};
+if($("goCalendarDate"))$("goCalendarDate").onclick=()=>setCalendarDateFromControls();
 $("todayCalendar").onclick=()=>{visibleDate=new Date();renderCalendar()};
 if($("yearViewBtn"))$("yearViewBtn").onclick=()=>renderYearOverview();
 if($("calendarMonthSelect"))$("calendarMonthSelect").onchange=()=>setCalendarDateFromControls();

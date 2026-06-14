@@ -891,3 +891,47 @@ body.modal-open .operTable thead th{
 @media(max-width:520px){
   .calendar.yearOverview{grid-template-columns:1fr}
 }
+
+
+/* TOPDJS CRM v11.4.23 - Calendario simplificado */
+.calendarTopSimple{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  flex-wrap:wrap;
+  margin-bottom:18px;
+}
+.calendarTopSimple .calendarTitleBox h2{
+  margin:0;
+  font-size:30px;
+  color:#fff !important;
+  text-shadow:0 0 12px rgba(0,184,255,.28);
+}
+.calendarJumpSimple{
+  display:flex;
+  gap:12px;
+  align-items:center;
+  flex-wrap:wrap;
+}
+.calendarJumpSimple button{
+  min-width:150px;
+  padding:12px 18px !important;
+  border-radius:14px !important;
+}
+#yearViewBtn{
+  background:linear-gradient(180deg,#b7f7ff,#00b8ff) !important;
+  color:#00111d !important;
+  border-color:#7ee7ff !important;
+  box-shadow:0 0 18px rgba(0,184,255,.35) !important;
+}
+#todayCalendar{
+  background:linear-gradient(180deg,#071325,#02060d) !important;
+  color:#fff !important;
+  border-color:rgba(0,184,255,.65) !important;
+}
+@media(max-width:700px){
+  .calendarTopSimple{display:block}
+  .calendarJumpSimple{margin-top:12px}
+  .calendarJumpSimple button{width:100%}
+}

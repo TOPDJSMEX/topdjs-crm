@@ -6,12 +6,12 @@
 <meta name="theme-color" content="#0f172a">
 <link rel="manifest" href="manifest.json">
 <link rel="stylesheet" href="style.css">
-<title>TOPDJS CRM v11.4.22</title>
+<title>TOPDJS CRM v11.4.23</title>
 </head>
 <body>
 <header>
   <div>
-    <div class="brandHeader"><img src="topdjs-logo.png" class="brandLogo" alt="TopDJs"><div><h1>TOPDJS CRM v11.4.22</h1><p class="brandSub">Audio • Iluminación • Video • DJ</p></div></div>
+    <div class="brandHeader"><img src="topdjs-logo.png" class="brandLogo" alt="TopDJs"><div><h1>TOPDJS CRM v11.4.23</h1><p class="brandSub">Audio • Iluminación • Video • DJ</p></div></div>
     <p>Offline + Supabase + auditoría + dashboard real + gastos por evento.</p>
   </div>
   <div class="topActions">
@@ -131,21 +131,14 @@
 </section>
 
 <section id="calendar" class="panel">
-  <div class="calendarTop calendarTopAdvanced">
-    <button id="prevYear">« AÑO ANTERIOR</button>
-    <button id="prevMonth">← MES ANTERIOR</button>
+  <div class="calendarTop calendarTopSimple">
     <div class="calendarTitleBox">
       <h2 id="monthTitle"></h2>
-      <div class="calendarJump">
-        <select id="calendarMonthSelect" aria-label="Seleccionar mes"></select>
-        <input id="calendarYearInput" type="number" min="2000" max="2100" step="1" aria-label="Seleccionar año">
-        <button id="goCalendarDate" class="secondary">IR</button>
-        <button id="todayCalendar" class="secondary">HOY</button>
-        <button id="yearViewBtn" class="secondary">🗓️ VER AÑO COMPLETO</button>
-      </div>
     </div>
-    <button id="nextMonth">MES SIGUIENTE →</button>
-    <button id="nextYear">AÑO SIGUIENTE »</button>
+    <div class="calendarJump calendarJumpSimple">
+      <button id="todayCalendar" class="secondary">HOY</button>
+      <button id="yearViewBtn" class="secondary">🗓️ VER AÑO COMPLETO</button>
+    </div>
   </div>
   <div id="calendarGrid" class="calendar"></div>
 </section>
