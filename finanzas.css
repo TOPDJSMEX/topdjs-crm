@@ -106,6 +106,20 @@ main {
   margin-top: 16px;
 }
 
+.status-row {
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+}
+
+.status-row .status-box {
+  flex: 1;
+}
+
+.status-row button {
+  flex: 0 0 auto;
+}
+
 .status-box {
   padding: 12px 14px;
   border: 1px solid rgba(250, 204, 21, 0.62);
@@ -261,9 +275,10 @@ main {
   }
 
   .topbar,
-  .panel-header {
+  .panel-header,
+  .status-row {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
   }
 
   .liquidity-grid {

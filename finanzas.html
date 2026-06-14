@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>TopDJs Finanzas CRM v2.0</title>
-  <link rel="stylesheet" href="finanzas.css?v=202" />
+  <link rel="stylesheet" href="finanzas.css?v=203" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     window.SUPABASE_URL = "https://xbrsnmbmkbvxyhrtiywy.supabase.co";
@@ -15,7 +15,7 @@
   <div class="app-shell">
     <header class="topbar">
       <div>
-        <p class="eyebrow">TopDJs Finanzas CRM v2.0.2 · Paso 1</p>
+        <p class="eyebrow">TopDJs Finanzas CRM v2.0.3 · Paso 1</p>
         <h1>Liquidez TopDJs</h1>
         <p class="subtitle">
           Lee los ingresos del CRM operativo TopDJs y los muestra por destino: BBVA, NU, Manuel y Efectivo.
@@ -26,9 +26,12 @@
     </header>
 
     <main>
-      <section id="statusBox" class="status-box">
-        Cargando liquidez desde Supabase...
-      </section>
+      <div class="status-row">
+        <section id="statusBox" class="status-box">
+          Cargando liquidez desde Supabase...
+        </section>
+        <button id="refreshBtn" type="button">Actualizar</button>
+      </div>
 
       <section class="liquidity-grid" aria-label="Resumen de liquidez">
         <article class="liquidity-card total">
@@ -61,36 +64,9 @@
           <small>Caja TopDJs</small>
         </article>
       </section>
-
-      <section class="panel">
-        <div class="panel-header">
-          <div>
-            <h2>Fuente de datos</h2>
-            <p>
-              Finanzas no captura ingresos manualmente. Esta pantalla usa los saldos de Finanzas y deja preparada la lectura de pagos del CRM operativo TopDJs.
-            </p>
-          </div>
-          <button id="refreshBtn" type="button">Actualizar</button>
-        </div>
-
-        <div class="source-list">
-          <div>
-            <span>Fuente principal</span>
-            <strong>finance_accounts</strong>
-          </div>
-          <div>
-            <span>Fuente operativa</span>
-            <strong>Pagos del CRM TopDJs</strong>
-          </div>
-          <div>
-            <span>Regla</span>
-            <strong>Liquidez total = BBVA + NU + Manuel + Efectivo</strong>
-          </div>
-        </div>
-      </section>
-    </main>
+</main>
   </div>
 
-  <script src="finanzas.js?v=202"></script>
+  <script src="finanzas.js?v=203"></script>
 </body>
 </html>
