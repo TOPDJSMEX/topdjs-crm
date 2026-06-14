@@ -1,6 +1,6 @@
 // =======================================================
-// TopDJs Finanzas CRM v2.1.2
-// Panel limpio + gastos fijos en ventana con botones directos + pagos + historial
+// TopDJs Finanzas CRM v2.1.3
+// Panel limpio + gastos fijos + pagos + historial + sincronización CRM desde 2026-06-15
 // =======================================================
 
 const SUPABASE_URL = window.SUPABASE_URL;
@@ -14,6 +14,8 @@ let paymentsCache = [];
 let editingExpenseId = null;
 let payingExpenseId = null;
 let openedExpenseId = null;
+
+const CRM_SYNC_START_DATE = "2026-06-15";
 
 const ACCOUNT_KEYS = {
   bbva: ["bbva", "cuenta bbva", "cuenta topdjs principal actual"],
@@ -970,6 +972,229 @@ async function voidPayment(id) {
   }
 }
 
+
+function toIsoDate(value) {
+  if (!value) return "";
+
+  const raw = String(value).trim();
+
+  // ISO / Supabase timestamp.
+  if (/^\d{4}-\d{2}-\d{2}/.test(raw)) return raw.slice(0, 10);
+
+  // dd/mm/yyyy or dd-mm-yyyy.
+  const match = raw.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if (match) {
+    const day = String(match[1]).padStart(2, "0");
+    const month = String(match[2]).padStart(2, "0");
+    const year = match[3];
+    return `${year}-${month}-${day}`;
+  }
+
+  const parsed = new Date(raw);
+  if (!Number.isNaN(parsed.getTime())) return parsed.toISOString().slice(0, 10);
+
+  return "";
+}
+
+function operationalPaymentSourceId(payment) {
+  return String(firstValue(payment, [
+    "id",
+    "payment_id",
+    "uuid",
+    "source_payment_id",
+    "event_payment_id",
+  ], `${operationalPaymentDate(payment)}|${operationalPaymentAmount(payment)}|${operationalPaymentDestinationLabel(payment)}|${firstValue(payment, ["record_id", "event_id", "topdjs_record_id"], "")}`));
+}
+
+function operationalPaymentAmount(payment) {
+  return Number(firstValue(payment, [
+    "amount",
+    "payment_amount",
+    "paid_amount",
+    "monto",
+    "abono",
+    "value",
+    "cantidad",
+    "total",
+  ], 0)) || 0;
+}
+
+function operationalPaymentDate(payment) {
+  return toIsoDate(firstValue(payment, [
+    "payment_date",
+    "paid_at",
+    "date",
+    "fecha",
+    "fecha_pago",
+    "created_at",
+    "updated_at",
+  ], ""));
+}
+
+function operationalPaymentDestinationLabel(payment) {
+  return firstValue(payment, [
+    "destination",
+    "payment_destination",
+    "destination_account",
+    "paid_to_account",
+    "payment_account",
+    "account",
+    "bank",
+    "method",
+    "payment_method",
+    "metodo",
+    "cuenta",
+    "cuenta_destino",
+  ], "");
+}
+
+function operationalPaymentAccountKey(payment) {
+  return accountKeyFromLabel(operationalPaymentDestinationLabel(payment));
+}
+
+function isOperationalPaymentEligible(payment) {
+  const amount = operationalPaymentAmount(payment);
+  const date = operationalPaymentDate(payment);
+  const accountKey = operationalPaymentAccountKey(payment);
+
+  return amount > 0 && date >= CRM_SYNC_START_DATE && Boolean(accountKey);
+}
+
+function groupPaymentsByAccount(payments) {
+  return payments.reduce((grouped, payment) => {
+    const accountKey = operationalPaymentAccountKey(payment);
+    const amount = operationalPaymentAmount(payment);
+
+    if (!grouped[accountKey]) grouped[accountKey] = 0;
+    grouped[accountKey] += amount;
+
+    return grouped;
+  }, {});
+}
+
+async function syncCrmPayments() {
+  try {
+    setStatus(`Sincronizando CRM operativo desde ${CRM_SYNC_START_DATE}...`);
+
+    const confirmed = window.confirm(
+      "Sincronizar pagos del CRM operativo TopDJs desde el 15-jun-2026.\n\n" +
+      "Los anticipos anteriores NO se tomarán para evitar duplicar saldos.\n\n" +
+      "¿Continuar?"
+    );
+
+    if (!confirmed) {
+      setStatus("Sincronización cancelada.", "ok");
+      return;
+    }
+
+    const [sourceResult, logResult] = await Promise.all([
+      db.from("event_payments").select("*"),
+      db.from("finance_crm_payment_sync_log").select("source_payment_id,status"),
+    ]);
+
+    if (sourceResult.error) throw sourceResult.error;
+    if (logResult.error) throw logResult.error;
+
+    const syncedIds = new Set(
+      (logResult.data || [])
+        .filter((row) => !row.status || row.status === "synced")
+        .map((row) => String(row.source_payment_id))
+    );
+
+    const sourcePayments = sourceResult.data || [];
+
+    const eligiblePayments = sourcePayments.filter((payment) => {
+      const sourceId = operationalPaymentSourceId(payment);
+      return isOperationalPaymentEligible(payment) && !syncedIds.has(sourceId);
+    });
+
+    const ignoredBeforeCutoff = sourcePayments.filter((payment) => {
+      const date = operationalPaymentDate(payment);
+      return date && date < CRM_SYNC_START_DATE;
+    }).length;
+
+    if (!eligiblePayments.length) {
+      setStatus(
+        `No hay pagos nuevos para sincronizar desde ${CRM_SYNC_START_DATE}. Ignorados anteriores: ${ignoredBeforeCutoff}.`,
+        "ok"
+      );
+      await loadFinance();
+      return;
+    }
+
+    const grouped = groupPaymentsByAccount(eligiblePayments);
+    const accountUpdates = [];
+
+    for (const [accountKey, amount] of Object.entries(grouped)) {
+      const account = findAccountByKey(accountKey);
+      if (!account) {
+        throw new Error(`No encontré la cuenta ${ACCOUNT_LABELS[accountKey]} para sumar pagos.`);
+      }
+
+      const currentBalance = accountBalance(account);
+      const newBalance = currentBalance + amount;
+
+      accountUpdates.push({
+        accountKey,
+        account,
+        amount,
+        currentBalance,
+        newBalance,
+      });
+    }
+
+    const summary = accountUpdates
+      .map((item) => `${ACCOUNT_LABELS[item.accountKey]} + ${money(item.amount)} = ${money(item.newBalance)}`)
+      .join("\n");
+
+    const finalConfirm = window.confirm(
+      `Pagos nuevos encontrados: ${eligiblePayments.length}\n\n${summary}\n\n¿Aplicar sincronización?`
+    );
+
+    if (!finalConfirm) {
+      setStatus("Sincronización cancelada antes de aplicar cambios.", "ok");
+      return;
+    }
+
+    for (const item of accountUpdates) {
+      const { error } = await db
+        .from("finance_accounts")
+        .update({ current_balance: item.newBalance })
+        .eq("id", item.account.id);
+
+      if (error) throw error;
+    }
+
+    const logRows = eligiblePayments.map((payment) => {
+      const accountKey = operationalPaymentAccountKey(payment);
+
+      return {
+        source_table: "event_payments",
+        source_payment_id: operationalPaymentSourceId(payment),
+        payment_date: operationalPaymentDate(payment),
+        amount: operationalPaymentAmount(payment),
+        destination_account: ACCOUNT_LABELS[accountKey],
+        raw_destination: operationalPaymentDestinationLabel(payment),
+        status: "synced",
+        synced_at: new Date().toISOString(),
+      };
+    });
+
+    const { error: insertLogError } = await db
+      .from("finance_crm_payment_sync_log")
+      .insert(logRows);
+
+    if (insertLogError) throw insertLogError;
+
+    setStatus(`Sincronización completa: ${eligiblePayments.length} pagos nuevos aplicados.`, "ok");
+    await loadFinance();
+  } catch (error) {
+    console.error("Error sincronizando CRM operativo:", error);
+    setStatus(error.message || "Error sincronizando CRM operativo.", "error");
+  }
+}
+
+
 async function loadFinance() {
   setStatus("Cargando liquidez, gastos e historial desde Supabase...");
 
@@ -1022,6 +1247,9 @@ async function loadFinance() {
 document.addEventListener("DOMContentLoaded", () => {
   const refreshBtn = document.getElementById("refreshBtn");
   if (refreshBtn) refreshBtn.addEventListener("click", loadFinance);
+
+  const syncCrmBtn = document.getElementById("syncCrmBtn");
+  if (syncCrmBtn) syncCrmBtn.addEventListener("click", syncCrmPayments);
 
   const openExpensesBtn = document.getElementById("openExpensesBtn");
   if (openExpensesBtn) openExpensesBtn.addEventListener("click", openExpensesWorkspace);

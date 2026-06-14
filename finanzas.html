@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TopDJs Finanzas CRM v2.1.2</title>
-  <link rel="stylesheet" href="finanzas.css?v=212" />
+  <title>TopDJs Finanzas CRM v2.1.3</title>
+  <link rel="stylesheet" href="finanzas.css?v=213" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     window.SUPABASE_URL = "https://xbrsnmbmkbvxyhrtiywy.supabase.co";
@@ -15,10 +15,10 @@
   <div class="app-shell">
     <header class="topbar">
       <div>
-        <p class="eyebrow">TopDJs Finanzas CRM v2.1.2 · Panel limpio</p>
+        <p class="eyebrow">TopDJs Finanzas CRM v2.1.3 · Panel limpio</p>
         <h1>Finanzas TopDJs</h1>
         <p class="subtitle">
-          Panel principal compacto: liquidez arriba y accesos por módulos para dejar espacio a tarjetas de crédito.
+          Panel principal compacto. La sincronización del CRM operativo solo toma pagos desde el 15-jun-2026 para no duplicar anticipos anteriores.
         </p>
       </div>
 
@@ -31,6 +31,7 @@
           Cargando liquidez, gastos e historial desde Supabase...
         </section>
         <button id="refreshBtn" type="button">Actualizar</button>
+        <button id="syncCrmBtn" type="button" class="sync">Sincronizar CRM</button>
       </div>
 
       <section class="liquidity-grid" aria-label="Resumen de liquidez">
@@ -149,6 +150,6 @@
     </div>
   </section>
 
-  <script src="finanzas.js?v=212"></script>
+  <script src="finanzas.js?v=213"></script>
 </body>
 </html>
