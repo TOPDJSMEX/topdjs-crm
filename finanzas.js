@@ -1,6 +1,7 @@
 // =======================================================
-// TopDJs Finanzas CRM v2.0.5
+// TopDJs Finanzas CRM v2.0.6
 // Liquidez + CRUD de gastos fijos
+// Fix: editar guarda sobre las columnas reales usadas por Finanzas.
 // No se capturan ingresos manualmente en Finanzas.
 // =======================================================
 
@@ -53,12 +54,6 @@ function firstValue(object, keys, fallback = "") {
     }
   }
   return fallback;
-}
-
-function numberValue(object, keys, fallback = 0) {
-  const value = firstValue(object, keys, fallback);
-  const number = Number(value);
-  return Number.isFinite(number) ? number : fallback;
 }
 
 function setText(id, value) {
@@ -125,28 +120,27 @@ function renderBalances(balances) {
   setText("saldoEfectivo", money(balances.efectivo));
 }
 
+// Columnas reales/preferidas de finance_fixed_expenses:
+// name, amount, frequency, due_day, suggested_account, category, is_active.
+// También se leen nombres anteriores por compatibilidad.
 function expenseName(expense) {
-  return firstValue(expense, ["expense_name", "name", "concept", "description", "label"], "-");
+  return firstValue(expense, ["name", "expense_name", "concept", "description", "label"], "-");
 }
 
 function expenseAmount(expense) {
-  return numberValue(expense, ["amount", "monthly_amount", "payment_amount", "monto"], 0);
+  return Number(firstValue(expense, ["amount", "monthly_amount", "payment_amount", "monto"], 0)) || 0;
 }
 
 function expenseDay(expense) {
-  return firstValue(expense, ["payment_day", "due_day", "day", "day_of_month", "cutoff_day"], "");
+  return firstValue(expense, ["due_day", "payment_day", "day", "day_of_month", "cutoff_day"], "");
 }
 
 function expenseAccount(expense) {
-  return firstValue(expense, ["account", "payment_account", "paid_from_account", "source_account", "bank"], "-");
+  return firstValue(expense, ["suggested_account", "payment_account", "paid_from_account", "source_account", "account", "bank"], "Flexible");
 }
 
 function expenseCategory(expense) {
   return firstValue(expense, ["category", "type", "expense_type"], "Fijo");
-}
-
-function expenseNotes(expense) {
-  return firstValue(expense, ["notes", "note", "status"], "");
 }
 
 function isActiveExpense(expense) {
@@ -186,13 +180,12 @@ function renderFixedExpenses() {
     .map((expense) => {
       const day = expenseDay(expense);
       const dayLabel = day ? `Día ${String(day).padStart(2, "0")}` : "Pendiente";
-      const notes = expenseNotes(expense);
 
       return `
         <article class="expense-row">
           <div class="expense-main">
             <strong>${escapeHtml(expenseName(expense))}</strong>
-            <small>${escapeHtml(notes || "Sin notas")}</small>
+            <small>Gasto fijo mensual</small>
           </div>
 
           <div class="expense-meta">
@@ -306,10 +299,10 @@ function getExpenseFormPayload() {
   return {
     name,
     amount,
-    payment_day: day,
-    payment_account: account,
+    frequency: "monthly",
+    due_day: day,
+    suggested_account: account,
     category: "Fijo",
-    notes: "",
     is_active: true,
   };
 }
