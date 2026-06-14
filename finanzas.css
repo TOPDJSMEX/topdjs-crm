@@ -1173,3 +1173,179 @@ td.amount {
     grid-row: auto;
   }
 }
+
+
+/* ================================
+   TOPDJS FINANZAS v1.0.5
+   Organización final: Cuentas arriba, Tarjetas abajo
+   Cada tarjeta ocupa una fila completa a todo lo ancho
+================================ */
+
+/* Antes cuentas y tarjetas estaban lado a lado. Ahora quedan en una sola columna. */
+.panel-grid {
+  grid-template-columns: 1fr !important;
+  align-items: stretch !important;
+  gap: 24px !important;
+}
+
+.panel-grid > .panel {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+}
+
+/* La tabla de cuentas se queda limpia y arriba */
+#accountsList.table-wrap,
+#accountsList {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+#accountsList table {
+  width: 100% !important;
+}
+
+/* La sección de tarjetas ya no debe comportarse como tabla con scroll */
+#cardsList {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  overflow: visible !important;
+}
+
+.table-wrap:has(#cardsList) {
+  overflow-x: visible !important;
+}
+
+.cards-board-wide,
+.cards-board-clean.cards-board-wide {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  padding: 20px 24px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 18px !important;
+}
+
+.finance-card-wide,
+.finance-card-clean.finance-card-wide {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  padding: 18px 20px !important;
+}
+
+/* Fila completa: identidad + datos principales + acción */
+.card-wide-grid {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  display: grid !important;
+  grid-template-columns:
+    minmax(260px, 1.45fr)
+    minmax(170px, 0.95fr)
+    minmax(170px, 0.95fr)
+    minmax(170px, 0.95fr)
+    minmax(190px, 1fr)
+    minmax(160px, 0.85fr)
+    minmax(170px, 0.9fr) !important;
+  gap: 14px !important;
+  align-items: stretch !important;
+}
+
+.wide-identity,
+.wide-block,
+.wide-actions {
+  min-width: 0 !important;
+  overflow: hidden !important;
+}
+
+.wide-title-copy h3 {
+  overflow: visible !important;
+  overflow-wrap: normal !important;
+  word-break: normal !important;
+}
+
+.wide-debt strong,
+.wide-computed .computed-money,
+.wide-block strong {
+  white-space: nowrap !important;
+  overflow: visible !important;
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+}
+
+.wide-input-block .money-input,
+.finance-card-wide .money-input {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.wide-actions .save-card-btn {
+  width: 100% !important;
+}
+
+/* En pantallas medianas sigue sin scroll: cada tarjeta se acomoda en bloques. */
+@media (max-width: 1350px) {
+  .card-wide-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  .wide-identity {
+    grid-column: 1 / -1 !important;
+  }
+
+  .wide-actions {
+    grid-column: 1 / -1 !important;
+    display: grid !important;
+    grid-template-columns: 1fr auto !important;
+    align-items: center !important;
+  }
+
+  .wide-actions .save-card-btn {
+    width: auto !important;
+    min-width: 190px !important;
+  }
+}
+
+@media (max-width: 820px) {
+  .card-wide-grid {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  .wide-identity,
+  .wide-actions {
+    grid-column: 1 / -1 !important;
+  }
+}
+
+@media (max-width: 600px) {
+  .cards-board-wide,
+  .cards-board-clean.cards-board-wide {
+    padding: 12px !important;
+  }
+
+  .card-wide-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .wide-identity,
+  .wide-actions {
+    grid-column: auto !important;
+  }
+
+  .wide-actions {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .wide-actions .save-card-btn {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+}

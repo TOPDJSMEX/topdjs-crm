@@ -1,6 +1,6 @@
 // =======================================================
-// TOPDJS FINANZAS CRM v1.0.4
-// Tarjetas en una fila: límite capturado, disponible calculado, mínimo editable y vista completa
+// TOPDJS FINANZAS CRM v1.0.5
+// Layout vertical: Cuentas arriba y Prioridad tarjetas abajo, cada tarjeta a todo lo ancho
 // =======================================================
 
 // IMPORTANTE:
