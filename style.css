@@ -1263,10 +1263,6 @@ header{
   font-size:18px !important;
   text-shadow:0 0 10px rgba(44,255,154,.28);
 }
-.day.dayToday .pill{
-  background:rgba(44,255,154,.10) !important;
-  border-left:4px solid #2CFF9A !important;
-}
 .todayLabel{
   display:inline-flex;
   margin-left:8px;
@@ -1282,4 +1278,12 @@ header{
 }
 .day.dayToday.outside{
   opacity:1 !important;
+}
+
+
+/* TOPDJS CRM v11.4.35 - Eventos del día actual conservan azul */
+.day.dayToday .pill{
+  background:#1e293b !important;
+  border-left:4px solid var(--accent) !important;
+  color:var(--text) !important;
 }

@@ -1,9 +1,9 @@
-TOPDJS CRM v11.4.34 - CALENDARIO HOY VERDE
+TOPDJS CRM v11.4.35 - CALENDARIO HOY EVENTOS AZULES
 
-Nuevo:
-- En la sección Calendario, el día en curso ahora se resalta en verde.
-- La casilla del día actual queda con borde, brillo y fondo verde para ubicarla rápidamente.
-- También se agrega una pequeña etiqueta HOY dentro de la casilla.
+Cambio:
+- La casilla del día actual se mantiene en verde.
+- Los botones/píldoras de eventos dentro del día actual vuelven a quedar en azul como antes.
+- Se evita que los eventos del día se confundan con el color verde de la casilla HOY.
 
 Mantiene:
 - Botones de acción modernos
@@ -16,6 +16,6 @@ Mantiene:
 
 Instalación:
 1. Subir los 7 archivos a GitHub.
-2. Commit: TopDJs CRM v11.4.34 - Calendario hoy verde
+2. Commit: TopDJs CRM v11.4.35 - Calendario hoy eventos azules
 3. Deploy to Production en Vercel.
 4. Recarga fuerte: Option + Command + R.
