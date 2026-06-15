@@ -1,11 +1,12 @@
-TOPDJS CRM v11.4.35 - CALENDARIO HOY EVENTOS AZULES
+TOPDJS CRM v11.4.36 - VENCIDO EN CONFIRMADO SIN ANTICIPO
 
-Cambio:
-- La casilla del día actual se mantiene en verde.
-- Los botones/píldoras de eventos dentro del día actual vuelven a quedar en azul como antes.
-- Se evita que los eventos del día se confundan con el color verde de la casilla HOY.
+Nuevo:
+- En Eventos Operativos, si un evento está en estado Confirmado sin anticipo y su fecha ya pasó, conserva su casilla iluminada de Confirmado sin anticipo.
+- Además aparece una segunda etiqueta roja de VENCIDO para identificarlo también como vencido.
+- Esto evita perder el estado comercial mientras se ve claramente que ya está vencido.
 
 Mantiene:
+- Calendario hoy con casilla verde y eventos azules
 - Botones de acción modernos
 - Header ajustado
 - Estado del evento sin duplicar
@@ -16,6 +17,6 @@ Mantiene:
 
 Instalación:
 1. Subir los 7 archivos a GitHub.
-2. Commit: TopDJs CRM v11.4.35 - Calendario hoy eventos azules
+2. Commit: TopDJs CRM v11.4.36 - Vencido en confirmado sin anticipo
 3. Deploy to Production en Vercel.
 4. Recarga fuerte: Option + Command + R.

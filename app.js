@@ -683,6 +683,7 @@ function operationalEventStatus(r){
   r=normalizeRecord(r);
   const s=normalizeCommercialStatus(r.status);
   if(s==="COTIZADO")return {label:"🧾 COTIZADO", cls:"eventQuoted"};
+  if(s==="CONFIRMADO SIN ANTICIPO" && isPastEvent(r) && !isLiquidated(r))return {label:"🔴 VENCIDO", cls:"eventPastDue"};
   if(s==="CONFIRMADO SIN ANTICIPO")return {label:"⚠️ CONFIRMADO SIN ANTICIPO", cls:"eventConfirmedNoPay"};
   if(s==="CONFIRMADO CON ANTICIPO" && isPastEvent(r) && !isLiquidated(r))return {label:`🔴 COBRAR ${money(bal(r))}`, cls:"eventPastDue"};
   if(s==="CONFIRMADO CON ANTICIPO")return {label:"✅ CONFIRMADO CON ANTICIPO", cls:"eventConfirmedPay"};
