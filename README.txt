@@ -1,10 +1,10 @@
-TOPDJS CRM v11.4.31 - HEADER BRANDING CENTRADO
+TOPDJS CRM v11.4.32 - HEADER AJUSTADO
 
 Nuevo:
-- Logo TopDJs centrado en el encabezado.
-- Debajo del logo aparece: Audio · Iluminación · Video · DJ.
-- Estilo elegante con letras azules para reforzar branding.
-- Mejor aprovechamiento del espacio libre en el header.
+- Se mantiene a la izquierda el encabezado con TOPDJS CRM v11.4.32 y la línea Offline + Supabase + auditoría + dashboard real + gastos por evento.
+- Se deja centrado únicamente el logo TopDJs.
+- Debajo del logo queda: Audio · Iluminación · Video · DJ en letras azules.
+- TopActions permanece a la derecha.
 
 Mantiene:
 - Estado del evento sin duplicar
@@ -16,6 +16,6 @@ Mantiene:
 
 Instalación:
 1. Subir los 7 archivos a GitHub.
-2. Commit: TopDJs CRM v11.4.31 - Header branding centrado
+2. Commit: TopDJs CRM v11.4.32 - Header ajustado
 3. Deploy to Production en Vercel.
 4. Recarga fuerte: Option + Command + R.

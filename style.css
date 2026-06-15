@@ -1096,3 +1096,68 @@ header{
   .brandHeader.brandHeaderCentered .brandSub{font-size:11px !important;letter-spacing:.1em !important;}
   .brandHeader.brandHeaderCentered h1{font-size:22px !important;}
 }
+
+
+/* TOPDJS CRM v11.4.32 - Header con logo centrado y datos a la izquierda */
+header{
+  display:grid !important;
+  grid-template-columns:minmax(320px,1.1fr) minmax(220px,.9fr) auto !important;
+  align-items:center !important;
+  gap:18px !important;
+}
+.headerInfoLeft{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  justify-content:center;
+  text-align:left;
+}
+.headerInfoLeft h1{
+  margin:0 !important;
+  line-height:1.05 !important;
+  color:#fff !important;
+  text-shadow:0 0 12px rgba(0,184,255,.22);
+}
+.headerMetaLeft{
+  margin:8px 0 0 !important;
+  color:#b8c7d9 !important;
+}
+.headerCenterBrand{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  gap:8px;
+}
+.headerCenterLogo{
+  height:78px !important;
+  width:78px !important;
+  margin:0 auto !important;
+  filter:drop-shadow(0 0 16px rgba(0,184,255,.5));
+}
+.headerCenterSub{
+  margin:0 !important;
+  color:#35d7ff !important;
+  font-size:14px !important;
+  font-weight:900 !important;
+  letter-spacing:.14em !important;
+  text-transform:uppercase !important;
+}
+.topActions{
+  justify-content:flex-end !important;
+  align-self:center !important;
+}
+@media(max-width:980px){
+  header{
+    grid-template-columns:1fr !important;
+    text-align:center !important;
+  }
+  .headerInfoLeft{align-items:center !important;text-align:center !important;}
+  .topActions{justify-content:center !important;}
+}
+@media(max-width:720px){
+  .headerCenterLogo{height:64px !important;width:64px !important;}
+  .headerCenterSub{font-size:11px !important;letter-spacing:.08em !important;}
+  .headerInfoLeft h1{font-size:24px !important;}
+}
