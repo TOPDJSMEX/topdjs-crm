@@ -1,12 +1,13 @@
-TOPDJS CRM v11.4.32 - HEADER AJUSTADO
+TOPDJS CRM v11.4.33 - BOTONES DE ACCIÓN MODERNOS
 
 Nuevo:
-- Se mantiene a la izquierda el encabezado con TOPDJS CRM v11.4.32 y la línea Offline + Supabase + auditoría + dashboard real + gastos por evento.
-- Se deja centrado únicamente el logo TopDJs.
-- Debajo del logo queda: Audio · Iluminación · Video · DJ en letras azules.
-- TopActions permanece a la derecha.
+- Botones de acción con colores distintos para evitar repetición visual.
+- Estilo más moderno con degradados, brillo neón controlado y mejor separación.
+- VER, GASTOS, ARCHIVO, EDITAR, PEDIDO BODEGA, REGISTRAR PAGO y BORRAR usan colores únicos.
+- Mantiene el layout estable de Eventos Operativos.
 
 Mantiene:
+- Header ajustado
 - Estado del evento sin duplicar
 - Pendiente confirmación
 - Estados comerciales
@@ -16,6 +17,6 @@ Mantiene:
 
 Instalación:
 1. Subir los 7 archivos a GitHub.
-2. Commit: TopDJs CRM v11.4.32 - Header ajustado
+2. Commit: TopDJs CRM v11.4.33 - Botones de acción modernos
 3. Deploy to Production en Vercel.
 4. Recarga fuerte: Option + Command + R.
