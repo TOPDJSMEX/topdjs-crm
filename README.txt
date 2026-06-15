@@ -1,20 +1,21 @@
-TOPDJS CRM v11.4.30 - ESTADO SIN DUPLICAR
+TOPDJS CRM v11.4.31 - HEADER BRANDING CENTRADO
 
-Cambio:
-- En Eventos Operativos ya no se repite el estado del evento en dos etiquetas.
-- Se conserva la casilla iluminada de Estado del evento.
-- Solo aparece una segunda etiqueta operativa cuando agrega información distinta, como COBRAR en eventos vencidos.
+Nuevo:
+- Logo TopDJs centrado en el encabezado.
+- Debajo del logo aparece: Audio · Iluminación · Video · DJ.
+- Estilo elegante con letras azules para reforzar branding.
+- Mejor aprovechamiento del espacio libre en el header.
 
 Mantiene:
-- Pendiente = eventos cotizados pendientes de confirmación.
-- Confirmado sin anticipo separado.
-- Confirmado con anticipo separado.
-- Fecha Día/Mes/Año.
-- Clientes acciones alineadas.
-- Calendario anual con años.
+- Estado del evento sin duplicar
+- Pendiente confirmación
+- Estados comerciales
+- Fecha día/mes/año
+- Calendario anual con años
+- Clientes acciones alineadas
 
 Instalación:
 1. Subir los 7 archivos a GitHub.
-2. Commit: TopDJs CRM v11.4.30 - Estado sin duplicar
+2. Commit: TopDJs CRM v11.4.31 - Header branding centrado
 3. Deploy to Production en Vercel.
 4. Recarga fuerte: Option + Command + R.

@@ -1034,3 +1034,65 @@ body.modal-open .operTable thead th{
 .eventCanceled td,.eventLost td{opacity:.65}
 @media(max-width:1350px){.summaryDashboard{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:760px){.summaryDashboard{grid-template-columns:1fr}}
+
+
+/* TOPDJS CRM v11.4.31 - Header branding centrado */
+.headerBrandWrap{
+  flex:1 1 auto;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+}
+.brandHeader.brandHeaderCentered{
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:center !important;
+  justify-content:center !important;
+  gap:8px !important;
+  min-height:auto !important;
+  width:100%;
+}
+.brandHeader.brandHeaderCentered .brandLogo{
+  height:86px !important;
+  width:86px !important;
+  margin:0 auto !important;
+  filter:drop-shadow(0 0 16px rgba(0,184,255,.5));
+}
+.brandHeader.brandHeaderCentered h1{
+  margin:2px 0 0 !important;
+  font-size:26px !important;
+  line-height:1.05 !important;
+  letter-spacing:.06em !important;
+  text-align:center !important;
+}
+.brandHeader.brandHeaderCentered .brandSub{
+  margin:0 !important;
+  color:#35d7ff !important;
+  font-size:14px !important;
+  font-weight:900 !important;
+  letter-spacing:.16em !important;
+  text-transform:uppercase !important;
+  text-align:center !important;
+}
+.headerMeta{
+  margin:8px 0 0 !important;
+  text-align:center !important;
+}
+header{
+  align-items:center !important;
+}
+.topActions{
+  align-self:center !important;
+}
+@media(max-width:900px){
+  header{display:flex !important;flex-direction:column !important;align-items:center !important;}
+  .headerBrandWrap{width:100% !important;}
+  .topActions{justify-content:center !important;width:100% !important;}
+}
+@media(max-width:720px){
+  .brandHeader.brandHeaderCentered .brandLogo{height:70px !important;width:70px !important;}
+  .brandHeader.brandHeaderCentered .brandSub{font-size:11px !important;letter-spacing:.1em !important;}
+  .brandHeader.brandHeaderCentered h1{font-size:22px !important;}
+}
