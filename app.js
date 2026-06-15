@@ -1174,9 +1174,11 @@ function renderCalendar(){
   updateCalendarControls();
   ["LUN","MAR","MIÉ","JUE","VIE","SÁB","DOM"].forEach(d=>{let e=document.createElement("div");e.className="dayHeader";e.textContent=d;grid.appendChild(e)});
   const first=new Date(y,m,1),off=(first.getDay()+6)%7,start=new Date(y,m,1-off);
+  const today=todayISO();
   for(let i=0;i<42;i++){
     let d=new Date(start);d.setDate(start.getDate()+i);let ds=d.toISOString().slice(0,10);
-    let cell=document.createElement("div");cell.className="day"+(d.getMonth()!=m?" outside":"");cell.innerHTML=`<strong>${d.getDate()}</strong>`;
+    const isToday=ds===today;
+    let cell=document.createElement("div");cell.className="day"+(d.getMonth()!=m?" outside":"")+(isToday?" dayToday":"");cell.innerHTML=`<strong>${d.getDate()}</strong>${isToday?'<span class="todayLabel">HOY</span>':''}`;
     records.filter(r=>!r._deleted&&r.date===ds).forEach(r=>{
       r=normalizeRecord(r);
       let b=document.createElement("button");b.className="pill";
