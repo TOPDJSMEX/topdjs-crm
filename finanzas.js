@@ -1,6 +1,6 @@
 // =======================================================
-// TopDJs Finanzas CRM v2.1.9
-// Panel limpio + gastos fijos + tarjetas con próximo pago detallado + sincronización CRM + tacómetros + asistente interno
+// TopDJs Finanzas CRM v2.2.0
+// Panel limpio + pago manual + gastos fijos + tarjetas + sincronización CRM + tacómetros + asistente interno
 // =======================================================
 
 const SUPABASE_URL = window.SUPABASE_URL;
@@ -13,6 +13,7 @@ let fixedExpensesCache = [];
 let paymentsCache = [];
 let creditCardsCache = [];
 let syncedCrmPaymentsCache = [];
+let manualPaymentsCache = [];
 let editingExpenseId = null;
 let payingExpenseId = null;
 let openedExpenseId = null;
@@ -93,6 +94,32 @@ function setStatus(message, type = "") {
   if (!element) return;
   element.className = `status-box ${type}`.trim();
   element.textContent = message;
+}
+
+function openManualPaymentWorkspace() {
+  const workspace = document.getElementById("manualPaymentWorkspace");
+  if (!workspace) return;
+
+  const dateInput = document.getElementById("manualPaymentDate");
+  const amountInput = document.getElementById("manualPaymentAmount");
+  const conceptInput = document.getElementById("manualPaymentConcept");
+
+  if (dateInput && !dateInput.value) dateInput.value = isoToday();
+  if (amountInput) amountInput.value = "";
+  if (conceptInput) conceptInput.value = "";
+
+  workspace.classList.remove("hidden");
+  document.body.classList.add("workspace-open");
+
+  if (amountInput) amountInput.focus();
+}
+
+function closeManualPaymentWorkspace() {
+  const workspace = document.getElementById("manualPaymentWorkspace");
+  if (!workspace) return;
+
+  workspace.classList.add("hidden");
+  document.body.classList.remove("workspace-open");
 }
 
 function openExpensesWorkspace() {
@@ -1462,15 +1489,26 @@ function currentMonthIncomeTotal() {
   const currentYear = now.getFullYear();
   const currentMonth = now.getMonth();
 
-  return (syncedCrmPaymentsCache || []).reduce((sum, row) => {
-    const iso = toIsoDate(firstValue(row, ["payment_date", "created_at", "synced_at"], ""));
+  const allIncomeRows = [
+    ...(syncedCrmPaymentsCache || []).map((row) => ({
+      amount: firstValue(row, ["amount"], 0),
+      date: firstValue(row, ["payment_date", "created_at", "synced_at"], ""),
+    })),
+    ...(manualPaymentsCache || []).map((row) => ({
+      amount: firstValue(row, ["amount"], 0),
+      date: firstValue(row, ["paid_at", "created_at"], ""),
+    })),
+  ];
+
+  return allIncomeRows.reduce((sum, row) => {
+    const iso = toIsoDate(row.date);
     if (!iso) return sum;
 
     const date = new Date(`${iso}T00:00:00`);
     if (Number.isNaN(date.getTime())) return sum;
     if (date.getFullYear() !== currentYear || date.getMonth() !== currentMonth) return sum;
 
-    return sum + (Number(firstValue(row, ["amount"], 0)) || 0);
+    return sum + (Number(row.amount) || 0);
   }, 0);
 }
 
@@ -1800,6 +1838,72 @@ function toIsoDate(value) {
   return "";
 }
 
+
+function getManualPaymentPayload() {
+  const paidAt = document.getElementById("manualPaymentDate")?.value || isoToday();
+  const amount = Number(document.getElementById("manualPaymentAmount")?.value || 0);
+  const accountKey = document.getElementById("manualPaymentAccount")?.value || "";
+  const concept = String(document.getElementById("manualPaymentConcept")?.value || "").trim();
+
+  if (!paidAt) throw new Error("Selecciona la fecha del pago.");
+  if (!Number.isFinite(amount) || amount <= 0) throw new Error("La cantidad debe ser mayor a cero.");
+  if (!accountKey || !ACCOUNT_LABELS[accountKey]) throw new Error("Selecciona una cuenta válida.");
+  if (!concept) throw new Error("Escribe el concepto del pago.");
+
+  return { paidAt, amount, accountKey, concept };
+}
+
+async function saveManualPayment(event) {
+  event.preventDefault();
+
+  try {
+    const { paidAt, amount, accountKey, concept } = getManualPaymentPayload();
+
+    const account = findAccountByKey(accountKey);
+    if (!account) throw new Error(`No encontré la cuenta ${ACCOUNT_LABELS[accountKey]} en finance_accounts.`);
+
+    const currentBalance = accountBalance(account);
+    const newBalance = currentBalance + amount;
+
+    const confirmed = window.confirm(
+      `Confirmar pago recibido por ${money(amount)}.\n\n` +
+      `Concepto: ${concept}\n` +
+      `Cuenta destino: ${ACCOUNT_LABELS[accountKey]}\n\n` +
+      `Saldo actual: ${money(currentBalance)}\n` +
+      `Nuevo saldo: ${money(newBalance)}`
+    );
+
+    if (!confirmed) return;
+
+    const { error: insertError } = await db
+      .from("finance_manual_payments")
+      .insert({
+        concept,
+        amount,
+        deposited_to_account: ACCOUNT_LABELS[accountKey],
+        paid_at: paidAt,
+        created_at: new Date().toISOString(),
+      });
+
+    if (insertError) throw insertError;
+
+    const { error: accountError } = await db
+      .from("finance_accounts")
+      .update({ current_balance: newBalance })
+      .eq("id", account.id);
+
+    if (accountError) throw accountError;
+
+    setStatus(`Pago guardado: ${money(amount)} depositado a ${ACCOUNT_LABELS[accountKey]}.`, "ok");
+    closeManualPaymentWorkspace();
+    await loadFinance();
+  } catch (error) {
+    console.error("Error guardando pago manual:", error);
+    setStatus(error.message || "Error guardando pago manual.", "error");
+  }
+}
+
+
 function operationalPaymentSourceId(payment) {
   return String(firstValue(payment, [
     "id",
@@ -2002,12 +2106,13 @@ async function syncCrmPayments() {
 async function loadFinance() {
   setStatus("Cargando liquidez, gastos e historial desde Supabase...");
 
-  const [accountsResult, expensesResult, paymentsResult, cardsResult, crmSyncResult] = await Promise.all([
+  const [accountsResult, expensesResult, paymentsResult, cardsResult, crmSyncResult, manualPaymentsResult] = await Promise.all([
     db.from("finance_accounts").select("*"),
     db.from("finance_fixed_expenses").select("*"),
     db.from("finance_fixed_expense_payments").select("*").order("created_at", { ascending: false }).limit(50),
     db.from("finance_credit_cards").select("*"),
     db.from("finance_crm_payment_sync_log").select("*"),
+    db.from("finance_manual_payments").select("*"),
   ]);
 
   if (accountsResult.error) {
@@ -2061,6 +2166,13 @@ async function loadFinance() {
     syncedCrmPaymentsCache = crmSyncResult.data || [];
   }
 
+  if (manualPaymentsResult.error) {
+    console.error("Error cargando pagos manuales:", manualPaymentsResult.error);
+    manualPaymentsCache = [];
+  } else {
+    manualPaymentsCache = manualPaymentsResult.data || [];
+  }
+
   renderFinancialGauges();
 
   if (openedExpenseId) {
@@ -2073,6 +2185,18 @@ async function loadFinance() {
 document.addEventListener("DOMContentLoaded", () => {
   const refreshBtn = document.getElementById("refreshBtn");
   if (refreshBtn) refreshBtn.addEventListener("click", loadFinance);
+
+  const manualPaymentBtn = document.getElementById("manualPaymentBtn");
+  if (manualPaymentBtn) manualPaymentBtn.addEventListener("click", openManualPaymentWorkspace);
+
+  const closeManualPaymentBtn = document.getElementById("closeManualPaymentBtn");
+  if (closeManualPaymentBtn) closeManualPaymentBtn.addEventListener("click", closeManualPaymentWorkspace);
+
+  const cancelManualPaymentBtn = document.getElementById("cancelManualPaymentBtn");
+  if (cancelManualPaymentBtn) cancelManualPaymentBtn.addEventListener("click", closeManualPaymentWorkspace);
+
+  const manualPaymentForm = document.getElementById("manualPaymentForm");
+  if (manualPaymentForm) manualPaymentForm.addEventListener("submit", saveManualPayment);
 
   const analyzeFinanceBtn = document.getElementById("analyzeFinanceBtn");
   if (analyzeFinanceBtn) analyzeFinanceBtn.addEventListener("click", renderInternalStrategies);
@@ -2100,6 +2224,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
+      closeManualPaymentWorkspace();
       closeExpensesWorkspace();
       closeCardsWorkspace();
     }

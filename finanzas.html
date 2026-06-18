@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TopDJs Finanzas CRM v2.1.9</title>
-  <link rel="stylesheet" href="finanzas.css?v=219" />
+  <title>TopDJs Finanzas CRM v2.2.0</title>
+  <link rel="stylesheet" href="finanzas.css?v=220" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     window.SUPABASE_URL = "https://xbrsnmbmkbvxyhrtiywy.supabase.co";
@@ -15,10 +15,10 @@
   <div class="app-shell">
     <header class="topbar">
       <div>
-        <p class="eyebrow">TopDJs Finanzas CRM v2.1.9 · Panel limpio</p>
+        <p class="eyebrow">TopDJs Finanzas CRM v2.2.0 · Panel limpio</p>
         <h1>Finanzas TopDJs</h1>
         <p class="subtitle">
-          Panel principal compacto con liquidez, gastos, tarjetas, próximo pago detallado, tacómetros y asistente financiero interno.
+          Panel principal compacto con liquidez, pago manual, gastos, tarjetas, tacómetros y asistente financiero interno.
         </p>
       </div>
 
@@ -31,6 +31,7 @@
           Cargando liquidez, gastos e historial desde Supabase...
         </section>
         <button id="refreshBtn" type="button">Actualizar</button>
+        <button id="manualPaymentBtn" type="button" class="pay">Pago</button>
         <button id="syncCrmBtn" type="button" class="sync">Sincronizar CRM</button>
       </div>
 
@@ -220,6 +221,62 @@
     </main>
   </div>
 
+
+  <section id="manualPaymentWorkspace" class="workspace-overlay hidden" aria-label="Registrar pago manual">
+    <div class="workspace-card manual-payment-card">
+      <div class="workspace-header">
+        <div>
+          <span class="module-eyebrow">Pago manual</span>
+          <h2>Registrar pago recibido</h2>
+          <p>Captura fecha, cantidad, concepto y la cuenta donde se depositó.</p>
+        </div>
+
+        <div class="workspace-actions">
+          <button id="closeManualPaymentBtn" type="button" class="secondary">Cerrar</button>
+        </div>
+      </div>
+
+      <div class="manual-payment-body">
+        <form id="manualPaymentForm" class="manual-payment-form">
+          <div class="form-field">
+            <label>Fecha</label>
+            <input id="manualPaymentDate" type="date" required />
+          </div>
+
+          <div class="form-field">
+            <label>Cantidad</label>
+            <input id="manualPaymentAmount" type="number" min="0" step="1" placeholder="0" required />
+          </div>
+
+          <div class="form-field">
+            <label>Cuenta donde se depositó</label>
+            <select id="manualPaymentAccount" required>
+              <option value="bbva">BBVA</option>
+              <option value="nu">NU</option>
+              <option value="manuel">Manuel</option>
+              <option value="efectivo">Efectivo</option>
+            </select>
+          </div>
+
+          <div class="form-field full">
+            <label>Concepto</label>
+            <input id="manualPaymentConcept" type="text" placeholder="Ej. Anticipo boda, renta de audio, ajuste de caja..." required />
+          </div>
+
+          <div class="manual-payment-actions">
+            <button type="submit" class="pay">Guardar pago</button>
+            <button type="button" class="secondary" id="cancelManualPaymentBtn">Cancelar</button>
+          </div>
+        </form>
+
+        <div class="manual-payment-note">
+          Este registro suma dinero a la cuenta seleccionada y queda guardado en historial interno de pagos manuales.
+        </div>
+      </div>
+    </div>
+  </section>
+
+
   <section id="expensesWorkspace" class="workspace-overlay hidden" aria-label="Ventana de gastos fijos">
     <div class="workspace-card">
       <div class="workspace-header">
@@ -293,6 +350,6 @@
     </div>
   </section>
 
-  <script src="finanzas.js?v=219"></script>
+  <script src="finanzas.js?v=220"></script>
 </body>
 </html>
