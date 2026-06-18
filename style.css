@@ -1287,3 +1287,24 @@ header{
   border-left:4px solid var(--accent) !important;
   color:var(--text) !important;
 }
+
+
+/* TOPDJS CRM v11.4.37 - Cotizar desde Clientes */
+.clientQuoteBtn{
+  margin-top:10px !important;
+  padding:10px 14px !important;
+  border-radius:14px !important;
+  background:linear-gradient(135deg,#00B8FF,#0F766E) !important;
+  color:#ffffff !important;
+  border:1px solid rgba(126,231,255,.75) !important;
+  font-size:12px !important;
+  font-weight:950 !important;
+  letter-spacing:.04em !important;
+  text-transform:uppercase !important;
+  box-shadow:0 0 18px rgba(0,184,255,.28),0 10px 22px rgba(0,0,0,.22) !important;
+}
+.clientQuoteBtn:hover{
+  transform:translateY(-1px);
+  filter:brightness(1.12);
+  box-shadow:0 0 26px rgba(0,184,255,.42),0 10px 22px rgba(0,0,0,.28) !important;
+}

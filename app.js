@@ -1401,12 +1401,13 @@ function groupClientRecords(list){
   list.filter(r=>!r._deleted).forEach(r=>{
     r=normalizeRecord(r);
     const key=clientKey(r);
-    if(!groups[key])groups[key]={key,name:clientDisplayName(r),phone:r.phone||"",email:r.email||"",instagram:r.instagram||"",records:[],total:0,paid:0,balance:0,lastDate:""};
+    if(!groups[key])groups[key]={key,name:clientDisplayName(r),company:r.company||"",phone:r.phone||"",email:r.email||"",instagram:r.instagram||"",records:[],total:0,paid:0,balance:0,lastDate:""};
     groups[key].records.push(r);
     groups[key].total+=Number(r.amount||0);
     groups[key].paid+=Number(r.paid||0);
     groups[key].balance+=bal(r);
     if(String(r.date||"")>String(groups[key].lastDate||""))groups[key].lastDate=r.date;
+    if(!groups[key].company&&r.company)groups[key].company=r.company;
     if(!groups[key].phone&&r.phone)groups[key].phone=r.phone;
     if(!groups[key].email&&r.email)groups[key].email=r.email;
     if(!groups[key].instagram&&r.instagram)groups[key].instagram=r.instagram;
@@ -1457,6 +1458,7 @@ function renderClientHistory(){
             <h3>${esc(g.name)}</h3>
             ${recurrentBadge(g)}
             <p>${g.phone?`📱 ${esc(g.phone)} `:""} ${g.email?` · 📧 ${esc(g.email)} `:""} ${g.instagram?` · 📸 ${esc(g.instagram)}`:""}</p>
+            <button class="clientQuoteBtn" onclick='quoteFromClientKey(${JSON.stringify(g.key)})'>🧾 COTIZAR A ESTE CLIENTE</button>
           </div>
           <div class="clientStats">
             <strong>${g.records.length}</strong><span>EVENTO(S)</span>
@@ -1476,6 +1478,30 @@ function setClientSearch(name){
   const el=$("clientSearch");
   if(el){el.value=name;renderClientHistory();}
   document.querySelector('[data-tab="clients"]').click();
+}
+
+function quoteFromClientKey(key){
+  const groups=groupClientRecords(records);
+  const g=groups.find(x=>x.key===key);
+  if(!g || !g.records.length){
+    alert("No encontré datos guardados de este cliente.");
+    return;
+  }
+  const r=normalizeRecord(g.records[0]||{});
+  clearQuoteForm();
+  setInput("quoteClient",r.client||g.name||"");
+  setInput("quoteCompany",r.company||g.company||"");
+  setInput("quotePhone",r.phone||g.phone||"");
+  setInput("quoteEmail",r.email||g.email||"");
+  setInput("quoteInstagram",r.instagram||g.instagram||"");
+  if($("quoteStatus"))setInput("quoteStatus","COTIZADO");
+  if($("quotePaid"))setInput("quotePaid",0);
+  if($("quotePaidMethod"))setInput("quotePaidMethod","");
+  if($("quotePaidDate"))setInput("quotePaidDate",todayISO());
+  updateQuoteBalance();
+  if($("quoteFormTitle"))$("quoteFormTitle").textContent="🧾 COTIZADOR · CLIENTE EXISTENTE";
+  document.querySelector('[data-tab="quote"]').click();
+  window.scrollTo({top:0,behavior:"smooth"});
 }
 
 function renderAll(){renderRecords();renderCalendar();renderContacts();renderClientHistory();updateQuoteBalance()}
