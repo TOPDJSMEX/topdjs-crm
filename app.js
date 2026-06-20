@@ -124,6 +124,39 @@ function displayCatalogItemName(name){
   if(n==="ING ILUMINACION" || n==="ING ILUMINACION VIDEO")return "ING ILUMINACION/VIDEO";
   return name;
 }
+
+function quoteBool(v){
+  return v===true || v===1 || String(v||"").toLowerCase()==="true" || String(v||"").toLowerCase()==="si" || String(v||"").toLowerCase()==="sí";
+}
+function quoteCatalogMeta(qc){
+  if(!qc)return {};
+  if(typeof qc==="string"){
+    try{qc=JSON.parse(qc)}catch(e){return {}}
+  }
+  if(!qc || typeof qc!=="object")return {};
+  return qc.__quote_meta || qc.__meta || qc.quote_meta || {};
+}
+function recordInvoiceRequested(r){
+  const meta=quoteCatalogMeta(r?.quote_catalog);
+  return quoteBool(r?.invoice_requested ?? meta.invoice_requested ?? meta.solicita_factura ?? meta.factura);
+}
+function recordAmountBase(r){
+  const meta=quoteCatalogMeta(r?.quote_catalog);
+  const fromField=Number(r?.amount_base||0);
+  if(fromField>0)return Math.round(fromField);
+  const fromMeta=Number(meta.amount_base||meta.subtotal||0);
+  if(fromMeta>0)return Math.round(fromMeta);
+  const amount=Number(r?.amount||0);
+  if(amount>0 && recordInvoiceRequested(r))return Math.round(amount/1.16);
+  return Math.round(amount||0);
+}
+function quoteIvaFromSubtotal(subtotal, invoiceRequested){
+  return invoiceRequested?Math.round(Number(subtotal||0)*0.16):0;
+}
+function quoteAmountFromSubtotal(subtotal, invoiceRequested){
+  const base=Math.round(Number(subtotal||0));
+  return base + quoteIvaFromSubtotal(base, invoiceRequested);
+}
 function getStaffQtyFromQuoteCatalog(qc,aliases=[]){
   let qty=0;
   const aliasKeys=aliases.map(normalizeCatalogKey);
@@ -203,6 +236,9 @@ function normalizeRecord(r){
   if(r.endTime&&!r.end_time)r.end_time=r.endTime;
   if(r.quoteCatalog&&!r.quote_catalog)r.quote_catalog=r.quoteCatalog;
   if(r.expensesJsonb&&!r.expenses_jsonb)r.expenses_jsonb=r.expensesJsonb;
+  const meta=quoteCatalogMeta(r.quote_catalog);
+  if(r.invoice_requested===undefined && meta && Object.prototype.hasOwnProperty.call(meta,"invoice_requested"))r.invoice_requested=quoteBool(meta.invoice_requested);
+  if(!r.amount_base && meta && Number(meta.amount_base||0)>0)r.amount_base=Math.round(Number(meta.amount_base));
   r.expenses_jsonb=normalizeExpenses(r.expenses_jsonb);
   r.status=inferCommercialStatus(r);
   return r;
@@ -253,6 +289,9 @@ function getCatalogSelection(){
     });
     out[rub]={selected,notes:$("notes_"+safeId(rub))?.value||""}
   });
+  const amount_base=quoteSubtotalInput();
+  const invoice_requested=quoteInvoiceRequested();
+  out.__quote_meta={invoice_requested,amount_base,iva:quoteIvaFromSubtotal(amount_base,invoice_requested),amount:quoteAmountFromSubtotal(amount_base,invoice_requested)};
   return out
 }
 function clearCatalog(){
@@ -322,18 +361,30 @@ function setCatalogSelection(qc){
   });
 }
 
-function updateQuoteBalance(){$("quoteBalance").textContent=money(Math.max(Number($("quoteTotal").value||0)-Number($("quotePaid").value||0),0))}
-$("quoteTotal").oninput=updateQuoteBalance;$("quotePaid").oninput=updateQuoteBalance;
+function quoteSubtotalInput(){return Number($("quoteTotal")?.value||0)}
+function quoteInvoiceRequested(){return !!$("quoteInvoiceRequested")?.checked}
+function quoteTotalWithIvaFromSubtotal(subtotal){return Math.round(Number(subtotal||0)*1.16)}
+function updateQuoteBalance(){
+  const subtotal=quoteSubtotalInput();
+  const factura=quoteInvoiceRequested();
+  const iva=quoteIvaFromSubtotal(subtotal,factura);
+  const total=quoteAmountFromSubtotal(subtotal,factura);
+  const paid=Number($("quotePaid")?.value||0);
+  if($("quoteTaxSummary"))$("quoteTaxSummary").textContent=factura?`Factura: Sí · IVA 16%: ${money(iva)} · Total dashboard/PDF: ${money(total)}`:`Factura: No · Dashboard/PDF sin IVA: ${money(total)}`;
+  if($("quoteBalance"))$("quoteBalance").textContent=money(Math.max(total-paid,0));
+}
+$("quoteTotal").oninput=updateQuoteBalance;$("quotePaid").oninput=updateQuoteBalance;if($("quoteInvoiceRequested"))$("quoteInvoiceRequested").onchange=updateQuoteBalance;
 $("clearQuoteBtn").onclick=()=>{
   if(!confirm("¿LIMPIAR COTIZADOR?"))return;
   ["quoteClient","quoteCompany","quotePhone","quoteEmail","quoteInstagram","quoteProject","quoteDate","quoteVenue","quotePax","quoteServiceHours","quoteSetupHours","quoteSetupTime","quoteStartTime","quoteEndTime","quoteTotal","quoteNotes"].forEach(id=>$(id).value="");
-  $("quotePaid").value=0;if($("quotePaidDate"))$("quotePaidDate").value=todayISO();if($("quoteStatus"))$("quoteStatus").value="COTIZADO";$("quoteSetupType").value="MISMO DÍA";clearCatalog();updateQuoteBalance()
+  $("quotePaid").value=0;if($("quotePaidDate"))$("quotePaidDate").value=todayISO();if($("quoteInvoiceRequested"))$("quoteInvoiceRequested").checked=false;if($("quoteStatus"))$("quoteStatus").value="COTIZADO";$("quoteSetupType").value="MISMO DÍA";clearCatalog();updateQuoteBalance()
 };
 
 function clearQuoteForm(){
   ["quoteClient","quoteCompany","quotePhone","quoteEmail","quoteInstagram","quoteProject","quoteDate","quoteVenue","quotePax","quoteServiceHours","quoteSetupHours","quoteSetupTime","quoteStartTime","quoteEndTime","quoteTotal","quoteNotes"].forEach(id=>{if($(id))$(id).value=""});
   if($("quotePaid"))$("quotePaid").value=0;
   if($("quotePaidDate"))$("quotePaidDate").value=todayISO();
+  if($("quoteInvoiceRequested"))$("quoteInvoiceRequested").checked=false;
   if($("quotePaidMethod"))$("quotePaidMethod").value="";
   if($("quoteStatus"))$("quoteStatus").value="COTIZADO";
   if($("quoteSetupType"))$("quoteSetupType").value="MISMO DÍA";
@@ -347,11 +398,11 @@ function clearQuoteForm(){
 }
 if($("cancelEditBtn"))$("cancelEditBtn").onclick=()=>clearQuoteForm();
 
-function collectQuoteData(local_id=null){const amount=Number($("quoteTotal").value||0),paid=Number($("quotePaid").value||0);return{local_id:local_id||uid(),type:"COTIZACIÓN ENVIADA",date:$("quoteDate").value,client:$("quoteClient").value,company:$("quoteCompany").value,phone:$("quotePhone").value,email:$("quoteEmail").value,instagram:$("quoteInstagram").value,event_type:$("quoteEventType").value,project:$("quoteProject").value,venue:$("quoteVenue").value,pax:Number($("quotePax").value||0),service_hours:Number($("quoteServiceHours").value||0),setup_type:$("quoteSetupType").value,setup_hours:Number($("quoteSetupHours").value||0),setup_time:$("quoteSetupTime").value,start_time:$("quoteStartTime").value,end_time:$("quoteEndTime").value,amount,paid,paid_method:$("quotePaidMethod")?.value||"",paid_date:$("quotePaidDate")?.value||todayISO(),status:normalizeCommercialStatus($("quoteStatus")?.value || (paid>=amount&&amount>0?"LIQUIDADO":paid>0?"CONFIRMADO CON ANTICIPO":"COTIZADO")),notes:$("quoteNotes").value,quote_catalog:getCatalogSelection(),updated_at:new Date().toISOString(),_dirty:true}}
+function collectQuoteData(local_id=null){const amount_base=quoteSubtotalInput(),invoice_requested=quoteInvoiceRequested(),amount=quoteAmountFromSubtotal(amount_base,invoice_requested),paid=Number($("quotePaid").value||0);return{local_id:local_id||uid(),type:"COTIZACIÓN ENVIADA",date:$("quoteDate").value,client:$("quoteClient").value,company:$("quoteCompany").value,phone:$("quotePhone").value,email:$("quoteEmail").value,instagram:$("quoteInstagram").value,event_type:$("quoteEventType").value,project:$("quoteProject").value,venue:$("quoteVenue").value,pax:Number($("quotePax").value||0),service_hours:Number($("quoteServiceHours").value||0),setup_type:$("quoteSetupType").value,setup_hours:Number($("quoteSetupHours").value||0),setup_time:$("quoteSetupTime").value,start_time:$("quoteStartTime").value,end_time:$("quoteEndTime").value,amount_base,invoice_requested,amount,paid,paid_method:$("quotePaidMethod")?.value||"",paid_date:$("quotePaidDate")?.value||todayISO(),status:normalizeCommercialStatus($("quoteStatus")?.value || (paid>=amount&&amount>0?"LIQUIDADO":paid>0?"CONFIRMADO CON ANTICIPO":"COTIZADO")),notes:$("quoteNotes").value,quote_catalog:getCatalogSelection(),updated_at:new Date().toISOString(),_dirty:true}}
 $("saveQuoteBtn").onclick=async()=>{
-  const amount=Number($("quoteTotal").value||0);
+  const amount=quoteSubtotalInput();
   if(!$("quoteClient").value||!$("quoteDate").value)return alert("AGREGA CLIENTE Y FECHA.");
-  if(!amount)return alert("AGREGA TOTAL COTIZADO.");
+  if(!amount)return alert("AGREGA PRODUCCIÓN SIN IVA.");
   const actor=askActor(editingRecordId?"actualizar evento":"crear evento");
   if(!actor)return;
   const oldRecord=editingRecordId?(records.find(r=>r.local_id===editingRecordId)||{}):null;
@@ -395,7 +446,7 @@ function mergeRecordForEdit(local, remote){
   local=normalizeRecord(local||{});
   remote=normalizeRecord(remote||{});
   const out={...local};
-  ["id","local_id","type","date","client","company","phone","email","instagram","event_type","project","venue","pax","service_hours","setup_type","setup_hours","setup_time","start_time","end_time","amount","paid","status","notes","quote_catalog","expenses_jsonb","paid_method","paid_date","updated_by","updated_at"].forEach(k=>{
+  ["id","local_id","type","date","client","company","phone","email","instagram","event_type","project","venue","pax","service_hours","setup_type","setup_hours","setup_time","start_time","end_time","amount_base","invoice_requested","amount","paid","status","notes","quote_catalog","expenses_jsonb","paid_method","paid_date","updated_by","updated_at"].forEach(k=>{
     out[k]=firstValue(remote[k], local[k]);
   });
   out.quote_catalog=parseMaybeJson(firstValue(remote.quote_catalog, local.quote_catalog));
@@ -442,7 +493,8 @@ function fillEditForm(r){
   setInput("quoteSetupTime",r.setup_time);
   setInput("quoteStartTime",r.start_time);
   setInput("quoteEndTime",r.end_time);
-  setInput("quoteTotal",r.amount);
+  setInput("quoteTotal", recordAmountBase(r)||"");
+  if($("quoteInvoiceRequested"))$("quoteInvoiceRequested").checked=recordInvoiceRequested(r);
   setInput("quotePaid",r.paid);setInput("quotePaidMethod",r.paid_method||"");
   const firstPayment=(eventPayments||[]).filter(p=>p.record_local_id===r.local_id).sort((a,b)=>String(a.payment_date||a.created_at).localeCompare(String(b.payment_date||b.created_at)))[0];
   setInput("quotePaidDate", firstPayment?.payment_date || r.paid_date || todayISO());
@@ -608,13 +660,14 @@ function quotePdfFolio(r){
 }
 function quotePdfMoney(n){return money(Math.round(Number(n||0)))}
 function quotePdfTotals(r){
-  const total=Number(r.amount||0);
-  const subtotal=total>0?Math.round(total/1.16):0;
-  const iva=Math.max(total-subtotal,0);
+  const factura=recordInvoiceRequested(r);
+  const subtotal=recordAmountBase(r);
+  const iva=quoteIvaFromSubtotal(subtotal,factura);
+  const total=quoteAmountFromSubtotal(subtotal,factura);
   const existing=records.some(x=>String(x.local_id||"")===String(r.local_id||""));
   const paid=existing?paidForRecord(r):Number(r.paid||0);
   const balance=Math.max(total-paid,0);
-  return {subtotal,iva,total,paid,balance};
+  return {subtotal,iva,total,paid,balance,factura};
 }
 function quotePdfEventSchedule(r){
   if(r.start_time&&r.end_time)return `${r.start_time} a ${r.end_time} hrs`;
@@ -690,14 +743,14 @@ html,body{margin:0;padding:0;background:#fff;color:#162234;font-family:-apple-sy
     ${sectionsHtml}
     <section class="totals">
       <div class="total-row"><span>Producción total</span><strong class="amount">${quotePdfMoney(totals.subtotal)}</strong></div>
-      <div class="total-row"><span>IVA 16%</span><strong class="amount">${quotePdfMoney(totals.iva)}</strong></div>
+      <div class="total-row"><span>${totals.factura?"IVA 16%":"IVA"}</span><strong class="amount">${quotePdfMoney(totals.iva)}</strong></div>
       <div class="total-row highlight"><strong>TOTAL</strong><strong class="amount">${quotePdfMoney(totals.total)}</strong></div>
       <div class="total-row"><span>Anticipo / pagado</span><strong class="amount">${quotePdfMoney(totals.paid)}</strong></div>
       <div class="total-row"><span>Saldo pendiente</span><strong class="amount">${quotePdfMoney(totals.balance)}</strong></div>
     </section>
     <section class="${bottomGridClass}">
       <div class="bottom-box"><h2>OBSERVACIONES GENERALES</h2><p>${generalNotes?quotePdfHtmlEsc(generalNotes):""}</p></div>
-      <div class="bottom-box"><h2>CONDICIONES</h2><ul><li>La fecha se aparta con el anticipo.</li><li>El saldo se liquida antes del inicio del evento.</li><li>Propuesta sujeta a disponibilidad de fecha y equipo.</li><li>Los precios están expresados en MXN e incluyen IVA.</li></ul></div>
+      <div class="bottom-box"><h2>CONDICIONES</h2><ul><li>La fecha se aparta con el anticipo.</li><li>El saldo se liquida antes del inicio del evento.</li><li>Propuesta sujeta a disponibilidad de fecha y equipo.</li>${totals.factura?"<li>Los precios están expresados en MXN e incluyen IVA.</li>":"<li>Los precios están expresados en MXN. No incluye IVA porque no se solicitó factura.</li>"}</ul></div>
     </section>
   </main>
 </div>
@@ -714,9 +767,9 @@ function openClientQuotePdfWindow(r){
   w.document.close();
 }
 function generateClientQuotePdfFromCurrent(){
-  const amount=Number($("quoteTotal")?.value||0);
+  const amount=quoteSubtotalInput();
   if(!$("quoteClient")?.value)return alert("Agrega el cliente antes de generar el PDF.");
-  if(!amount)return alert("Agrega el total cotizado antes de generar el PDF.");
+  if(!amount)return alert("Agrega la producción sin IVA antes de generar el PDF.");
   openClientQuotePdfWindow(quotePdfBuildRecordFromCurrent());
 }
 function generateClientQuotePdf(key){
@@ -750,11 +803,11 @@ function catalogFlat(qc){
 }
 function diffRecords(oldR,newR){
   oldR=normalizeRecord(oldR||{});newR=normalizeRecord(newR||{});
-  const labels={client:"cliente",company:"empresa",phone:"teléfono",email:"email",instagram:"Instagram",event_type:"tipo de evento",project:"proyecto",date:"fecha",venue:"venue",pax:"PAX",service_hours:"horas de servicio",setup_type:"montaje",setup_hours:"horas de montaje",setup_time:"hora de montaje",start_time:"hora inicio",end_time:"hora término",amount:"monto",paid:"anticipo",paid_date:"fecha de anticipo",paid_method:"método de anticipo",status:"estatus",notes:"observaciones"};
+  const labels={client:"cliente",company:"empresa",phone:"teléfono",email:"email",instagram:"Instagram",event_type:"tipo de evento",project:"proyecto",date:"fecha",venue:"venue",pax:"PAX",service_hours:"horas de servicio",setup_type:"montaje",setup_hours:"horas de montaje",setup_time:"hora de montaje",start_time:"hora inicio",end_time:"hora término",amount_base:"producción sin IVA",invoice_requested:"solicita factura",amount:"total dashboard/PDF",paid:"anticipo",paid_date:"fecha de anticipo",paid_method:"método de anticipo",status:"estatus",notes:"observaciones"};
   const changes=[];
   Object.entries(labels).forEach(([k,label])=>{
     const a=String(oldR[k]??"").trim(),b=String(newR[k]??"").trim();
-    if(a!==b){const isMoney=["amount","paid"].includes(k);changes.push(`Cambió ${label}:\n${isMoney?money(a||0):a||"—"} → ${isMoney?money(b||0):b||"—"}`)}
+    if(a!==b){const isMoney=["amount_base","amount","paid"].includes(k);changes.push(`Cambió ${label}:\n${isMoney?money(a||0):a||"—"} → ${isMoney?money(b||0):b||"—"}`)}
   });
   const oldCat=catalogFlat(oldR.quote_catalog),newCat=catalogFlat(newR.quote_catalog);
   Object.keys(newCat).forEach(k=>{if(!oldCat[k])changes.push(`Agregó:\n${newCat[k]}`);else if(oldCat[k]!==newCat[k])changes.push(`Cambió equipo:\n${oldCat[k]} → ${newCat[k]}`)});
