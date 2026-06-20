@@ -1,33 +1,24 @@
-TOPDJS CRM v11.4.37 - COTIZAR DESDE CLIENTES
+TOPDJS CRM v11.4.38 - PDF CLIENTE DESDE COTIZADOR
 
 Nuevo:
-- En la sección Clientes, cada cliente en el historial ahora tiene el botón:
-  🧾 Cotizar a este cliente
-- Al presionarlo, el CRM abre directo el Cotizador.
-- Se llenan automáticamente los datos guardados del cliente:
-  Cliente
-  Empresa
-  Teléfono / WhatsApp
-  Email
-  Instagram
-- El resto del evento queda limpio para capturar nueva fecha, proyecto, venue, equipo y monto.
-- El estado inicial queda como Cotizado.
+- Botón PDF PARA CLIENTE en el cotizador.
+- Botón PDF CLIENTE en eventos guardados.
+- PDF tamaño carta con el formato aprobado.
+- Encabezado negro con logo TopDJs y leyenda pequeña.
+- Secciones reales del cotizador:
+  Audio, Cabina y DJ, Iluminación, Video, Adicionales, Staff, Transporte.
+- Solo aparecen los rubros con items seleccionados.
+- Las observaciones por rubro aparecen debajo del rubro solo si están llenas.
+- Observaciones generales aparecen al final en lugar de la sección Incluye.
+- Footer actualizado: @topdjs.mx y 5530260203.
 
-Objetivo:
-- No volver a capturar datos de clientes frecuentes.
-- Cotizar más rápido desde el historial del cliente.
-
-Mantiene:
-- Vencido en confirmado sin anticipo
-- Calendario hoy con casilla verde y eventos azules
-- Botones de acción modernos
-- Header ajustado
-- Estados comerciales
-- Fecha día/mes/año
-- Calendario anual con años
+Notas de uso:
+- Al presionar PDF PARA CLIENTE se abre una ventana de impresión/guardar PDF.
+- El PDF usa tamaño carta.
+- Si Safari bloquea la ventana, permitir pop-ups para el dominio del CRM.
 
 Instalación:
-1. Subir los 7 archivos a GitHub.
-2. Commit: TopDJs CRM v11.4.37 - Cotizar desde clientes
+1. Reemplazar los archivos index.html, style.css, app.js, sw.js, manifest.json y topdjs-logo.png.
+2. Commit sugerido: TopDJs CRM v11.4.38 - PDF cliente desde cotizador.
 3. Deploy to Production en Vercel.
 4. Recarga fuerte: Option + Command + R.

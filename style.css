@@ -1308,3 +1308,12 @@ header{
   filter:brightness(1.12);
   box-shadow:0 0 26px rgba(0,184,255,.42),0 10px 22px rgba(0,0,0,.28) !important;
 }
+
+
+/* TOPDJS CRM v11.4.38 - PDF para cliente desde cotizador */
+.quotePdfBtn{
+  background:linear-gradient(180deg,#6ee7ff,#00a2ff) !important;
+  color:#00111d !important;
+  border-color:#9ff3ff !important;
+  box-shadow:0 0 22px rgba(0,184,255,.38) !important;
+}
