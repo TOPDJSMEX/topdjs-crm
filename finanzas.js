@@ -1,6 +1,6 @@
 // =======================================================
-// TopDJs Finanzas CRM v2.2.0
-// Panel limpio + pago manual + gastos fijos + tarjetas + sincronización CRM + tacómetros + asistente interno
+// TopDJs Finanzas CRM v2.2.1
+// Panel limpio + pago manual + gasto manual + gastos fijos + tarjetas + sincronización CRM + tacómetros + asistente interno
 // =======================================================
 
 const SUPABASE_URL = window.SUPABASE_URL;
@@ -14,6 +14,7 @@ let paymentsCache = [];
 let creditCardsCache = [];
 let syncedCrmPaymentsCache = [];
 let manualPaymentsCache = [];
+let manualExpensesCache = [];
 let editingExpenseId = null;
 let payingExpenseId = null;
 let openedExpenseId = null;
@@ -116,6 +117,32 @@ function openManualPaymentWorkspace() {
 
 function closeManualPaymentWorkspace() {
   const workspace = document.getElementById("manualPaymentWorkspace");
+  if (!workspace) return;
+
+  workspace.classList.add("hidden");
+  document.body.classList.remove("workspace-open");
+}
+
+function openManualExpenseWorkspace() {
+  const workspace = document.getElementById("manualExpenseWorkspace");
+  if (!workspace) return;
+
+  const dateInput = document.getElementById("manualExpenseDate");
+  const amountInput = document.getElementById("manualExpenseAmount");
+  const conceptInput = document.getElementById("manualExpenseConcept");
+
+  if (dateInput && !dateInput.value) dateInput.value = isoToday();
+  if (amountInput) amountInput.value = "";
+  if (conceptInput) conceptInput.value = "";
+
+  workspace.classList.remove("hidden");
+  document.body.classList.add("workspace-open");
+
+  if (amountInput) amountInput.focus();
+}
+
+function closeManualExpenseWorkspace() {
+  const workspace = document.getElementById("manualExpenseWorkspace");
   if (!workspace) return;
 
   workspace.classList.add("hidden");
@@ -1560,6 +1587,24 @@ function totalCreditCardDebt() {
   return (creditCardsCache || []).reduce((sum, card) => sum + cardBalance(card), 0);
 }
 
+
+function currentMonthManualExpensesTotal() {
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth();
+
+  return (manualExpensesCache || []).reduce((sum, row) => {
+    const iso = toIsoDate(firstValue(row, ["spent_at", "created_at"], ""));
+    if (!iso) return sum;
+
+    const date = new Date(`${iso}T00:00:00`);
+    if (Number.isNaN(date.getTime())) return sum;
+    if (date.getFullYear() !== currentYear || date.getMonth() !== currentMonth) return sum;
+
+    return sum + (Number(firstValue(row, ["amount"], 0)) || 0);
+  }, 0);
+}
+
 function totalFixedMonthlyExpenses() {
   return sortedActiveExpenses().reduce((sum, expense) => sum + expenseMonthlyEstimate(expense), 0);
 }
@@ -1592,7 +1637,7 @@ function buildInternalStrategies() {
   const strategies = [];
 
   const liquidity = totalLiquidity();
-  const fixedMonthly = totalFixedMonthlyExpenses();
+  const fixedMonthly = totalFixedMonthlyExpenses() + currentMonthManualExpensesTotal();
   const cardDebt = totalCreditCardDebt();
   const monthlyIncome = currentMonthIncomeTotal();
   const noInterestTotal = totalNoInterestPayments();
@@ -1759,7 +1804,7 @@ function renderFinancialGauges() {
     Number(balances.efectivo || 0);
 
   const totalDebt = (creditCardsCache || []).reduce((sum, card) => sum + cardBalance(card), 0);
-  const fixedMonthlyTotal = sortedActiveExpenses().reduce((sum, expense) => sum + expenseMonthlyEstimate(expense), 0);
+  const fixedMonthlyTotal = sortedActiveExpenses().reduce((sum, expense) => sum + expenseMonthlyEstimate(expense), 0) + currentMonthManualExpensesTotal();
   const currentIncome = currentMonthIncomeTotal();
 
   // Deudas: mientras más bajo, mejor. Se mide la presión de deuda contra la liquidez.
@@ -1902,6 +1947,71 @@ async function saveManualPayment(event) {
     setStatus(error.message || "Error guardando pago manual.", "error");
   }
 }
+
+function getManualExpensePayload() {
+  const spentAt = document.getElementById("manualExpenseDate")?.value || isoToday();
+  const amount = Number(document.getElementById("manualExpenseAmount")?.value || 0);
+  const accountKey = document.getElementById("manualExpenseAccount")?.value || "";
+  const concept = String(document.getElementById("manualExpenseConcept")?.value || "").trim();
+
+  if (!spentAt) throw new Error("Selecciona la fecha del gasto.");
+  if (!Number.isFinite(amount) || amount <= 0) throw new Error("La cantidad debe ser mayor a cero.");
+  if (!accountKey || !ACCOUNT_LABELS[accountKey]) throw new Error("Selecciona una cuenta válida.");
+  if (!concept) throw new Error("Escribe el concepto del gasto.");
+
+  return { spentAt, amount, accountKey, concept };
+}
+
+async function saveManualExpense(event) {
+  event.preventDefault();
+
+  try {
+    const { spentAt, amount, accountKey, concept } = getManualExpensePayload();
+
+    const account = findAccountByKey(accountKey);
+    if (!account) throw new Error(`No encontré la cuenta ${ACCOUNT_LABELS[accountKey]} en finance_accounts.`);
+
+    const currentBalance = accountBalance(account);
+    const newBalance = currentBalance - amount;
+
+    const confirmed = window.confirm(
+      `Confirmar gasto/retiro por ${money(amount)}.\n\n` +
+      `Concepto: ${concept}\n` +
+      `Cuenta de retiro: ${ACCOUNT_LABELS[accountKey]}\n\n` +
+      `Saldo actual: ${money(currentBalance)}\n` +
+      `Nuevo saldo: ${money(newBalance)}`
+    );
+
+    if (!confirmed) return;
+
+    const { error: insertError } = await db
+      .from("finance_manual_expenses")
+      .insert({
+        concept,
+        amount,
+        withdrawn_from_account: ACCOUNT_LABELS[accountKey],
+        spent_at: spentAt,
+        created_at: new Date().toISOString(),
+      });
+
+    if (insertError) throw insertError;
+
+    const { error: accountError } = await db
+      .from("finance_accounts")
+      .update({ current_balance: newBalance })
+      .eq("id", account.id);
+
+    if (accountError) throw accountError;
+
+    setStatus(`Gasto guardado: ${money(amount)} retirado de ${ACCOUNT_LABELS[accountKey]}.`, "ok");
+    closeManualExpenseWorkspace();
+    await loadFinance();
+  } catch (error) {
+    console.error("Error guardando gasto manual:", error);
+    setStatus(error.message || "Error guardando gasto manual.", "error");
+  }
+}
+
 
 
 function operationalPaymentSourceId(payment) {
@@ -2106,13 +2216,14 @@ async function syncCrmPayments() {
 async function loadFinance() {
   setStatus("Cargando liquidez, gastos e historial desde Supabase...");
 
-  const [accountsResult, expensesResult, paymentsResult, cardsResult, crmSyncResult, manualPaymentsResult] = await Promise.all([
+  const [accountsResult, expensesResult, paymentsResult, cardsResult, crmSyncResult, manualPaymentsResult, manualExpensesResult] = await Promise.all([
     db.from("finance_accounts").select("*"),
     db.from("finance_fixed_expenses").select("*"),
     db.from("finance_fixed_expense_payments").select("*").order("created_at", { ascending: false }).limit(50),
     db.from("finance_credit_cards").select("*"),
     db.from("finance_crm_payment_sync_log").select("*"),
     db.from("finance_manual_payments").select("*"),
+    db.from("finance_manual_expenses").select("*"),
   ]);
 
   if (accountsResult.error) {
@@ -2173,6 +2284,13 @@ async function loadFinance() {
     manualPaymentsCache = manualPaymentsResult.data || [];
   }
 
+  if (manualExpensesResult.error) {
+    console.error("Error cargando gastos manuales:", manualExpensesResult.error);
+    manualExpensesCache = [];
+  } else {
+    manualExpensesCache = manualExpensesResult.data || [];
+  }
+
   renderFinancialGauges();
 
   if (openedExpenseId) {
@@ -2197,6 +2315,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const manualPaymentForm = document.getElementById("manualPaymentForm");
   if (manualPaymentForm) manualPaymentForm.addEventListener("submit", saveManualPayment);
+
+  const manualExpenseBtn = document.getElementById("manualExpenseBtn");
+  if (manualExpenseBtn) manualExpenseBtn.addEventListener("click", openManualExpenseWorkspace);
+
+  const closeManualExpenseBtn = document.getElementById("closeManualExpenseBtn");
+  if (closeManualExpenseBtn) closeManualExpenseBtn.addEventListener("click", closeManualExpenseWorkspace);
+
+  const cancelManualExpenseBtn = document.getElementById("cancelManualExpenseBtn");
+  if (cancelManualExpenseBtn) cancelManualExpenseBtn.addEventListener("click", closeManualExpenseWorkspace);
+
+  const manualExpenseForm = document.getElementById("manualExpenseForm");
+  if (manualExpenseForm) manualExpenseForm.addEventListener("submit", saveManualExpense);
 
   const analyzeFinanceBtn = document.getElementById("analyzeFinanceBtn");
   if (analyzeFinanceBtn) analyzeFinanceBtn.addEventListener("click", renderInternalStrategies);
@@ -2225,6 +2355,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
       closeManualPaymentWorkspace();
+      closeManualExpenseWorkspace();
       closeExpensesWorkspace();
       closeCardsWorkspace();
     }

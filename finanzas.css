@@ -1433,3 +1433,20 @@ body.workspace-open {
     flex: 1;
   }
 }
+
+
+/* ================================
+   v2.2.1 · Botón Gastos manual
+================================ */
+
+.manual-expense-note {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid rgba(239, 68, 68, 0.34);
+  border-radius: 12px;
+  background: rgba(239, 68, 68, 0.055);
+  color: #ffe1e1;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+}

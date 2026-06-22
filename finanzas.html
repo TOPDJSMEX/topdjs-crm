@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TopDJs Finanzas CRM v2.2.0</title>
-  <link rel="stylesheet" href="finanzas.css?v=220" />
+  <title>TopDJs Finanzas CRM v2.2.1</title>
+  <link rel="stylesheet" href="finanzas.css?v=221" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     window.SUPABASE_URL = "https://xbrsnmbmkbvxyhrtiywy.supabase.co";
@@ -15,10 +15,10 @@
   <div class="app-shell">
     <header class="topbar">
       <div>
-        <p class="eyebrow">TopDJs Finanzas CRM v2.2.0 · Panel limpio</p>
+        <p class="eyebrow">TopDJs Finanzas CRM v2.2.1 · Panel limpio</p>
         <h1>Finanzas TopDJs</h1>
         <p class="subtitle">
-          Panel principal compacto con liquidez, pago manual, gastos, tarjetas, tacómetros y asistente financiero interno.
+          Panel principal compacto con liquidez, pago manual, gasto manual, gastos fijos, tarjetas, tacómetros y asistente financiero interno.
         </p>
       </div>
 
@@ -32,6 +32,7 @@
         </section>
         <button id="refreshBtn" type="button">Actualizar</button>
         <button id="manualPaymentBtn" type="button" class="pay">Pago</button>
+        <button id="manualExpenseBtn" type="button" class="danger">Gastos</button>
         <button id="syncCrmBtn" type="button" class="sync">Sincronizar CRM</button>
       </div>
 
@@ -277,6 +278,62 @@
   </section>
 
 
+
+  <section id="manualExpenseWorkspace" class="workspace-overlay hidden" aria-label="Registrar gasto manual">
+    <div class="workspace-card manual-payment-card">
+      <div class="workspace-header">
+        <div>
+          <span class="module-eyebrow">Gasto manual</span>
+          <h2>Registrar gasto o retiro</h2>
+          <p>Captura fecha, cantidad, concepto y la cuenta de donde se retiró.</p>
+        </div>
+
+        <div class="workspace-actions">
+          <button id="closeManualExpenseBtn" type="button" class="secondary">Cerrar</button>
+        </div>
+      </div>
+
+      <div class="manual-payment-body">
+        <form id="manualExpenseForm" class="manual-payment-form">
+          <div class="form-field">
+            <label>Fecha</label>
+            <input id="manualExpenseDate" type="date" required />
+          </div>
+
+          <div class="form-field">
+            <label>Cantidad</label>
+            <input id="manualExpenseAmount" type="number" min="0" step="1" placeholder="0" required />
+          </div>
+
+          <div class="form-field">
+            <label>Cuenta de donde se retiró</label>
+            <select id="manualExpenseAccount" required>
+              <option value="bbva">BBVA</option>
+              <option value="nu">NU</option>
+              <option value="manuel">Manuel</option>
+              <option value="efectivo">Efectivo</option>
+            </select>
+          </div>
+
+          <div class="form-field full">
+            <label>Concepto</label>
+            <input id="manualExpenseConcept" type="text" placeholder="Ej. Gasolina, comida staff, material, estacionamiento..." required />
+          </div>
+
+          <div class="manual-payment-actions">
+            <button type="submit" class="danger">Guardar gasto</button>
+            <button type="button" class="secondary" id="cancelManualExpenseBtn">Cancelar</button>
+          </div>
+        </form>
+
+        <div class="manual-expense-note">
+          Este registro descuenta dinero de la cuenta seleccionada y queda guardado en historial interno de gastos manuales.
+        </div>
+      </div>
+    </div>
+  </section>
+
+
   <section id="expensesWorkspace" class="workspace-overlay hidden" aria-label="Ventana de gastos fijos">
     <div class="workspace-card">
       <div class="workspace-header">
@@ -350,6 +407,6 @@
     </div>
   </section>
 
-  <script src="finanzas.js?v=220"></script>
+  <script src="finanzas.js?v=221"></script>
 </body>
 </html>
