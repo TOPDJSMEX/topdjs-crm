@@ -639,20 +639,70 @@ ${rowsHtml}
 }
 
 
-/* TOPDJS CRM v11.4.38 - PDF cliente desde cotizador */
-function quotePdfCleanSectionTitle(rub){
+/* TOPDJS CRM v11.4.41 - PDF cliente español / inglés desde cotizador */
+function quotePdfCleanSectionTitle(rub,lang="es"){
   const key=normalizeCatalogKey(rub);
-  if(key.includes("AUDIO"))return "Audio";
-  if(key.includes("CABINA")||key.includes("DJ"))return "Cabina y DJ";
-  if(key.includes("ILUMINACION"))return "Iluminación";
-  if(key.includes("VIDEO"))return "Video";
-  if(key.includes("ADICIONALES"))return "Adicionales";
-  if(key.includes("STAFF"))return "Staff";
-  if(key.includes("TRANSPORTE"))return "Transporte";
-  return String(rub||"").replace(/^[^A-Za-zÁÉÍÓÚÑáéíóúñ]+\s*/,"").trim()||"Rubro";
+  let es="Rubro";
+  if(key.includes("AUDIO"))es="Audio";
+  else if(key.includes("CABINA")||key.includes("DJ"))es="Cabina y DJ";
+  else if(key.includes("ILUMINACION"))es="Iluminación";
+  else if(key.includes("VIDEO"))es="Video";
+  else if(key.includes("ADICIONALES"))es="Adicionales";
+  else if(key.includes("STAFF"))es="Staff";
+  else if(key.includes("TRANSPORTE"))es="Transporte";
+  else es=String(rub||"").replace(/^[^A-Za-zÁÉÍÓÚÑáéíóúñ]+\s*/,"").trim()||"Rubro";
+  if(lang!=="en")return es;
+  const enMap={"Audio":"Audio","Cabina y DJ":"DJ Booth and DJ","Iluminación":"Lighting","Video":"Video","Adicionales":"Add-ons","Staff":"Staff","Transporte":"Transportation","Rubro":"Section"};
+  return enMap[es]||es;
+}
+function quotePdfLabels(lang="es"){
+  const en=lang==="en";
+  return en?{
+    htmlLang:"en",legend:"Audio • Lighting • Video • DJ",print:"PRINT / SAVE PDF",close:"CLOSE",
+    folio:"Folio",issued:"Issue date",validity:"Valid for",validityDays:"7 days",
+    clientTitle:"CLIENT AND EVENT DETAILS",clientSub:"General information loaded automatically from the quote builder.",
+    client:"Client:",event:"Event:",phone:"Phone:",email:"Email:",eventDate:"Event date:",schedule:"Schedule:",venue:"Venue:",executive:"Executive:",
+    noItems:"No equipment or services selected in the quote builder.",sectionNotes:"Notes:",
+    production:"Production total",vat16:"VAT 16%",vat:"VAT",total:"TOTAL",paid:"Deposit / paid",balance:"Remaining balance",
+    generalNotes:"GENERAL NOTES",conditions:"TERMS AND CONDITIONS",
+    conditionDeposit:"The date is reserved with the deposit.",
+    conditionBalance:"The remaining balance must be paid before the event starts.",
+    conditionAvailability:"Proposal subject to date and equipment availability.",
+    conditionVatYes:"Prices are expressed in MXN and include 16% VAT.",
+    conditionVatNo:"Prices are expressed in MXN. VAT is not included because invoice was not requested.",
+    alertClient:"Add the client before generating the PDF.",alertAmount:"Add the production amount before generating the PDF.",
+    popupBlocked:"Safari blocked the pop-up window. Allow pop-ups to generate the PDF.",notFound:"I couldn't find this event to generate the client PDF."
+  }:{
+    htmlLang:"es",legend:"Audio • Iluminación • Video • DJ",print:"IMPRIMIR / GUARDAR PDF",close:"CERRAR",
+    folio:"Folio",issued:"Fecha de emisión",validity:"Vigencia",validityDays:"7 días",
+    clientTitle:"DATOS DEL CLIENTE Y EVENTO",clientSub:"Información general cargada automáticamente desde el cotizador.",
+    client:"Cliente:",event:"Evento:",phone:"Teléfono:",email:"Correo:",eventDate:"Fecha del evento:",schedule:"Horario:",venue:"Lugar:",executive:"Ejecutivo:",
+    noItems:"No hay equipo o servicios seleccionados en el cotizador.",sectionNotes:"Observaciones:",
+    production:"Producción total",vat16:"IVA 16%",vat:"IVA",total:"TOTAL",paid:"Anticipo / pagado",balance:"Saldo pendiente",
+    generalNotes:"OBSERVACIONES GENERALES",conditions:"CONDICIONES",
+    conditionDeposit:"La fecha se aparta con el anticipo.",
+    conditionBalance:"El saldo se liquida antes del inicio del evento.",
+    conditionAvailability:"Propuesta sujeta a disponibilidad de fecha y equipo.",
+    conditionVatYes:"Los precios están expresados en MXN e incluyen IVA.",
+    conditionVatNo:"Los precios están expresados en MXN. No incluye IVA porque no se solicitó factura.",
+    alertClient:"Agrega el cliente antes de generar el PDF.",alertAmount:"Agrega la producción sin IVA antes de generar el PDF.",
+    popupBlocked:"Safari bloqueó la ventana emergente. Permite pop-ups para generar el PDF.",notFound:"No encontré este evento para generar PDF de cliente."
+  };
 }
 function quotePdfHtmlEsc(s){return esc(s).replace(/\n/g,"<br>")}
-function quotePdfTodayLong(){return new Date().toLocaleDateString("es-MX",{day:"2-digit",month:"long",year:"numeric"})}
+function quotePdfTodayLong(lang="es"){
+  const locale=lang==="en"?"en-US":"es-MX";
+  const opts=lang==="en"?{month:"long",day:"2-digit",year:"numeric"}:{day:"2-digit",month:"long",year:"numeric"};
+  return new Date().toLocaleDateString(locale,opts);
+}
+function quotePdfDateLong(dateStr,lang="es"){
+  if(!dateStr)return "";
+  try{
+    const d=new Date(dateStr+"T12:00:00");
+    if(lang==="en")return d.toLocaleDateString("en-US",{month:"long",day:"2-digit",year:"numeric"});
+    return d.toLocaleDateString("es-MX",{day:"2-digit",month:"long",year:"numeric"});
+  }catch(e){return dateStr}
+}
 function quotePdfFolio(r){
   const base=(r.local_id||r.id||uid()).toString().replace(/[^a-z0-9]/gi,"").slice(-6).toUpperCase()||"000001";
   const y=(new Date()).getFullYear();
@@ -669,17 +719,17 @@ function quotePdfTotals(r){
   const balance=Math.max(total-paid,0);
   return {subtotal,iva,total,paid,balance,factura};
 }
-function quotePdfEventSchedule(r){
-  if(r.start_time&&r.end_time)return `${r.start_time} a ${r.end_time} hrs`;
-  if(r.start_time)return `${r.start_time} hrs`;
-  if(r.end_time)return `Termina ${r.end_time} hrs`;
+function quotePdfEventSchedule(r,lang="es"){
+  if(r.start_time&&r.end_time)return lang==="en"?`${r.start_time} to ${r.end_time}`:`${r.start_time} a ${r.end_time} hrs`;
+  if(r.start_time)return lang==="en"?`${r.start_time}`:`${r.start_time} hrs`;
+  if(r.end_time)return lang==="en"?`Ends ${r.end_time}`:`Termina ${r.end_time} hrs`;
   return "";
 }
-function quotePdfSectionsFromRecord(r){
+function quotePdfSectionsFromRecord(r,lang="es"){
   return getSelectedCatalogSections(parseMaybeJson(r.quote_catalog))
     .filter(sec=>Array.isArray(sec.items)&&sec.items.length>0)
     .map(sec=>({
-      title:quotePdfCleanSectionTitle(sec.rub),
+      title:quotePdfCleanSectionTitle(sec.rub,lang),
       items:sec.items.map(i=>({qty:Number(i.qty||1)||1,item:displayCatalogItemName(i.item||"")})).filter(i=>i.item),
       notes:String(sec.notes||"").trim()
     }));
@@ -687,25 +737,27 @@ function quotePdfSectionsFromRecord(r){
 function quotePdfBuildRecordFromCurrent(){
   return collectQuoteData("preview_"+uid());
 }
-function quotePdfBuildHtml(r){
+function quotePdfBuildHtml(r,lang="es"){
   r=normalizeRecord(r||{});
-  const sections=quotePdfSectionsFromRecord(r);
+  const L=quotePdfLabels(lang);
+  const sections=quotePdfSectionsFromRecord(r,lang);
   const totals=quotePdfTotals(r);
   const folio=quotePdfFolio(r);
-  const issued=quotePdfTodayLong();
-  const schedule=quotePdfEventSchedule(r);
+  const issued=quotePdfTodayLong(lang);
+  const schedule=quotePdfEventSchedule(r,lang);
   const generalNotes=String(r.notes||"").trim();
   const sectionsHtml=sections.length?sections.map(sec=>`
     <section class="quote-section">
       <div class="quote-section-title">${quotePdfHtmlEsc(sec.title)}</div>
       <div class="quote-section-body">
         ${sec.items.map(i=>`<div class="quote-item"><span class="dot">•</span><span><strong>${quotePdfHtmlEsc(i.qty)} ×</strong> ${quotePdfHtmlEsc(i.item)}</span></div>`).join("")}
-        ${sec.notes?`<div class="section-notes"><strong>Observaciones:</strong><br>${quotePdfHtmlEsc(sec.notes)}</div>`:""}
+        ${sec.notes?`<div class="section-notes"><strong>${quotePdfHtmlEsc(L.sectionNotes)}</strong><br>${quotePdfHtmlEsc(sec.notes)}</div>`:""}
       </div>
-    </section>`).join(""):`<p class="empty">No hay equipo o servicios seleccionados en el cotizador.</p>`;
+    </section>`).join(""):`<p class="empty">${quotePdfHtmlEsc(L.noItems)}</p>`;
   const bottomGridClass=generalNotes?"bottom-grid":"bottom-grid only-conditions";
+  const vatLabel=totals.factura?L.vat16:L.vat;
   return `<!doctype html>
-<html lang="es"><head><meta charset="utf-8"><title>TopDJs ${quotePdfHtmlEsc(folio)}</title>
+<html lang="${L.htmlLang}"><head><meta charset="utf-8"><title>TopDJs ${quotePdfHtmlEsc(folio)}</title>
 <style>
 @page{size:letter;margin:0}
 *{box-sizing:border-box}
@@ -714,43 +766,43 @@ html,body{margin:0;padding:0;background:#fff;color:#162234;font-family:-apple-sy
 .header{background:#000;color:#fff;text-align:center;padding:22px 54px 12px;border-bottom:2px solid #31d4ff;page-break-inside:avoid}.logo{width:150px;height:70px;object-fit:contain;display:block;margin:0 auto 8px}.legend{font-size:12px;letter-spacing:.14em;color:#5fc2ff;font-weight:950;text-transform:uppercase;margin:0 0 18px}.meta{display:flex;justify-content:space-between;gap:18px;font-size:12px;font-weight:800;color:#eef7ff}.meta span{white-space:nowrap}.sheet{min-height:11in;padding-bottom:.62in}.content{padding:26px 54px 72px}.client-card{position:relative;border:1.4px solid #000;border-radius:19px;padding:38px 24px 24px;margin:0 0 28px;page-break-inside:avoid}.client-title{position:absolute;left:50%;top:-14px;transform:translateX(-50%);background:#000;color:#fff;border-radius:999px;padding:7px 42px;font-size:13px;font-weight:950;letter-spacing:.03em;white-space:nowrap}.client-sub{font-size:11.5px;color:#5e7890;margin:0 0 16px}.client-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px 34px}.client-col{display:grid;grid-template-columns:max-content 1fr;gap:9px 12px;align-items:baseline}.client-col+.client-col{border-left:1px solid #e6eef6;padding-left:28px}.label{color:#65758b;font-size:13px;font-weight:900;white-space:nowrap}.value{font-size:15px;color:#162234}.quote-section{border:1px solid #d9e4ef;border-radius:17px;margin:20px 0 24px;overflow:hidden;page-break-inside:avoid}.quote-section-title{background:#000;color:#00a2ff;font-size:24px;font-weight:950;padding:12px 22px}.quote-section-body{padding:15px 24px 18px}.quote-item{display:grid;grid-template-columns:18px 1fr;gap:6px;font-size:15px;padding:7px 0;border-bottom:1px solid #edf2f7}.quote-item:last-child{border-bottom:0}.dot{color:#00a2ff;font-weight:950}.section-notes{margin-top:12px;border-left:4px solid #00a2ff;background:#f6f9fc;border-radius:8px;padding:10px 12px;font-size:13px;color:#334155;line-height:1.35}.totals{background:#000;border:1.5px solid #00a2ff;border-radius:18px;margin:24px 0 24px;padding:18px 24px;page-break-inside:avoid;color:#fff}.total-row{display:grid;grid-template-columns:1fr auto;gap:18px;align-items:center;padding:8px 0;border-bottom:1px solid #2a4666;font-size:15px}.total-row:last-child{border-bottom:0}.total-row strong{font-weight:950}.total-row.highlight{padding:15px 0;color:#31d4ff;font-size:17px}.total-row.highlight .amount{font-size:25px}.amount{font-weight:950}.bottom-grid{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid #d9e4ef;border-radius:18px;margin:24px 0 0;overflow:hidden;page-break-inside:avoid}.bottom-box{padding:18px 24px;min-height:145px}.bottom-box:first-child{border-right:1px solid #e6eef6}.bottom-box h2{margin:0 0 11px;color:#00a2ff;font-size:18px;letter-spacing:.03em}.bottom-box p,.bottom-box li{font-size:14px;line-height:1.35;margin:0 0 7px}.bottom-box ul{margin:0;padding-left:18px}.bottom-box li::marker{color:#00a2ff}.only-conditions{grid-template-columns:1fr}.only-conditions .bottom-box:first-child{display:none}.only-conditions .bottom-box{border-right:0}.empty{color:#65758b;font-size:14px}.footer{position:fixed;left:0;right:0;bottom:0;height:.48in;background:#000;border-top:2px solid #31d4ff;color:#c9d8e7;display:grid;grid-template-columns:1fr 1fr 1fr 1fr;align-items:center;padding:0 54px;font-size:11px}.footer strong{color:#fff}.footer span{text-align:center}.footer span:first-child{text-align:left}.footer span:last-child{text-align:right}@media print{.noPrint{display:none}.quote-section,.client-card,.totals,.bottom-grid{break-inside:avoid;page-break-inside:avoid}.content{padding-bottom:82px}}
 </style></head>
 <body>
-<div class="noPrint"><button onclick="window.print()">IMPRIMIR / GUARDAR PDF</button><button onclick="window.close()">CERRAR</button></div>
+<div class="noPrint"><button onclick="window.print()">${quotePdfHtmlEsc(L.print)}</button><button onclick="window.close()">${quotePdfHtmlEsc(L.close)}</button></div>
 <div class="sheet">
   <header class="header">
     <img class="logo" src="topdjs-logo.png" alt="TopDJs">
-    <div class="legend">Audio • Iluminación • Video • DJ</div>
-    <div class="meta"><span>Folio: ${quotePdfHtmlEsc(folio)}</span><span>Fecha de emisión: ${quotePdfHtmlEsc(issued)}</span><span>Vigencia: 7 días</span></div>
+    <div class="legend">${quotePdfHtmlEsc(L.legend)}</div>
+    <div class="meta"><span>${quotePdfHtmlEsc(L.folio)}: ${quotePdfHtmlEsc(folio)}</span><span>${quotePdfHtmlEsc(L.issued)}: ${quotePdfHtmlEsc(issued)}</span><span>${quotePdfHtmlEsc(L.validity)}: ${quotePdfHtmlEsc(L.validityDays)}</span></div>
   </header>
   <main class="content">
     <section class="client-card">
-      <div class="client-title">DATOS DEL CLIENTE Y EVENTO</div>
-      <p class="client-sub">Información general cargada automáticamente desde el cotizador.</p>
+      <div class="client-title">${quotePdfHtmlEsc(L.clientTitle)}</div>
+      <p class="client-sub">${quotePdfHtmlEsc(L.clientSub)}</p>
       <div class="client-grid">
         <div class="client-col">
-          <div class="label">Cliente:</div><div class="value">${quotePdfHtmlEsc(r.client||"")}</div>
-          <div class="label">Evento:</div><div class="value">${quotePdfHtmlEsc(r.project||r.event_type||"")}</div>
-          <div class="label">Teléfono:</div><div class="value">${quotePdfHtmlEsc(r.phone||"")}</div>
-          <div class="label">Correo:</div><div class="value">${quotePdfHtmlEsc(r.email||"")}</div>
+          <div class="label">${quotePdfHtmlEsc(L.client)}</div><div class="value">${quotePdfHtmlEsc(r.client||"")}</div>
+          <div class="label">${quotePdfHtmlEsc(L.event)}</div><div class="value">${quotePdfHtmlEsc(r.project||r.event_type||"")}</div>
+          <div class="label">${quotePdfHtmlEsc(L.phone)}</div><div class="value">${quotePdfHtmlEsc(r.phone||"")}</div>
+          <div class="label">${quotePdfHtmlEsc(L.email)}</div><div class="value">${quotePdfHtmlEsc(r.email||"")}</div>
         </div>
         <div class="client-col">
-          <div class="label">Fecha del evento:</div><div class="value">${quotePdfHtmlEsc(formatDateEs(r.date)||"")}</div>
-          <div class="label">Horario:</div><div class="value">${quotePdfHtmlEsc(schedule)}</div>
-          <div class="label">Lugar:</div><div class="value">${quotePdfHtmlEsc(r.venue||"")}</div>
-          <div class="label">Ejecutivo:</div><div class="value">TopDJs</div>
+          <div class="label">${quotePdfHtmlEsc(L.eventDate)}</div><div class="value">${quotePdfHtmlEsc(quotePdfDateLong(r.date,lang)||"")}</div>
+          <div class="label">${quotePdfHtmlEsc(L.schedule)}</div><div class="value">${quotePdfHtmlEsc(schedule)}</div>
+          <div class="label">${quotePdfHtmlEsc(L.venue)}</div><div class="value">${quotePdfHtmlEsc(r.venue||"")}</div>
+          <div class="label">${quotePdfHtmlEsc(L.executive)}</div><div class="value">TopDJs</div>
         </div>
       </div>
     </section>
     ${sectionsHtml}
     <section class="totals">
-      <div class="total-row"><span>Producción total</span><strong class="amount">${quotePdfMoney(totals.subtotal)}</strong></div>
-      <div class="total-row"><span>${totals.factura?"IVA 16%":"IVA"}</span><strong class="amount">${quotePdfMoney(totals.iva)}</strong></div>
-      <div class="total-row highlight"><strong>TOTAL</strong><strong class="amount">${quotePdfMoney(totals.total)}</strong></div>
-      <div class="total-row"><span>Anticipo / pagado</span><strong class="amount">${quotePdfMoney(totals.paid)}</strong></div>
-      <div class="total-row"><span>Saldo pendiente</span><strong class="amount">${quotePdfMoney(totals.balance)}</strong></div>
+      <div class="total-row"><span>${quotePdfHtmlEsc(L.production)}</span><strong class="amount">${quotePdfMoney(totals.subtotal)}</strong></div>
+      <div class="total-row"><span>${quotePdfHtmlEsc(vatLabel)}</span><strong class="amount">${quotePdfMoney(totals.iva)}</strong></div>
+      <div class="total-row highlight"><strong>${quotePdfHtmlEsc(L.total)}</strong><strong class="amount">${quotePdfMoney(totals.total)}</strong></div>
+      <div class="total-row"><span>${quotePdfHtmlEsc(L.paid)}</span><strong class="amount">${quotePdfMoney(totals.paid)}</strong></div>
+      <div class="total-row"><span>${quotePdfHtmlEsc(L.balance)}</span><strong class="amount">${quotePdfMoney(totals.balance)}</strong></div>
     </section>
     <section class="${bottomGridClass}">
-      <div class="bottom-box"><h2>OBSERVACIONES GENERALES</h2><p>${generalNotes?quotePdfHtmlEsc(generalNotes):""}</p></div>
-      <div class="bottom-box"><h2>CONDICIONES</h2><ul><li>La fecha se aparta con el anticipo.</li><li>El saldo se liquida antes del inicio del evento.</li><li>Propuesta sujeta a disponibilidad de fecha y equipo.</li>${totals.factura?"<li>Los precios están expresados en MXN e incluyen IVA.</li>":"<li>Los precios están expresados en MXN. No incluye IVA porque no se solicitó factura.</li>"}</ul></div>
+      <div class="bottom-box"><h2>${quotePdfHtmlEsc(L.generalNotes)}</h2><p>${generalNotes?quotePdfHtmlEsc(generalNotes):""}</p></div>
+      <div class="bottom-box"><h2>${quotePdfHtmlEsc(L.conditions)}</h2><ul><li>${quotePdfHtmlEsc(L.conditionDeposit)}</li><li>${quotePdfHtmlEsc(L.conditionBalance)}</li><li>${quotePdfHtmlEsc(L.conditionAvailability)}</li><li>${quotePdfHtmlEsc(totals.factura?L.conditionVatYes:L.conditionVatNo)}</li></ul></div>
     </section>
   </main>
 </div>
@@ -758,26 +810,31 @@ html,body{margin:0;padding:0;background:#fff;color:#162234;font-family:-apple-sy
 <script>setTimeout(()=>window.print(),650)</script>
 </body></html>`;
 }
-function openClientQuotePdfWindow(r){
-  if(!r || (!r.local_id && !r.client && !r.project))return alert("No hay datos suficientes para generar el PDF de cliente.");
+function openClientQuotePdfWindow(r,lang="es"){
+  const L=quotePdfLabels(lang);
+  if(!r || (!r.local_id && !r.client && !r.project))return alert(L.notFound);
   const w=window.open("","_blank");
-  if(!w)return alert("Safari bloqueó la ventana emergente. Permite pop-ups para generar el PDF.");
+  if(!w)return alert(L.popupBlocked);
   w.document.open();
-  w.document.write(quotePdfBuildHtml(r));
+  w.document.write(quotePdfBuildHtml(r,lang));
   w.document.close();
 }
-function generateClientQuotePdfFromCurrent(){
+function generateClientQuotePdfFromCurrent(lang="es"){
+  const L=quotePdfLabels(lang);
   const amount=quoteSubtotalInput();
-  if(!$("quoteClient")?.value)return alert("Agrega el cliente antes de generar el PDF.");
-  if(!amount)return alert("Agrega la producción sin IVA antes de generar el PDF.");
-  openClientQuotePdfWindow(quotePdfBuildRecordFromCurrent());
+  if(!$('quoteClient')?.value)return alert(L.alertClient);
+  if(!amount)return alert(L.alertAmount);
+  openClientQuotePdfWindow(quotePdfBuildRecordFromCurrent(),lang);
 }
-function generateClientQuotePdf(key){
+function generateClientQuotePdf(key,lang="es"){
+  const L=quotePdfLabels(lang);
   const r=normalizeRecord(findLocalRecordFlexible(key)||records.find(x=>x.local_id===key)||{});
-  if(!r.local_id && !r.client)return alert("No encontré este evento para generar PDF de cliente.");
-  openClientQuotePdfWindow(r);
+  if(!r.local_id && !r.client)return alert(L.notFound);
+  openClientQuotePdfWindow(r,lang);
 }
-if($("clientQuotePdfBtn"))$("clientQuotePdfBtn").onclick=()=>generateClientQuotePdfFromCurrent();
+function generateClientQuotePdfEnglish(key){return generateClientQuotePdf(key,"en")}
+if($('clientQuotePdfBtn'))$('clientQuotePdfBtn').onclick=()=>generateClientQuotePdfFromCurrent("es");
+if($('clientQuotePdfEnBtn'))$('clientQuotePdfEnBtn').onclick=()=>generateClientQuotePdfFromCurrent("en");
 
 
 function askActor(action="guardar"){
@@ -1043,7 +1100,7 @@ function renderRecords(){
     const paid=paidForRecord(r);
     let tr=document.createElement("tr");
     tr.className=`operRow ${op.cls}`;
-    tr.innerHTML=`<td><div class="evtDateCell"><strong>${esc(formatDateDMY(r.date))}</strong></div></td><td><div class="evtClientBlock"><strong class="evtClientName">${esc(r.client)}</strong><small class="evtClientCompany">${esc(r.company)}</small><span class="commercialBadge ${statusBadgeClass(r.status)}">${esc(commercialStatusLabel(r.status))}</span>${operationalBadgeHtml(r,op)}</div></td><td><div class="evtTextBlock"><strong>${esc(r.project)}</strong></div></td><td><div class="evtMiniData">${esc(r.pax||"")}</div></td><td><div class="evtMiniData">${esc(r.service_hours||"")}</div></td><td><div class="evtTextBlock">${esc(r.setup_type||"")}</div></td><td><div class="recordMoneyBox recordMoneyAmount"><strong>${money(r.amount)}</strong><small>Recibido</small><small class="moneySubValue">${money(paid)}</small></div></td><td><div class="recordMoneyBox recordMoneyBalance"><strong>${money(bal(r))}</strong></div></td><td><div class="evtSyncBlock"><span class="evtSyncBadge ${r._dirty?"syncPending":"syncOk"}">${r._dirty?"PENDIENTE":"OK"}</span>${fileCount?`<small class="evtFileCount">📎 ${fileCount} archivo${fileCount===1?"":"s"}</small>`:""}<small class="evtUpdatedBy">${esc(r.updated_by||"—")}</small><small class="evtUpdatedAt">${esc(fmtAuditDate(r.updated_at||""))}</small></div></td><td><div class="recordActions"><button class="actionBtn actionViewBtn" onclick="showRecord('${r.local_id}')">👁️ VER</button><button class="actionBtn expensesBtn" onclick="showExpensesOnly('${r.local_id}')">💸 GASTOS</button><button class="actionBtn uploadFileBtn" onclick="openFilePicker('${r.local_id}')">📎 ARCHIVO</button><button class="actionBtn editBtn" onclick="editRecord('${r.local_id}')">✏️ EDITAR</button><button class="actionBtn warehouseBtn" onclick="generateWarehouseOrderPdf('${r.local_id}')">📦 PEDIDO BODEGA</button><button class="actionBtn quotePdfBtn" onclick="generateClientQuotePdf('${r.local_id}')">🧾 PDF CLIENTE</button><button class="actionBtn payBtn" onclick="addPayment('${r.local_id}')">💳 REGISTRAR PAGO</button><button class="actionBtn delete" onclick="delRecord('${r.local_id}')">🗑️ BORRAR</button></div></td>`;
+    tr.innerHTML=`<td><div class="evtDateCell"><strong>${esc(formatDateDMY(r.date))}</strong></div></td><td><div class="evtClientBlock"><strong class="evtClientName">${esc(r.client)}</strong><small class="evtClientCompany">${esc(r.company)}</small><span class="commercialBadge ${statusBadgeClass(r.status)}">${esc(commercialStatusLabel(r.status))}</span>${operationalBadgeHtml(r,op)}</div></td><td><div class="evtTextBlock"><strong>${esc(r.project)}</strong></div></td><td><div class="evtMiniData">${esc(r.pax||"")}</div></td><td><div class="evtMiniData">${esc(r.service_hours||"")}</div></td><td><div class="evtTextBlock">${esc(r.setup_type||"")}</div></td><td><div class="recordMoneyBox recordMoneyAmount"><strong>${money(r.amount)}</strong><small>Recibido</small><small class="moneySubValue">${money(paid)}</small></div></td><td><div class="recordMoneyBox recordMoneyBalance"><strong>${money(bal(r))}</strong></div></td><td><div class="evtSyncBlock"><span class="evtSyncBadge ${r._dirty?"syncPending":"syncOk"}">${r._dirty?"PENDIENTE":"OK"}</span>${fileCount?`<small class="evtFileCount">📎 ${fileCount} archivo${fileCount===1?"":"s"}</small>`:""}<small class="evtUpdatedBy">${esc(r.updated_by||"—")}</small><small class="evtUpdatedAt">${esc(fmtAuditDate(r.updated_at||""))}</small></div></td><td><div class="recordActions"><button class="actionBtn actionViewBtn" onclick="showRecord('${r.local_id}')">👁️ VER</button><button class="actionBtn expensesBtn" onclick="showExpensesOnly('${r.local_id}')">💸 GASTOS</button><button class="actionBtn uploadFileBtn" onclick="openFilePicker('${r.local_id}')">📎 ARCHIVO</button><button class="actionBtn editBtn" onclick="editRecord('${r.local_id}')">✏️ EDITAR</button><button class="actionBtn warehouseBtn" onclick="generateWarehouseOrderPdf('${r.local_id}')">📦 PEDIDO BODEGA</button><button class="actionBtn quotePdfBtn" onclick="generateClientQuotePdf('${r.local_id}')">🧾 PDF CLIENTE</button><button class="actionBtn quotePdfBtn" onclick="generateClientQuotePdf('${r.local_id}','en')">🇺🇸 PDF INGLÉS</button><button class="actionBtn payBtn" onclick="addPayment('${r.local_id}')">💳 REGISTRAR PAGO</button><button class="actionBtn delete" onclick="delRecord('${r.local_id}')">🗑️ BORRAR</button></div></td>`;
     tb.appendChild(tr);
   });
   const quotedOpen=visible.filter(r=>normalizeCommercialStatus(r.status)==="COTIZADO");
@@ -1281,7 +1338,7 @@ function showRecord(local_id){
   const r=normalizeRecord(records.find(x=>x.local_id===local_id));if(!r)return;
   currentFileRecordId=local_id;
   $("modalTitle").textContent=r.client;
-  $("modalBody").innerHTML=`<h3>📋 INFORMACIÓN DEL EVENTO</h3><p><strong>📅 FECHA:</strong> ${esc(r.date)}</p><p><strong>🎉 PROYECTO:</strong> ${esc(r.project)}</p><p><strong>🎯 TIPO:</strong> ${esc(r.event_type)}</p><p><strong>📍 LUGAR:</strong> ${esc(r.venue)}</p><p><strong>👥 PAX:</strong> ${esc(r.pax||"")}</p><p><strong>⏰ HORAS DE SERVICIO:</strong> ${esc(r.service_hours||"")}</p><p><strong>🔧 MONTAJE:</strong> ${esc(r.setup_type||"")} · ${esc(r.setup_hours||"")} HRS · ${esc(r.setup_time||"")}</p><p><strong>🎬 INICIO:</strong> ${esc(r.start_time||"")} · <strong>🏁 TÉRMINO:</strong> ${esc(r.end_time||"")}</p><p><strong>📌 ESTADO:</strong> ${esc(commercialStatusLabel(r.status))}</p><p><strong>💰 MONTO:</strong> ${money(r.amount)} | <strong>💳 RECIBIDO:</strong> ${money(paidForRecord(r))} | <strong>💸 SALDO:</strong> ${money(bal(r))}</p><p>${r.phone?`<a class="button whatsapp" href="${wa(r.phone,"Hola, te contacto de TopDJs sobre "+(r.project||"tu evento"))}" target="_blank">WHATSAPP</a> <a class="button call" href="${tel(r.phone)}">LLAMAR</a>`:""} <button class="editBtn" onclick="$('modal').classList.add('hidden');document.body.classList.remove('modal-open');editRecord('${r.local_id}')">EDITAR EVENTO</button> <button class="fileBtn" onclick="generateWarehouseOrderPdf('${r.local_id}')">PEDIDO BODEGA PDF</button> <button class="quotePdfBtn" onclick="generateClientQuotePdf('${r.local_id}')">PDF CLIENTE</button></p>${paymentsHtml(local_id)}${auditHtml(r)}${catalogHtml(r.quote_catalog)}<h3>📝 OBSERVACIONES GENERALES</h3><p>${esc(r.notes)}</p>${filesHtml(local_id)}`;
+  $("modalBody").innerHTML=`<h3>📋 INFORMACIÓN DEL EVENTO</h3><p><strong>📅 FECHA:</strong> ${esc(r.date)}</p><p><strong>🎉 PROYECTO:</strong> ${esc(r.project)}</p><p><strong>🎯 TIPO:</strong> ${esc(r.event_type)}</p><p><strong>📍 LUGAR:</strong> ${esc(r.venue)}</p><p><strong>👥 PAX:</strong> ${esc(r.pax||"")}</p><p><strong>⏰ HORAS DE SERVICIO:</strong> ${esc(r.service_hours||"")}</p><p><strong>🔧 MONTAJE:</strong> ${esc(r.setup_type||"")} · ${esc(r.setup_hours||"")} HRS · ${esc(r.setup_time||"")}</p><p><strong>🎬 INICIO:</strong> ${esc(r.start_time||"")} · <strong>🏁 TÉRMINO:</strong> ${esc(r.end_time||"")}</p><p><strong>📌 ESTADO:</strong> ${esc(commercialStatusLabel(r.status))}</p><p><strong>💰 MONTO:</strong> ${money(r.amount)} | <strong>💳 RECIBIDO:</strong> ${money(paidForRecord(r))} | <strong>💸 SALDO:</strong> ${money(bal(r))}</p><p>${r.phone?`<a class="button whatsapp" href="${wa(r.phone,"Hola, te contacto de TopDJs sobre "+(r.project||"tu evento"))}" target="_blank">WHATSAPP</a> <a class="button call" href="${tel(r.phone)}">LLAMAR</a>`:""} <button class="editBtn" onclick="$('modal').classList.add('hidden');document.body.classList.remove('modal-open');editRecord('${r.local_id}')">EDITAR EVENTO</button> <button class="fileBtn" onclick="generateWarehouseOrderPdf('${r.local_id}')">PEDIDO BODEGA PDF</button> <button class="quotePdfBtn" onclick="generateClientQuotePdf('${r.local_id}')">PDF CLIENTE</button> <button class="quotePdfBtn" onclick="generateClientQuotePdf('${r.local_id}','en')">PDF INGLÉS</button></p>${paymentsHtml(local_id)}${auditHtml(r)}${catalogHtml(r.quote_catalog)}<h3>📝 OBSERVACIONES GENERALES</h3><p>${esc(r.notes)}</p>${filesHtml(local_id)}`;
   $("modal").classList.remove("hidden");setTimeout(()=>loadHistoryIntoModal(r.local_id),300)
 }
 $("closeModal").onclick=()=>$("modal").classList.add("hidden");

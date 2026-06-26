@@ -1,18 +1,14 @@
-TOPDJS CRM v11.4.40 - FACTURA OPCIONAL / IVA EN DASHBOARD
+TOPDJS CRM v11.4.41 - PDF cliente en español e inglés
 
 Nuevo:
-- El cotizador conserva el campo Producción sin IVA.
-- Se agrega casilla: Solicita factura (+ IVA 16%).
-- Si NO se solicita factura:
-  - Dashboard, cobranza, saldo y PDF usan el monto capturado sin IVA.
-  - El IVA aparece en $0.
-- Si SÍ se solicita factura:
-  - El CRM calcula IVA 16%.
-  - Dashboard, cobranza, saldo y PDF usan el total con IVA.
-- El PDF cliente conserva el formato aprobado, footer @topdjs.mx y 5530260203.
+- Mantiene el flujo de producción sin IVA y casilla de Solicita factura (+ IVA 16%).
+- Agrega generación de PDF para cliente en inglés.
+- En el cotizador aparecen dos botones: PDF PARA CLIENTE y PDF CLIENTE INGLÉS.
+- En eventos guardados aparecen PDF CLIENTE y PDF INGLÉS.
+- El PDF en inglés conserva el mismo formato aprobado, secciones dinámicas, observaciones por rubro, observaciones generales y condiciones traducidas.
 
 Instalación:
-1. Subir estos archivos al repo.
-2. Commit: TopDJs CRM v11.4.40 - Factura opcional con IVA en dashboard
+1. Subir los 7 archivos a GitHub.
+2. Commit: TopDJs CRM v11.4.41 - PDF cliente en inglés
 3. Deploy to Production en Vercel.
 4. Recarga fuerte: Option + Command + R.
