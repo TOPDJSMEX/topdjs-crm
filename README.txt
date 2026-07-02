@@ -1,27 +1,17 @@
-TOPDJS CRM v11.4.39 - CATÁLOGO ACTUALIZADO CSX / GRAVITY
+TOPDJS CRM v11.4.40 - CSX 118 ORDENADO EN CATÁLOGO
 
-Nuevo en catálogo del cotizador:
+Cambio:
+- MARTIN SUB CSX 118 ahora queda inmediatamente debajo de MARTIN SUB SXP218 en el rubro AUDIO.
 
-AUDIO:
-- MARTIN SUB CSX 118
-
-ADICIONALES:
-- GRAVITY STAND
-
-Estos equipos ya aparecen disponibles para seleccionarse desde el cotizador y posteriormente salir en el pedido de bodega y cotización PDF por rubro.
-
-Mantiene:
-- Cotización PDF premium cliente
-- Cotizar desde clientes
-- Vencido en confirmado sin anticipo
-- Calendario hoy con eventos azules
-- Botones de acción modernos
-- Estados comerciales
-- Dashboard de cobranza
-- Gastos por evento
+Se mantiene:
+- GRAVITY STAND en ADICIONALES.
+- Cotización PDF premium cliente.
+- Cotizar desde clientes.
+- Estados comerciales.
+- Calendario, cobranza, gastos y pedido de bodega.
 
 Instalación:
-1. Subir los 7 archivos a GitHub.
-2. Commit: TopDJs CRM v11.4.39 - Catálogo actualizado CSX Gravity
+1. Subir los archivos a GitHub.
+2. Commit: TopDJs CRM v11.4.40 - CSX 118 ordenado bajo SXP218
 3. Deploy to Production en Vercel.
 4. Recarga fuerte: Option + Command + R.
