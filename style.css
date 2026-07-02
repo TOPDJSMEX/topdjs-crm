@@ -1289,7 +1289,7 @@ header{
 }
 
 
-/* TOPDJS CRM v11.4.37 - Cotizar desde Clientes */
+/* TOPDJS CRM v11.4.38 - Cotizar desde Clientes */
 .clientQuoteBtn{
   margin-top:10px !important;
   padding:10px 14px !important;
@@ -1310,32 +1310,10 @@ header{
 }
 
 
-/* TOPDJS CRM v11.4.38 - PDF para cliente desde cotizador */
+/* TOPDJS CRM v11.4.38 - Botón Cotización PDF Premium */
 .quotePdfBtn{
-  background:linear-gradient(180deg,#6ee7ff,#00a2ff) !important;
-  color:#00111d !important;
-  border-color:#9ff3ff !important;
-  box-shadow:0 0 22px rgba(0,184,255,.38) !important;
-}
-
-
-/* TOPDJS CRM v11.4.40 - Factura opcional */
-.invoiceCheck{
-  display:flex !important;
-  align-items:center !important;
-  gap:10px !important;
-  margin-top:12px !important;
-  padding:10px 12px !important;
-  border:1px solid rgba(0,184,255,.45) !important;
-  border-radius:12px !important;
-  background:rgba(0,184,255,.06) !important;
-  color:#cfefff !important;
-  font-weight:900 !important;
-}
-.invoiceCheck input{
-  width:22px !important;
-  height:22px !important;
-  margin:0 !important;
-  flex:0 0 auto !important;
-  accent-color:#00b8ff !important;
+  background:linear-gradient(135deg,#00B8FF,#7C3AED) !important;
+  border-color:rgba(165,180,252,.78) !important;
+  color:#fff !important;
+  box-shadow:0 0 18px rgba(124,58,237,.26),0 10px 22px rgba(0,0,0,.28) !important;
 }

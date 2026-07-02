@@ -12,7 +12,7 @@
 <header>
   <div class="headerInfoLeft">
     <h1>TOPDJS CRM v11.4.39</h1>
-    <p class="headerMetaLeft">Offline + Supabase + auditoría + dashboard real + gastos por evento + PDF cliente.</p>
+    <p class="headerMetaLeft">Offline + Supabase + auditoría + dashboard real + gastos por evento.</p>
   </div>
   <div class="headerCenterBrand">
     <img src="topdjs-logo.png" class="brandLogo headerCenterLogo" alt="TopDJs">
@@ -74,9 +74,7 @@
     </section>
     <section class="card">
       <h2>💰 TOTALES</h2>
-      <label>💰 PRODUCCIÓN SIN IVA</label><input id="quoteTotal" type="number" placeholder="44400">
-      <label class="invoiceCheck"><input id="quoteInvoiceRequested" type="checkbox"> 🧾 Solicita factura (+ IVA 16%)</label>
-      <p class="hint" id="quoteTaxSummary">Sin factura · Total dashboard: $0</p>
+      <label>💰 TOTAL COTIZADO</label><input id="quoteTotal" type="number" placeholder="85000">
       <label>💵 ANTICIPO / PAGADO</label><input id="quotePaid" type="number" value="0">
       <label>📅 FECHA DEL ANTICIPO</label><input id="quotePaidDate" type="date">
 <label>💳 MÉTODO DEL ANTICIPO</label>
@@ -97,12 +95,10 @@
         <option value="CANCELADO">Cancelado</option>
         <option value="PERDIDO">Perdido</option>
       </select>
-      <p class="big"><strong>💸 SALDO CON IVA:</strong> <span id="quoteBalance">$0</span></p>
+      <p class="big"><strong>💸 SALDO:</strong> <span id="quoteBalance">$0</span></p>
       <button id="saveQuoteBtn">GUARDAR COMO COTIZACIÓN</button>
       <button id="cancelEditBtn" class="secondary hidden">CANCELAR EDICIÓN</button>
       <button id="clearQuoteBtn" class="secondary">LIMPIAR COTIZADOR</button>
-      <button id="clientQuotePdfBtn" class="quotePdfBtn">PDF PARA CLIENTE</button>
-      <button id="clientQuotePdfEnBtn" class="quotePdfBtn secondary">PDF CLIENTE INGLÉS</button>
     </section>
     <section class="card wide">
       <h2>📦 CATÁLOGO</h2>
@@ -223,7 +219,7 @@
 <div id="modal" class="modal hidden"><div class="modalBox"><button id="closeModal" class="close">×</button><h2 id="modalTitle"></h2><div id="modalBody"></div></div></div>
 
 <script>
-window.TOPDJS_CATALOG={"🔊 AUDIO": ["MARTIN TORUS T1215", "MARTIN TORUS T1230", "MARTIN SUB SXP218", "MARTIN FLEXPOINT FP8", "AXIOM TOP AX12C", "AXIOM TOP AX6C", "AXIOM SUB SW2100A", "BOSE L1 PRO 8", "HK ELEMENTS", "HK CT108", "CONSOLA YAMAHA DM3", "CONSOLA MIDAS M32", "CONSOLA SOUND MASTER 12CH", "MICRÓFONO INALÁMBRICO", "MICRÓFONO DIADEMA", "MICRÓFONO LAVALIER"], "🎧 CABINA Y DJ": ["DJ", "CONTROLADOR PIONEER XDJ-AZ", "MONITOR HK LUCAS PERFORMER", "MONITOR LD DAVE", "DJ BOOTH"], "💡 ILUMINACIÓN": ["ADJ FOCUS BEAM LED", "MARTIN SPOT MH5", "RUBIK WASH", "ALEDA B-EYE K10 WASH", "DAZE RGB", "ADJ BLINDER", "ADJ IKON PROFILE", "EZ-BAR", "SUNSTAR COLOR SIX", "PIXEL PANEL 5", "SUNSTAR ORACLE LASER RGB", "FOG HAZE MAGMATIC", "CONSOLA MA COMMAND WING", "INTERFASE MA DOT2", "CONSOLA ADJ WOLFMIX"], "📺 VIDEO": ["PANTALLA LED PITCH 3.9 5X3", "PANTALLA LED PITCH 3.9 4X3", "PANTALLA LED PITCH 3.9 3X2", "MÓDULOS LED PITCH 3.9 96 X 96", "PROCESADOR NOVA STAR", "PROCESADOR TAURUS", "SWITCHER ROLAND", "VJ ARENA", "PANTALLA LG 70”"], "⚡ ADICIONALES": ["PLANTA DE LUZ", "TRUSS MK", "STAGE SET SOPORTE", "BAZOOKA CO2"], "👷 STAFF": ["ING. AUDIO", "ING ILUMINACION/VIDEO", "STAGE HANDS"], "🚚 TRANSPORTE": ["CDMX", "FORANEO"]};
+window.TOPDJS_CATALOG={"🔊 AUDIO": ["MARTIN TORUS T1215", "MARTIN TORUS T1230", "MARTIN SUB SXP218", "MARTIN FLEXPOINT FP8", "AXIOM TOP AX12C", "AXIOM TOP AX6C", "AXIOM SUB SW2100A", "BOSE L1 PRO 8", "HK ELEMENTS", "HK CT108", "CONSOLA YAMAHA DM3", "CONSOLA MIDAS M32", "CONSOLA SOUND MASTER 12CH", "MICRÓFONO INALÁMBRICO", "MICRÓFONO DIADEMA", "MICRÓFONO LAVALIER", "MARTIN SUB CSX 118"], "🎧 CABINA Y DJ": ["DJ", "CONTROLADOR PIONEER XDJ-AZ", "MONITOR HK LUCAS PERFORMER", "MONITOR LD DAVE", "DJ BOOTH"], "💡 ILUMINACIÓN": ["ADJ FOCUS BEAM LED", "MARTIN SPOT MH5", "RUBIK WASH", "ALEDA B-EYE K10 WASH", "DAZE RGB", "ADJ BLINDER", "ADJ IKON PROFILE", "EZ-BAR", "SUNSTAR COLOR SIX", "PIXEL PANEL 5", "SUNSTAR ORACLE LASER RGB", "FOG HAZE MAGMATIC", "CONSOLA MA COMMAND WING", "INTERFASE MA DOT2", "CONSOLA ADJ WOLFMIX"], "📺 VIDEO": ["PANTALLA LED PITCH 3.9 5X3", "PANTALLA LED PITCH 3.9 4X3", "PANTALLA LED PITCH 3.9 3X2", "MÓDULOS LED PITCH 3.9 96 X 96", "PROCESADOR NOVA STAR", "PROCESADOR TAURUS", "SWITCHER ROLAND", "VJ ARENA", "PANTALLA LG 70”"], "⚡ ADICIONALES": ["PLANTA DE LUZ", "TRUSS MK", "STAGE SET SOPORTE", "BAZOOKA CO2", "GRAVITY STAND"], "👷 STAFF": ["ING. AUDIO", "ING ILUMINACION/VIDEO", "STAGE HANDS"], "🚚 TRANSPORTE": ["CDMX", "FORANEO"]};
 window.SUPABASE_URL="https://xbrsnmbmkbvxyhrtiywy.supabase.co";
 window.SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhicnNubWJta2J2eHlocnRpeXd5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEyMTUwMzYsImV4cCI6MjA5Njc5MTAzNn0.ULJh4UYoaNLsirKnRQ4TmIbv-L5kzWwWWEFwIsFI02Y";
 </script>

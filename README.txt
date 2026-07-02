@@ -1,14 +1,27 @@
-TOPDJS CRM v11.4.41 - PDF cliente en español e inglés
+TOPDJS CRM v11.4.39 - CATÁLOGO ACTUALIZADO CSX / GRAVITY
 
-Nuevo:
-- Mantiene el flujo de producción sin IVA y casilla de Solicita factura (+ IVA 16%).
-- Agrega generación de PDF para cliente en inglés.
-- En el cotizador aparecen dos botones: PDF PARA CLIENTE y PDF CLIENTE INGLÉS.
-- En eventos guardados aparecen PDF CLIENTE y PDF INGLÉS.
-- El PDF en inglés conserva el mismo formato aprobado, secciones dinámicas, observaciones por rubro, observaciones generales y condiciones traducidas.
+Nuevo en catálogo del cotizador:
+
+AUDIO:
+- MARTIN SUB CSX 118
+
+ADICIONALES:
+- GRAVITY STAND
+
+Estos equipos ya aparecen disponibles para seleccionarse desde el cotizador y posteriormente salir en el pedido de bodega y cotización PDF por rubro.
+
+Mantiene:
+- Cotización PDF premium cliente
+- Cotizar desde clientes
+- Vencido en confirmado sin anticipo
+- Calendario hoy con eventos azules
+- Botones de acción modernos
+- Estados comerciales
+- Dashboard de cobranza
+- Gastos por evento
 
 Instalación:
 1. Subir los 7 archivos a GitHub.
-2. Commit: TopDJs CRM v11.4.41 - PDF cliente en inglés
+2. Commit: TopDJs CRM v11.4.39 - Catálogo actualizado CSX Gravity
 3. Deploy to Production en Vercel.
 4. Recarga fuerte: Option + Command + R.
