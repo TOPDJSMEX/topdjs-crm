@@ -6,13 +6,13 @@
 <meta name="theme-color" content="#0f172a">
 <link rel="manifest" href="manifest.json">
 <link rel="stylesheet" href="style.css">
-<title>TOPDJS CRM v11.4.40</title>
+<title>TOPDJS CRM v11.4.42</title>
 </head>
 <body>
 <header>
   <div class="headerInfoLeft">
-    <h1>TOPDJS CRM v11.4.40</h1>
-    <p class="headerMetaLeft">Offline + Supabase + auditoría + dashboard real + gastos por evento.</p>
+    <h1>TOPDJS CRM v11.4.42</h1>
+    <p class="headerMetaLeft">Offline + Supabase + auditoría + dashboard real + gastos por evento + PDF cliente ES/EN + inventario actualizado.</p>
   </div>
   <div class="headerCenterBrand">
     <img src="topdjs-logo.png" class="brandLogo headerCenterLogo" alt="TopDJs">
@@ -74,7 +74,9 @@
     </section>
     <section class="card">
       <h2>💰 TOTALES</h2>
-      <label>💰 TOTAL COTIZADO</label><input id="quoteTotal" type="number" placeholder="85000">
+      <label>💰 PRODUCCIÓN SIN IVA</label><input id="quoteTotal" type="number" placeholder="44400">
+      <label class="invoiceCheck"><input id="quoteInvoiceRequested" type="checkbox"> 🧾 Solicita factura (+ IVA 16%)</label>
+      <p class="hint" id="quoteTaxSummary">Sin factura · Total dashboard: $0</p>
       <label>💵 ANTICIPO / PAGADO</label><input id="quotePaid" type="number" value="0">
       <label>📅 FECHA DEL ANTICIPO</label><input id="quotePaidDate" type="date">
 <label>💳 MÉTODO DEL ANTICIPO</label>
@@ -95,10 +97,12 @@
         <option value="CANCELADO">Cancelado</option>
         <option value="PERDIDO">Perdido</option>
       </select>
-      <p class="big"><strong>💸 SALDO:</strong> <span id="quoteBalance">$0</span></p>
+      <p class="big"><strong>💸 SALDO CON IVA:</strong> <span id="quoteBalance">$0</span></p>
       <button id="saveQuoteBtn">GUARDAR COMO COTIZACIÓN</button>
       <button id="cancelEditBtn" class="secondary hidden">CANCELAR EDICIÓN</button>
       <button id="clearQuoteBtn" class="secondary">LIMPIAR COTIZADOR</button>
+      <button id="clientQuotePdfBtn" class="quotePdfBtn">PDF PARA CLIENTE</button>
+      <button id="clientQuotePdfEnBtn" class="quotePdfBtn secondary">PDF CLIENTE INGLÉS</button>
     </section>
     <section class="card wide">
       <h2>📦 CATÁLOGO</h2>

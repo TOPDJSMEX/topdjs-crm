@@ -124,6 +124,39 @@ function displayCatalogItemName(name){
   if(n==="ING ILUMINACION" || n==="ING ILUMINACION VIDEO")return "ING ILUMINACION/VIDEO";
   return name;
 }
+
+function quoteBool(v){
+  return v===true || v===1 || String(v||"").toLowerCase()==="true" || String(v||"").toLowerCase()==="si" || String(v||"").toLowerCase()==="sí";
+}
+function quoteCatalogMeta(qc){
+  if(!qc)return {};
+  if(typeof qc==="string"){
+    try{qc=JSON.parse(qc)}catch(e){return {}}
+  }
+  if(!qc || typeof qc!=="object")return {};
+  return qc.__quote_meta || qc.__meta || qc.quote_meta || {};
+}
+function recordInvoiceRequested(r){
+  const meta=quoteCatalogMeta(r?.quote_catalog);
+  return quoteBool(r?.invoice_requested ?? meta.invoice_requested ?? meta.solicita_factura ?? meta.factura);
+}
+function recordAmountBase(r){
+  const meta=quoteCatalogMeta(r?.quote_catalog);
+  const fromField=Number(r?.amount_base||0);
+  if(fromField>0)return Math.round(fromField);
+  const fromMeta=Number(meta.amount_base||meta.subtotal||0);
+  if(fromMeta>0)return Math.round(fromMeta);
+  const amount=Number(r?.amount||0);
+  if(amount>0 && recordInvoiceRequested(r))return Math.round(amount/1.16);
+  return Math.round(amount||0);
+}
+function quoteIvaFromSubtotal(subtotal, invoiceRequested){
+  return invoiceRequested?Math.round(Number(subtotal||0)*0.16):0;
+}
+function quoteAmountFromSubtotal(subtotal, invoiceRequested){
+  const base=Math.round(Number(subtotal||0));
+  return base + quoteIvaFromSubtotal(base, invoiceRequested);
+}
 function getStaffQtyFromQuoteCatalog(qc,aliases=[]){
   let qty=0;
   const aliasKeys=aliases.map(normalizeCatalogKey);
@@ -203,6 +236,9 @@ function normalizeRecord(r){
   if(r.endTime&&!r.end_time)r.end_time=r.endTime;
   if(r.quoteCatalog&&!r.quote_catalog)r.quote_catalog=r.quoteCatalog;
   if(r.expensesJsonb&&!r.expenses_jsonb)r.expenses_jsonb=r.expensesJsonb;
+  const meta=quoteCatalogMeta(r.quote_catalog);
+  if(r.invoice_requested===undefined && meta && Object.prototype.hasOwnProperty.call(meta,"invoice_requested"))r.invoice_requested=quoteBool(meta.invoice_requested);
+  if(!r.amount_base && meta && Number(meta.amount_base||0)>0)r.amount_base=Math.round(Number(meta.amount_base));
   r.expenses_jsonb=normalizeExpenses(r.expenses_jsonb);
   r.status=inferCommercialStatus(r);
   return r;
@@ -253,6 +289,9 @@ function getCatalogSelection(){
     });
     out[rub]={selected,notes:$("notes_"+safeId(rub))?.value||""}
   });
+  const amount_base=quoteSubtotalInput();
+  const invoice_requested=quoteInvoiceRequested();
+  out.__quote_meta={invoice_requested,amount_base,iva:quoteIvaFromSubtotal(amount_base,invoice_requested),amount:quoteAmountFromSubtotal(amount_base,invoice_requested)};
   return out
 }
 function clearCatalog(){
@@ -322,18 +361,30 @@ function setCatalogSelection(qc){
   });
 }
 
-function updateQuoteBalance(){$("quoteBalance").textContent=money(Math.max(Number($("quoteTotal").value||0)-Number($("quotePaid").value||0),0))}
-$("quoteTotal").oninput=updateQuoteBalance;$("quotePaid").oninput=updateQuoteBalance;
+function quoteSubtotalInput(){return Number($("quoteTotal")?.value||0)}
+function quoteInvoiceRequested(){return !!$("quoteInvoiceRequested")?.checked}
+function quoteTotalWithIvaFromSubtotal(subtotal){return Math.round(Number(subtotal||0)*1.16)}
+function updateQuoteBalance(){
+  const subtotal=quoteSubtotalInput();
+  const factura=quoteInvoiceRequested();
+  const iva=quoteIvaFromSubtotal(subtotal,factura);
+  const total=quoteAmountFromSubtotal(subtotal,factura);
+  const paid=Number($("quotePaid")?.value||0);
+  if($("quoteTaxSummary"))$("quoteTaxSummary").textContent=factura?`Factura: Sí · IVA 16%: ${money(iva)} · Total dashboard/PDF: ${money(total)}`:`Factura: No · Dashboard/PDF sin IVA: ${money(total)}`;
+  if($("quoteBalance"))$("quoteBalance").textContent=money(Math.max(total-paid,0));
+}
+$("quoteTotal").oninput=updateQuoteBalance;$("quotePaid").oninput=updateQuoteBalance;if($("quoteInvoiceRequested"))$("quoteInvoiceRequested").onchange=updateQuoteBalance;
 $("clearQuoteBtn").onclick=()=>{
   if(!confirm("¿LIMPIAR COTIZADOR?"))return;
   ["quoteClient","quoteCompany","quotePhone","quoteEmail","quoteInstagram","quoteProject","quoteDate","quoteVenue","quotePax","quoteServiceHours","quoteSetupHours","quoteSetupTime","quoteStartTime","quoteEndTime","quoteTotal","quoteNotes"].forEach(id=>$(id).value="");
-  $("quotePaid").value=0;if($("quotePaidDate"))$("quotePaidDate").value=todayISO();if($("quoteStatus"))$("quoteStatus").value="COTIZADO";$("quoteSetupType").value="MISMO DÍA";clearCatalog();updateQuoteBalance()
+  $("quotePaid").value=0;if($("quotePaidDate"))$("quotePaidDate").value=todayISO();if($("quoteInvoiceRequested"))$("quoteInvoiceRequested").checked=false;if($("quoteStatus"))$("quoteStatus").value="COTIZADO";$("quoteSetupType").value="MISMO DÍA";clearCatalog();updateQuoteBalance()
 };
 
 function clearQuoteForm(){
   ["quoteClient","quoteCompany","quotePhone","quoteEmail","quoteInstagram","quoteProject","quoteDate","quoteVenue","quotePax","quoteServiceHours","quoteSetupHours","quoteSetupTime","quoteStartTime","quoteEndTime","quoteTotal","quoteNotes"].forEach(id=>{if($(id))$(id).value=""});
   if($("quotePaid"))$("quotePaid").value=0;
   if($("quotePaidDate"))$("quotePaidDate").value=todayISO();
+  if($("quoteInvoiceRequested"))$("quoteInvoiceRequested").checked=false;
   if($("quotePaidMethod"))$("quotePaidMethod").value="";
   if($("quoteStatus"))$("quoteStatus").value="COTIZADO";
   if($("quoteSetupType"))$("quoteSetupType").value="MISMO DÍA";
@@ -347,11 +398,11 @@ function clearQuoteForm(){
 }
 if($("cancelEditBtn"))$("cancelEditBtn").onclick=()=>clearQuoteForm();
 
-function collectQuoteData(local_id=null){const amount=Number($("quoteTotal").value||0),paid=Number($("quotePaid").value||0);return{local_id:local_id||uid(),type:"COTIZACIÓN ENVIADA",date:$("quoteDate").value,client:$("quoteClient").value,company:$("quoteCompany").value,phone:$("quotePhone").value,email:$("quoteEmail").value,instagram:$("quoteInstagram").value,event_type:$("quoteEventType").value,project:$("quoteProject").value,venue:$("quoteVenue").value,pax:Number($("quotePax").value||0),service_hours:Number($("quoteServiceHours").value||0),setup_type:$("quoteSetupType").value,setup_hours:Number($("quoteSetupHours").value||0),setup_time:$("quoteSetupTime").value,start_time:$("quoteStartTime").value,end_time:$("quoteEndTime").value,amount,paid,paid_method:$("quotePaidMethod")?.value||"",paid_date:$("quotePaidDate")?.value||todayISO(),status:normalizeCommercialStatus($("quoteStatus")?.value || (paid>=amount&&amount>0?"LIQUIDADO":paid>0?"CONFIRMADO CON ANTICIPO":"COTIZADO")),notes:$("quoteNotes").value,quote_catalog:getCatalogSelection(),updated_at:new Date().toISOString(),_dirty:true}}
+function collectQuoteData(local_id=null){const amount_base=quoteSubtotalInput(),invoice_requested=quoteInvoiceRequested(),amount=quoteAmountFromSubtotal(amount_base,invoice_requested),paid=Number($("quotePaid").value||0);return{local_id:local_id||uid(),type:"COTIZACIÓN ENVIADA",date:$("quoteDate").value,client:$("quoteClient").value,company:$("quoteCompany").value,phone:$("quotePhone").value,email:$("quoteEmail").value,instagram:$("quoteInstagram").value,event_type:$("quoteEventType").value,project:$("quoteProject").value,venue:$("quoteVenue").value,pax:Number($("quotePax").value||0),service_hours:Number($("quoteServiceHours").value||0),setup_type:$("quoteSetupType").value,setup_hours:Number($("quoteSetupHours").value||0),setup_time:$("quoteSetupTime").value,start_time:$("quoteStartTime").value,end_time:$("quoteEndTime").value,amount_base,invoice_requested,amount,paid,paid_method:$("quotePaidMethod")?.value||"",paid_date:$("quotePaidDate")?.value||todayISO(),status:normalizeCommercialStatus($("quoteStatus")?.value || (paid>=amount&&amount>0?"LIQUIDADO":paid>0?"CONFIRMADO CON ANTICIPO":"COTIZADO")),notes:$("quoteNotes").value,quote_catalog:getCatalogSelection(),updated_at:new Date().toISOString(),_dirty:true}}
 $("saveQuoteBtn").onclick=async()=>{
-  const amount=Number($("quoteTotal").value||0);
+  const amount=quoteSubtotalInput();
   if(!$("quoteClient").value||!$("quoteDate").value)return alert("AGREGA CLIENTE Y FECHA.");
-  if(!amount)return alert("AGREGA TOTAL COTIZADO.");
+  if(!amount)return alert("AGREGA PRODUCCIÓN SIN IVA.");
   const actor=askActor(editingRecordId?"actualizar evento":"crear evento");
   if(!actor)return;
   const oldRecord=editingRecordId?(records.find(r=>r.local_id===editingRecordId)||{}):null;
@@ -395,7 +446,7 @@ function mergeRecordForEdit(local, remote){
   local=normalizeRecord(local||{});
   remote=normalizeRecord(remote||{});
   const out={...local};
-  ["id","local_id","type","date","client","company","phone","email","instagram","event_type","project","venue","pax","service_hours","setup_type","setup_hours","setup_time","start_time","end_time","amount","paid","status","notes","quote_catalog","expenses_jsonb","paid_method","paid_date","updated_by","updated_at"].forEach(k=>{
+  ["id","local_id","type","date","client","company","phone","email","instagram","event_type","project","venue","pax","service_hours","setup_type","setup_hours","setup_time","start_time","end_time","amount_base","invoice_requested","amount","paid","status","notes","quote_catalog","expenses_jsonb","paid_method","paid_date","updated_by","updated_at"].forEach(k=>{
     out[k]=firstValue(remote[k], local[k]);
   });
   out.quote_catalog=parseMaybeJson(firstValue(remote.quote_catalog, local.quote_catalog));
@@ -442,7 +493,8 @@ function fillEditForm(r){
   setInput("quoteSetupTime",r.setup_time);
   setInput("quoteStartTime",r.start_time);
   setInput("quoteEndTime",r.end_time);
-  setInput("quoteTotal",r.amount);
+  setInput("quoteTotal", recordAmountBase(r)||"");
+  if($("quoteInvoiceRequested"))$("quoteInvoiceRequested").checked=recordInvoiceRequested(r);
   setInput("quotePaid",r.paid);setInput("quotePaidMethod",r.paid_method||"");
   const firstPayment=(eventPayments||[]).filter(p=>p.record_local_id===r.local_id).sort((a,b)=>String(a.payment_date||a.created_at).localeCompare(String(b.payment_date||b.created_at)))[0];
   setInput("quotePaidDate", firstPayment?.payment_date || r.paid_date || todayISO());
@@ -587,6 +639,204 @@ ${rowsHtml}
 }
 
 
+/* TOPDJS CRM v11.4.42 - PDF cliente español / inglés desde cotizador */
+function quotePdfCleanSectionTitle(rub,lang="es"){
+  const key=normalizeCatalogKey(rub);
+  let es="Rubro";
+  if(key.includes("AUDIO"))es="Audio";
+  else if(key.includes("CABINA")||key.includes("DJ"))es="Cabina y DJ";
+  else if(key.includes("ILUMINACION"))es="Iluminación";
+  else if(key.includes("VIDEO"))es="Video";
+  else if(key.includes("ADICIONALES"))es="Adicionales";
+  else if(key.includes("STAFF"))es="Staff";
+  else if(key.includes("TRANSPORTE"))es="Transporte";
+  else es=String(rub||"").replace(/^[^A-Za-zÁÉÍÓÚÑáéíóúñ]+\s*/,"").trim()||"Rubro";
+  if(lang!=="en")return es;
+  const enMap={"Audio":"Audio","Cabina y DJ":"DJ Booth and DJ","Iluminación":"Lighting","Video":"Video","Adicionales":"Add-ons","Staff":"Staff","Transporte":"Transportation","Rubro":"Section"};
+  return enMap[es]||es;
+}
+function quotePdfLabels(lang="es"){
+  const en=lang==="en";
+  return en?{
+    htmlLang:"en",legend:"Audio • Lighting • Video • DJ",print:"PRINT / SAVE PDF",close:"CLOSE",
+    folio:"Folio",issued:"Issue date",validity:"Valid for",validityDays:"7 days",
+    clientTitle:"CLIENT AND EVENT DETAILS",clientSub:"General information loaded automatically from the quote builder.",
+    client:"Client:",event:"Event:",phone:"Phone:",email:"Email:",eventDate:"Event date:",schedule:"Schedule:",venue:"Venue:",executive:"Executive:",
+    noItems:"No equipment or services selected in the quote builder.",sectionNotes:"Notes:",
+    production:"Production total",vat16:"VAT 16%",vat:"VAT",total:"TOTAL",paid:"Deposit / paid",balance:"Remaining balance",
+    generalNotes:"GENERAL NOTES",conditions:"TERMS AND CONDITIONS",
+    conditionDeposit:"The date is reserved with the deposit.",
+    conditionBalance:"The remaining balance must be paid before the event starts.",
+    conditionAvailability:"Proposal subject to date and equipment availability.",
+    conditionVatYes:"Prices are expressed in MXN and include 16% VAT.",
+    conditionVatNo:"Prices are expressed in MXN. VAT is not included because invoice was not requested.",
+    alertClient:"Add the client before generating the PDF.",alertAmount:"Add the production amount before generating the PDF.",
+    popupBlocked:"Safari blocked the pop-up window. Allow pop-ups to generate the PDF.",notFound:"I couldn't find this event to generate the client PDF."
+  }:{
+    htmlLang:"es",legend:"Audio • Iluminación • Video • DJ",print:"IMPRIMIR / GUARDAR PDF",close:"CERRAR",
+    folio:"Folio",issued:"Fecha de emisión",validity:"Vigencia",validityDays:"7 días",
+    clientTitle:"DATOS DEL CLIENTE Y EVENTO",clientSub:"Información general cargada automáticamente desde el cotizador.",
+    client:"Cliente:",event:"Evento:",phone:"Teléfono:",email:"Correo:",eventDate:"Fecha del evento:",schedule:"Horario:",venue:"Lugar:",executive:"Ejecutivo:",
+    noItems:"No hay equipo o servicios seleccionados en el cotizador.",sectionNotes:"Observaciones:",
+    production:"Producción total",vat16:"IVA 16%",vat:"IVA",total:"TOTAL",paid:"Anticipo / pagado",balance:"Saldo pendiente",
+    generalNotes:"OBSERVACIONES GENERALES",conditions:"CONDICIONES",
+    conditionDeposit:"La fecha se aparta con el anticipo.",
+    conditionBalance:"El saldo se liquida antes del inicio del evento.",
+    conditionAvailability:"Propuesta sujeta a disponibilidad de fecha y equipo.",
+    conditionVatYes:"Los precios están expresados en MXN e incluyen IVA.",
+    conditionVatNo:"Los precios están expresados en MXN. No incluye IVA porque no se solicitó factura.",
+    alertClient:"Agrega el cliente antes de generar el PDF.",alertAmount:"Agrega la producción sin IVA antes de generar el PDF.",
+    popupBlocked:"Safari bloqueó la ventana emergente. Permite pop-ups para generar el PDF.",notFound:"No encontré este evento para generar PDF de cliente."
+  };
+}
+function quotePdfHtmlEsc(s){return esc(s).replace(/\n/g,"<br>")}
+function quotePdfTodayLong(lang="es"){
+  const locale=lang==="en"?"en-US":"es-MX";
+  const opts=lang==="en"?{month:"long",day:"2-digit",year:"numeric"}:{day:"2-digit",month:"long",year:"numeric"};
+  return new Date().toLocaleDateString(locale,opts);
+}
+function quotePdfDateLong(dateStr,lang="es"){
+  if(!dateStr)return "";
+  try{
+    const d=new Date(dateStr+"T12:00:00");
+    if(lang==="en")return d.toLocaleDateString("en-US",{month:"long",day:"2-digit",year:"numeric"});
+    return d.toLocaleDateString("es-MX",{day:"2-digit",month:"long",year:"numeric"});
+  }catch(e){return dateStr}
+}
+function quotePdfFolio(r){
+  const base=(r.local_id||r.id||uid()).toString().replace(/[^a-z0-9]/gi,"").slice(-6).toUpperCase()||"000001";
+  const y=(new Date()).getFullYear();
+  return `TDJ-${y}-${base}`;
+}
+function quotePdfMoney(n){return money(Math.round(Number(n||0)))}
+function quotePdfTotals(r){
+  const factura=recordInvoiceRequested(r);
+  const subtotal=recordAmountBase(r);
+  const iva=quoteIvaFromSubtotal(subtotal,factura);
+  const total=quoteAmountFromSubtotal(subtotal,factura);
+  const existing=records.some(x=>String(x.local_id||"")===String(r.local_id||""));
+  const paid=existing?paidForRecord(r):Number(r.paid||0);
+  const balance=Math.max(total-paid,0);
+  return {subtotal,iva,total,paid,balance,factura};
+}
+function quotePdfEventSchedule(r,lang="es"){
+  if(r.start_time&&r.end_time)return lang==="en"?`${r.start_time} to ${r.end_time}`:`${r.start_time} a ${r.end_time} hrs`;
+  if(r.start_time)return lang==="en"?`${r.start_time}`:`${r.start_time} hrs`;
+  if(r.end_time)return lang==="en"?`Ends ${r.end_time}`:`Termina ${r.end_time} hrs`;
+  return "";
+}
+function quotePdfSectionsFromRecord(r,lang="es"){
+  return getSelectedCatalogSections(parseMaybeJson(r.quote_catalog))
+    .filter(sec=>Array.isArray(sec.items)&&sec.items.length>0)
+    .map(sec=>({
+      title:quotePdfCleanSectionTitle(sec.rub,lang),
+      items:sec.items.map(i=>({qty:Number(i.qty||1)||1,item:displayCatalogItemName(i.item||"")})).filter(i=>i.item),
+      notes:String(sec.notes||"").trim()
+    }));
+}
+function quotePdfBuildRecordFromCurrent(){
+  return collectQuoteData("preview_"+uid());
+}
+function quotePdfBuildHtml(r,lang="es"){
+  r=normalizeRecord(r||{});
+  const L=quotePdfLabels(lang);
+  const sections=quotePdfSectionsFromRecord(r,lang);
+  const totals=quotePdfTotals(r);
+  const folio=quotePdfFolio(r);
+  const issued=quotePdfTodayLong(lang);
+  const schedule=quotePdfEventSchedule(r,lang);
+  const generalNotes=String(r.notes||"").trim();
+  const sectionsHtml=sections.length?sections.map(sec=>`
+    <section class="quote-section">
+      <div class="quote-section-title">${quotePdfHtmlEsc(sec.title)}</div>
+      <div class="quote-section-body">
+        ${sec.items.map(i=>`<div class="quote-item"><span class="dot">•</span><span><strong>${quotePdfHtmlEsc(i.qty)} ×</strong> ${quotePdfHtmlEsc(i.item)}</span></div>`).join("")}
+        ${sec.notes?`<div class="section-notes"><strong>${quotePdfHtmlEsc(L.sectionNotes)}</strong><br>${quotePdfHtmlEsc(sec.notes)}</div>`:""}
+      </div>
+    </section>`).join(""):`<p class="empty">${quotePdfHtmlEsc(L.noItems)}</p>`;
+  const bottomGridClass=generalNotes?"bottom-grid":"bottom-grid only-conditions";
+  const vatLabel=totals.factura?L.vat16:L.vat;
+  return `<!doctype html>
+<html lang="${L.htmlLang}"><head><meta charset="utf-8"><title>TopDJs ${quotePdfHtmlEsc(folio)}</title>
+<style>
+@page{size:letter;margin:0}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:#fff;color:#162234;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.noPrint{position:fixed;top:12px;right:12px;z-index:50;display:flex;gap:8px}.noPrint button{border:0;border-radius:10px;background:#00a2ff;color:#00111d;font-weight:900;padding:10px 14px;cursor:pointer;box-shadow:0 0 18px rgba(0,162,255,.35)}
+.header{background:#000;color:#fff;text-align:center;padding:22px 54px 12px;border-bottom:2px solid #31d4ff;page-break-inside:avoid}.logo{width:150px;height:70px;object-fit:contain;display:block;margin:0 auto 8px}.legend{font-size:12px;letter-spacing:.14em;color:#5fc2ff;font-weight:950;text-transform:uppercase;margin:0 0 18px}.meta{display:flex;justify-content:space-between;gap:18px;font-size:12px;font-weight:800;color:#eef7ff}.meta span{white-space:nowrap}.sheet{min-height:11in;padding-bottom:.62in}.content{padding:26px 54px 72px}.client-card{position:relative;border:1.4px solid #000;border-radius:19px;padding:38px 24px 24px;margin:0 0 28px;page-break-inside:avoid}.client-title{position:absolute;left:50%;top:-14px;transform:translateX(-50%);background:#000;color:#fff;border-radius:999px;padding:7px 42px;font-size:13px;font-weight:950;letter-spacing:.03em;white-space:nowrap}.client-sub{font-size:11.5px;color:#5e7890;margin:0 0 16px}.client-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px 34px}.client-col{display:grid;grid-template-columns:max-content 1fr;gap:9px 12px;align-items:baseline}.client-col+.client-col{border-left:1px solid #e6eef6;padding-left:28px}.label{color:#65758b;font-size:13px;font-weight:900;white-space:nowrap}.value{font-size:15px;color:#162234}.quote-section{border:1px solid #d9e4ef;border-radius:17px;margin:20px 0 24px;overflow:hidden;page-break-inside:avoid}.quote-section-title{background:#000;color:#00a2ff;font-size:24px;font-weight:950;padding:12px 22px}.quote-section-body{padding:15px 24px 18px}.quote-item{display:grid;grid-template-columns:18px 1fr;gap:6px;font-size:15px;padding:7px 0;border-bottom:1px solid #edf2f7}.quote-item:last-child{border-bottom:0}.dot{color:#00a2ff;font-weight:950}.section-notes{margin-top:12px;border-left:4px solid #00a2ff;background:#f6f9fc;border-radius:8px;padding:10px 12px;font-size:13px;color:#334155;line-height:1.35}.totals{background:#000;border:1.5px solid #00a2ff;border-radius:18px;margin:24px 0 24px;padding:18px 24px;page-break-inside:avoid;color:#fff}.total-row{display:grid;grid-template-columns:1fr auto;gap:18px;align-items:center;padding:8px 0;border-bottom:1px solid #2a4666;font-size:15px}.total-row:last-child{border-bottom:0}.total-row strong{font-weight:950}.total-row.highlight{padding:15px 0;color:#31d4ff;font-size:17px}.total-row.highlight .amount{font-size:25px}.amount{font-weight:950}.bottom-grid{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid #d9e4ef;border-radius:18px;margin:24px 0 0;overflow:hidden;page-break-inside:avoid}.bottom-box{padding:18px 24px;min-height:145px}.bottom-box:first-child{border-right:1px solid #e6eef6}.bottom-box h2{margin:0 0 11px;color:#00a2ff;font-size:18px;letter-spacing:.03em}.bottom-box p,.bottom-box li{font-size:14px;line-height:1.35;margin:0 0 7px}.bottom-box ul{margin:0;padding-left:18px}.bottom-box li::marker{color:#00a2ff}.only-conditions{grid-template-columns:1fr}.only-conditions .bottom-box:first-child{display:none}.only-conditions .bottom-box{border-right:0}.empty{color:#65758b;font-size:14px}.footer{position:fixed;left:0;right:0;bottom:0;height:.48in;background:#000;border-top:2px solid #31d4ff;color:#c9d8e7;display:grid;grid-template-columns:1fr 1fr 1fr 1fr;align-items:center;padding:0 54px;font-size:11px}.footer strong{color:#fff}.footer span{text-align:center}.footer span:first-child{text-align:left}.footer span:last-child{text-align:right}@media print{.noPrint{display:none}.quote-section,.client-card,.totals,.bottom-grid{break-inside:avoid;page-break-inside:avoid}.content{padding-bottom:82px}}
+</style></head>
+<body>
+<div class="noPrint"><button onclick="window.print()">${quotePdfHtmlEsc(L.print)}</button><button onclick="window.close()">${quotePdfHtmlEsc(L.close)}</button></div>
+<div class="sheet">
+  <header class="header">
+    <img class="logo" src="topdjs-logo.png" alt="TopDJs">
+    <div class="legend">${quotePdfHtmlEsc(L.legend)}</div>
+    <div class="meta"><span>${quotePdfHtmlEsc(L.folio)}: ${quotePdfHtmlEsc(folio)}</span><span>${quotePdfHtmlEsc(L.issued)}: ${quotePdfHtmlEsc(issued)}</span><span>${quotePdfHtmlEsc(L.validity)}: ${quotePdfHtmlEsc(L.validityDays)}</span></div>
+  </header>
+  <main class="content">
+    <section class="client-card">
+      <div class="client-title">${quotePdfHtmlEsc(L.clientTitle)}</div>
+      <p class="client-sub">${quotePdfHtmlEsc(L.clientSub)}</p>
+      <div class="client-grid">
+        <div class="client-col">
+          <div class="label">${quotePdfHtmlEsc(L.client)}</div><div class="value">${quotePdfHtmlEsc(r.client||"")}</div>
+          <div class="label">${quotePdfHtmlEsc(L.event)}</div><div class="value">${quotePdfHtmlEsc(r.project||r.event_type||"")}</div>
+          <div class="label">${quotePdfHtmlEsc(L.phone)}</div><div class="value">${quotePdfHtmlEsc(r.phone||"")}</div>
+          <div class="label">${quotePdfHtmlEsc(L.email)}</div><div class="value">${quotePdfHtmlEsc(r.email||"")}</div>
+        </div>
+        <div class="client-col">
+          <div class="label">${quotePdfHtmlEsc(L.eventDate)}</div><div class="value">${quotePdfHtmlEsc(quotePdfDateLong(r.date,lang)||"")}</div>
+          <div class="label">${quotePdfHtmlEsc(L.schedule)}</div><div class="value">${quotePdfHtmlEsc(schedule)}</div>
+          <div class="label">${quotePdfHtmlEsc(L.venue)}</div><div class="value">${quotePdfHtmlEsc(r.venue||"")}</div>
+          <div class="label">${quotePdfHtmlEsc(L.executive)}</div><div class="value">TopDJs</div>
+        </div>
+      </div>
+    </section>
+    ${sectionsHtml}
+    <section class="totals">
+      <div class="total-row"><span>${quotePdfHtmlEsc(L.production)}</span><strong class="amount">${quotePdfMoney(totals.subtotal)}</strong></div>
+      <div class="total-row"><span>${quotePdfHtmlEsc(vatLabel)}</span><strong class="amount">${quotePdfMoney(totals.iva)}</strong></div>
+      <div class="total-row highlight"><strong>${quotePdfHtmlEsc(L.total)}</strong><strong class="amount">${quotePdfMoney(totals.total)}</strong></div>
+      <div class="total-row"><span>${quotePdfHtmlEsc(L.paid)}</span><strong class="amount">${quotePdfMoney(totals.paid)}</strong></div>
+      <div class="total-row"><span>${quotePdfHtmlEsc(L.balance)}</span><strong class="amount">${quotePdfMoney(totals.balance)}</strong></div>
+    </section>
+    <section class="${bottomGridClass}">
+      <div class="bottom-box"><h2>${quotePdfHtmlEsc(L.generalNotes)}</h2><p>${generalNotes?quotePdfHtmlEsc(generalNotes):""}</p></div>
+      <div class="bottom-box"><h2>${quotePdfHtmlEsc(L.conditions)}</h2><ul><li>${quotePdfHtmlEsc(L.conditionDeposit)}</li><li>${quotePdfHtmlEsc(L.conditionBalance)}</li><li>${quotePdfHtmlEsc(L.conditionAvailability)}</li><li>${quotePdfHtmlEsc(totals.factura?L.conditionVatYes:L.conditionVatNo)}</li></ul></div>
+    </section>
+  </main>
+</div>
+<footer class="footer"><span><strong>TopDJs</strong></span><span>@topdjs.mx</span><span>5530260203</span><span>www.topdjs.com.mx</span></footer>
+<script>setTimeout(()=>window.print(),650)</script>
+</body></html>`;
+}
+function openClientQuotePdfWindow(r,lang="es"){
+  const L=quotePdfLabels(lang);
+  if(!r || (!r.local_id && !r.client && !r.project))return alert(L.notFound);
+  const w=window.open("","_blank");
+  if(!w)return alert(L.popupBlocked);
+  w.document.open();
+  w.document.write(quotePdfBuildHtml(r,lang));
+  w.document.close();
+}
+function generateClientQuotePdfFromCurrent(lang="es"){
+  const L=quotePdfLabels(lang);
+  const amount=quoteSubtotalInput();
+  if(!$('quoteClient')?.value)return alert(L.alertClient);
+  if(!amount)return alert(L.alertAmount);
+  openClientQuotePdfWindow(quotePdfBuildRecordFromCurrent(),lang);
+}
+function generateClientQuotePdf(key,lang="es"){
+  const L=quotePdfLabels(lang);
+  const r=normalizeRecord(findLocalRecordFlexible(key)||records.find(x=>x.local_id===key)||{});
+  if(!r.local_id && !r.client)return alert(L.notFound);
+  openClientQuotePdfWindow(r,lang);
+}
+function generateClientQuotePdfEnglish(key){return generateClientQuotePdf(key,"en")}
+if($('clientQuotePdfBtn'))$('clientQuotePdfBtn').onclick=()=>generateClientQuotePdfFromCurrent("es");
+if($('clientQuotePdfEnBtn'))$('clientQuotePdfEnBtn').onclick=()=>generateClientQuotePdfFromCurrent("en");
+
+
 function askActor(action="guardar"){
   const who=prompt(`¿Quién realiza esta acción?\n\n1 = Carlos\n2 = Vane\n\nAcción: ${action}`);
   if(who===null)return null;
@@ -610,11 +860,11 @@ function catalogFlat(qc){
 }
 function diffRecords(oldR,newR){
   oldR=normalizeRecord(oldR||{});newR=normalizeRecord(newR||{});
-  const labels={client:"cliente",company:"empresa",phone:"teléfono",email:"email",instagram:"Instagram",event_type:"tipo de evento",project:"proyecto",date:"fecha",venue:"venue",pax:"PAX",service_hours:"horas de servicio",setup_type:"montaje",setup_hours:"horas de montaje",setup_time:"hora de montaje",start_time:"hora inicio",end_time:"hora término",amount:"monto",paid:"anticipo",paid_date:"fecha de anticipo",paid_method:"método de anticipo",status:"estatus",notes:"observaciones"};
+  const labels={client:"cliente",company:"empresa",phone:"teléfono",email:"email",instagram:"Instagram",event_type:"tipo de evento",project:"proyecto",date:"fecha",venue:"venue",pax:"PAX",service_hours:"horas de servicio",setup_type:"montaje",setup_hours:"horas de montaje",setup_time:"hora de montaje",start_time:"hora inicio",end_time:"hora término",amount_base:"producción sin IVA",invoice_requested:"solicita factura",amount:"total dashboard/PDF",paid:"anticipo",paid_date:"fecha de anticipo",paid_method:"método de anticipo",status:"estatus",notes:"observaciones"};
   const changes=[];
   Object.entries(labels).forEach(([k,label])=>{
     const a=String(oldR[k]??"").trim(),b=String(newR[k]??"").trim();
-    if(a!==b){const isMoney=["amount","paid"].includes(k);changes.push(`Cambió ${label}:\n${isMoney?money(a||0):a||"—"} → ${isMoney?money(b||0):b||"—"}`)}
+    if(a!==b){const isMoney=["amount_base","amount","paid"].includes(k);changes.push(`Cambió ${label}:\n${isMoney?money(a||0):a||"—"} → ${isMoney?money(b||0):b||"—"}`)}
   });
   const oldCat=catalogFlat(oldR.quote_catalog),newCat=catalogFlat(newR.quote_catalog);
   Object.keys(newCat).forEach(k=>{if(!oldCat[k])changes.push(`Agregó:\n${newCat[k]}`);else if(oldCat[k]!==newCat[k])changes.push(`Cambió equipo:\n${oldCat[k]} → ${newCat[k]}`)});
@@ -836,160 +1086,6 @@ async function createInitialAdvancePaymentIfNeeded(rec,actor){
   }
 }
 
-
-function quoteNumberForRecord(r){
-  const y=String(r.date||todayISO()).slice(0,4)||new Date().getFullYear();
-  const raw=String(r.local_id||r.id||Date.now()).replace(/[^a-zA-Z0-9]/g,"").toUpperCase();
-  return `TDJ-${y}-${raw.slice(-5).padStart(5,"0")}`;
-}
-function quoteRubricInfo(rub){
-  const s=String(rub||"").toUpperCase();
-  if(s.includes("AUDIO"))return {key:"audio",name:"AUDIO",icon:"🔊",accent:"#00AFFF"};
-  if(s.includes("ILUMIN"))return {key:"lighting",name:"ILUMINACIÓN",icon:"💡",accent:"#57FF23"};
-  if(s.includes("CABINA")||s.includes("DJ"))return {key:"dj",name:"DJ",icon:"🎧",accent:"#FFB000"};
-  if(s.includes("VIDEO")||s.includes("PANTALLA"))return {key:"video",name:"VIDEO",icon:"📺",accent:"#A855FF"};
-  if(s.includes("STAFF"))return {key:"staff",name:"STAFF TÉCNICO",icon:"👷",accent:"#34D399"};
-  if(s.includes("TRANSPORTE"))return {key:"transport",name:"TRANSPORTE",icon:"🚚",accent:"#38BDF8"};
-  return {key:"extra",name:"ADICIONALES",icon:"⚡",accent:"#FDE047"};
-}
-function groupQuoteSectionsForClient(qc){
-  const order=["audio","lighting","dj","video","staff","transport","extra"];
-  const grouped={};
-  getSelectedCatalogSections(parseMaybeJson(qc)).forEach(sec=>{
-    const info=quoteRubricInfo(sec.rub);
-    if(!grouped[info.key])grouped[info.key]={...info,items:[],notes:[]};
-    sec.items.forEach(i=>grouped[info.key].items.push(i));
-    if(sec.notes)grouped[info.key].notes.push(sec.notes);
-  });
-  return order.map(k=>grouped[k]).filter(Boolean);
-}
-function serviceDescriptionForRubric(name){
-  const n=String(name||"").toUpperCase();
-  if(n.includes("AUDIO"))return "Sistema profesional de cobertura, presión y claridad para el evento.";
-  if(n.includes("ILUMIN"))return "Diseño de iluminación para ambiente, pista, momentos clave y efectos visuales.";
-  if(n==="DJ")return "DJ profesional, cabina y operación musical según el estilo del evento.";
-  if(n.includes("VIDEO"))return "Solución visual para pantallas, contenido y operación técnica de video.";
-  if(n.includes("STAFF"))return "Personal técnico para operación, montaje y apoyo durante el evento.";
-  if(n.includes("TRANSPORTE"))return "Logística de traslado, carga y descarga según requerimientos del evento.";
-  return "Servicios adicionales seleccionados para la producción del evento.";
-}
-function generateClientQuotePdf(key){
-  const r=normalizeRecord(findLocalRecordFlexible(key)||records.find(x=>x.local_id===key)||{});
-  if(!r.local_id && !r.client)return alert("No encontré este evento para generar cotización PDF.");
-  const groups=groupQuoteSectionsForClient(r.quote_catalog);
-  const paid=paidForRecord(r);
-  const total=Number(r.amount||0);
-  const subtotal=total>0?total/1.16:0;
-  const iva=total-subtotal;
-  const balance=Math.max(total-paid,0);
-  const today=new Date().toLocaleDateString("es-MX",{day:"2-digit",month:"long",year:"numeric"});
-  const quoteNo=quoteNumberForRecord(r);
-  const validDays=7;
-  const baseHref=String(location.href).replace(/[^/]*$/,"");
-  const groupRows=groups.length?groups.map(g=>`
-    <div class="serviceRow" style="--rubric:${g.accent}">
-      <div class="rubricIcon">${g.icon}</div>
-      <div class="rubricName">${esc(g.name)}</div>
-      <div class="rubricDesc">
-        <strong>${esc(serviceDescriptionForRubric(g.name))}</strong>
-        <ul>${g.items.map(i=>`<li><b>${esc(i.qty)}</b> ${esc(displayCatalogItemName(i.item))}</li>`).join("")}</ul>
-        ${g.notes.length?`<p class="rubricNotes">${esc(g.notes.join(" · "))}</p>`:""}
-      </div>
-      <div class="rubricStatus">INCLUIDO</div>
-    </div>
-  `).join(""):`<div class="emptyServices">No hay equipo seleccionado en el cotizador. Agrega rubros para completar esta sección.</div>`;
-  const html=`<!doctype html>
-<html lang="es">
-<head>
-<meta charset="utf-8">
-<base href="${baseHref}">
-<title>Cotización ${esc(quoteNo)} - TopDJs</title>
-<style>
-  @page{size:A4;margin:8mm}
-  *{box-sizing:border-box}
-  body{margin:0;background:#000;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .noPrint{position:fixed;top:12px;right:12px;z-index:9999;display:flex;gap:8px}
-  .noPrint button{border:1px solid #39C8FF;background:linear-gradient(180deg,#1fd0ff,#008ee6);color:#00111d;font-weight:900;border-radius:12px;padding:10px 14px;cursor:pointer;box-shadow:0 0 18px rgba(0,184,255,.45)}
-  .page{width:194mm;min-height:281mm;margin:0 auto;background:radial-gradient(circle at 90% 5%,rgba(0,184,255,.18),transparent 22%),radial-gradient(circle at 10% 88%,rgba(0,93,255,.14),transparent 24%),#030305;padding:9mm;border:1px solid rgba(0,184,255,.25);position:relative;overflow:hidden}
-  .page:before{content:"";position:absolute;inset:0;background:linear-gradient(135deg,transparent 0%,rgba(0,184,255,.09) 47%,transparent 49%),radial-gradient(circle at 80% 18%,rgba(0,184,255,.18),transparent 18%);pointer-events:none}
-  .content{position:relative;z-index:2}
-  .header{display:grid;grid-template-columns:44% 56%;gap:10mm;align-items:stretch;margin-bottom:7mm}
-  .brand{display:flex;align-items:flex-start;gap:12px}
-  .logo{width:34mm;height:34mm;object-fit:contain;filter:drop-shadow(0 0 12px rgba(0,184,255,.55))}
-  .brandText{padding-top:5mm}
-  .brandText h1{font-size:42px;letter-spacing:.12em;margin:0 0 2mm;font-weight:950;text-shadow:0 0 16px rgba(255,255,255,.2)}
-  .tagline{font-size:11px;letter-spacing:.20em;color:#00B8FF;text-transform:uppercase;font-weight:900;white-space:nowrap}
-  .title{font-size:36px;letter-spacing:.16em;margin:7mm 0 0;font-weight:950;text-shadow:0 0 18px rgba(255,255,255,.22)}
-  .titleLine{width:52mm;height:2px;background:#00B8FF;box-shadow:0 0 14px #00B8FF;margin-top:3mm}
-  .hero{min-height:48mm;border-radius:18px;border:1px solid rgba(0,184,255,.6);overflow:hidden;background:linear-gradient(135deg,rgba(0,0,0,.1),rgba(0,184,255,.22)),radial-gradient(circle at 70% 35%,rgba(157,0,255,.42),transparent 18%),radial-gradient(circle at 35% 45%,rgba(0,184,255,.65),transparent 15%),linear-gradient(180deg,#050816,#000);position:relative;box-shadow:0 0 24px rgba(0,184,255,.28)}
-  .hero:before{content:"";position:absolute;inset:0;background:linear-gradient(70deg,transparent 0 45%,rgba(0,184,255,.36) 46%,transparent 49%),linear-gradient(110deg,transparent 0 36%,rgba(88,80,255,.28) 37%,transparent 40%),repeating-linear-gradient(90deg,rgba(255,255,255,.06) 0 1px,transparent 1px 20px);opacity:.85}
-  .hero:after{content:"EVENT EXPERIENCE";position:absolute;right:12px;bottom:10px;color:#DDF8FF;font-size:12px;font-weight:900;letter-spacing:.16em;text-shadow:0 0 10px #00B8FF}
-  .meta{display:grid;grid-template-columns:1fr 1fr;gap:0;margin-bottom:6mm;border:1px solid rgba(0,184,255,.72);border-radius:14px;overflow:hidden;box-shadow:0 0 18px rgba(0,184,255,.22)}
-  .meta div{padding:4.5mm 6mm;background:rgba(0,8,18,.88);border-right:1px solid rgba(255,255,255,.22)}
-  .meta div:last-child{border-right:0}.meta span{display:block;color:#d7e9f5;font-size:11px;font-weight:900;letter-spacing:.06em}.meta strong{display:block;color:#009DFF;font-size:18px;margin-top:2mm}
-  .cards{display:grid;grid-template-columns:1fr 1.15fr;gap:5mm;margin-bottom:6mm}.card{border:1px solid rgba(255,255,255,.32);border-radius:12px;background:rgba(0,0,0,.58);padding:5mm;box-shadow:inset 0 0 16px rgba(0,184,255,.06)}
-  .cardTitle{font-size:16px;letter-spacing:.08em;font-weight:950;margin-bottom:3.5mm;color:#fff;text-transform:uppercase}.cardTitle span{color:#00AFFF;margin-right:7px}.dataRow{display:grid;grid-template-columns:34% 66%;border-bottom:1px solid rgba(255,255,255,.14);padding:2mm 0;font-size:12px}.dataRow b{color:#fff}.dataRow span{color:#e5e7eb}
-  .sectionTitle{display:flex;align-items:center;gap:10px;margin:5mm 0 3mm;font-size:18px;font-weight:950;letter-spacing:.08em;text-transform:uppercase}.sectionTitle:after{content:"";height:1px;background:#00AFFF;box-shadow:0 0 10px #00AFFF;flex:1}.gearIcon{color:#00AFFF;font-size:24px}
-  .services{display:grid;gap:2.2mm}.serviceRow{display:grid;grid-template-columns:16mm 35mm 1fr 25mm;gap:0;align-items:stretch;min-height:20mm;border:1px solid rgba(255,255,255,.28);border-radius:9px;overflow:hidden;background:rgba(0,0,0,.72);break-inside:avoid;page-break-inside:avoid}.rubricIcon{display:flex;align-items:center;justify-content:center;font-size:22px;background:linear-gradient(135deg,var(--rubric),rgba(255,255,255,.02));box-shadow:inset 0 0 14px rgba(255,255,255,.12)}.rubricName{display:flex;align-items:center;padding:0 4mm;color:var(--rubric);font-weight:950;font-size:15px;letter-spacing:.06em}.rubricDesc{padding:3mm 4mm;border-left:1px solid rgba(255,255,255,.14);border-right:1px solid rgba(255,255,255,.14);font-size:10.5px;line-height:1.35;color:#eaf6ff}.rubricDesc strong{display:block;margin-bottom:1mm;color:#fff}.rubricDesc ul{margin:0;padding-left:14px;columns:2;column-gap:5mm}.rubricDesc li{break-inside:avoid;margin-bottom:.7mm}.rubricNotes{margin:2mm 0 0;color:#BFEFFF;font-style:italic}.rubricStatus{display:flex;align-items:center;justify-content:center;color:var(--rubric);font-size:10px;font-weight:950;letter-spacing:.06em}
-  .bottom{display:grid;grid-template-columns:1.1fr .9fr;gap:5mm;margin-top:6mm}.totals{border:1px solid #00AFFF;border-radius:12px;overflow:hidden;background:rgba(0,0,0,.78);box-shadow:0 0 20px rgba(0,184,255,.35)}.totalRow{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid rgba(255,255,255,.18);font-size:14px}.totalRow span,.totalRow strong{padding:3.2mm 5mm}.totalRow strong{text-align:right}.totalMain{background:linear-gradient(90deg,#004DDF,#009DFF);font-size:18px;font-weight:950}.balance strong{color:#009DFF;font-size:17px}.paid strong{color:#8DFFC4}.obs{border:1px solid rgba(255,255,255,.28);border-radius:12px;background:rgba(0,0,0,.58);padding:5mm;font-size:11px;line-height:1.38}.obs h3{margin:0 0 2.5mm;font-size:14px;letter-spacing:.06em}.obs li{margin-bottom:1.6mm}.obs li::marker{color:#00AFFF}.thanks{margin-top:3mm;border:1px solid rgba(255,255,255,.24);border-radius:12px;padding:4mm 5mm;color:#fff;font-size:13px}.thanks b{color:#00AFFF}
-  .footer{margin-top:5mm;border:1px solid rgba(255,255,255,.24);border-radius:11px;padding:3.4mm;display:grid;grid-template-columns:repeat(4,1fr);gap:3mm;text-align:center;font-size:10.5px;color:#e5e7eb}.footer b{color:#00AFFF}.emptyServices{padding:10mm;border:1px dashed rgba(0,184,255,.45);border-radius:12px;color:#b8c7d9}
-  @media print{.noPrint{display:none}.page{border:0;margin:0;box-shadow:none}.serviceRow{break-inside:avoid;page-break-inside:avoid}}
-</style>
-</head>
-<body>
-<div class="noPrint"><button onclick="window.print()">IMPRIMIR / GUARDAR PDF</button><button onclick="window.close()">CERRAR</button></div>
-<div class="page"><div class="content">
-  <div class="header">
-    <div>
-      <div class="brand"><img src="topdjs-logo.png" class="logo"><div class="brandText"><h1>TopDJs</h1><div class="tagline">Audio · Iluminación · Video · DJ</div></div></div>
-      <div class="title">COTIZACIÓN</div><div class="titleLine"></div>
-    </div>
-    <div class="hero"></div>
-  </div>
-  <div class="meta"><div><span>No. de cotización</span><strong>${esc(quoteNo)}</strong></div><div><span>Fecha de emisión</span><strong>${esc(today)}</strong></div></div>
-  <div class="cards">
-    <div class="card"><div class="cardTitle"><span>◎</span> Datos del cliente</div>
-      <div class="dataRow"><b>Cliente</b><span>${esc(r.client||"-")}</span></div>
-      <div class="dataRow"><b>Empresa</b><span>${esc(r.company||"-")}</span></div>
-      <div class="dataRow"><b>WhatsApp</b><span>${esc(r.phone||"-")}</span></div>
-      <div class="dataRow"><b>Email</b><span>${esc(r.email||"-")}</span></div>
-      <div class="dataRow"><b>Instagram</b><span>${esc(r.instagram||"-")}</span></div>
-    </div>
-    <div class="card"><div class="cardTitle"><span>▣</span> Datos del evento</div>
-      <div class="dataRow"><b>Tipo de evento</b><span>${esc(r.event_type||"-")}</span></div>
-      <div class="dataRow"><b>Proyecto / Evento</b><span>${esc(r.project||"-")}</span></div>
-      <div class="dataRow"><b>Fecha del evento</b><span>${esc(formatDateEs(r.date)||"-")}</span></div>
-      <div class="dataRow"><b>Venue</b><span>${esc(r.venue||"-")}</span></div>
-      <div class="dataRow"><b>PAX aprox.</b><span>${esc(r.pax||"-")}</span></div>
-      <div class="dataRow"><b>Horas de servicio</b><span>${esc(r.service_hours||"-")}</span></div>
-      <div class="dataRow"><b>Horario</b><span>${esc(r.start_time||"-")} ${r.end_time?" - "+esc(r.end_time):""}</span></div>
-    </div>
-  </div>
-  <div class="sectionTitle"><span class="gearIcon">⚙</span> Servicios cotizados</div>
-  <div class="services">${groupRows}</div>
-  <div class="bottom">
-    <div class="totals">
-      <div class="totalRow"><span>SUBTOTAL</span><strong>${money(subtotal)} MXN</strong></div>
-      <div class="totalRow"><span>IVA 16%</span><strong>${money(iva)} MXN</strong></div>
-      <div class="totalRow totalMain"><span>TOTAL COTIZACIÓN</span><strong>${money(total)} MXN</strong></div>
-      <div class="totalRow paid"><span>ANTICIPO / PAGADO</span><strong>${money(paid)} MXN</strong></div>
-      <div class="totalRow balance"><span>SALDO PENDIENTE</span><strong>${money(balance)} MXN</strong></div>
-    </div>
-    <div>
-      <div class="obs"><h3>OBSERVACIONES</h3><ul>${(r.notes?String(r.notes).split("\n").filter(Boolean):["La cotización incluye operación técnica durante el evento.","Cotización válida por 7 días naturales.","La fecha queda confirmada únicamente con anticipo recibido.","Cambios de horario, venue o requerimientos pueden modificar esta propuesta."]).map(n=>`<li>${esc(n)}</li>`).join("")}</ul></div>
-      <div class="thanks">Gracias por considerar a <b>TopDJs</b> para ser parte de tu evento.<br><b>Estamos listos para hacerlo inolvidable.</b></div>
-    </div>
-  </div>
-  <div class="footer"><span><b>☎</b> 55 7890 1234</span><span><b>✉</b> contacto@topdjs.com.mx</span><span><b>◎</b> topdjs.com.mx</span><span><b>⌖</b> CDMX / México</span></div>
-</div></div>
-<script>setTimeout(()=>window.print(),800)</script>
-</body>
-</html>`;
-  const w=window.open("","_blank");
-  if(!w)return alert("Safari bloqueó la ventana emergente. Permite pop-ups para generar el PDF.");
-  w.document.open();w.document.write(html);w.document.close();
-}
-
 function renderRecords(){
   const tb=$("recordsTable");
   tb.innerHTML="";
@@ -1004,7 +1100,7 @@ function renderRecords(){
     const paid=paidForRecord(r);
     let tr=document.createElement("tr");
     tr.className=`operRow ${op.cls}`;
-    tr.innerHTML=`<td><div class="evtDateCell"><strong>${esc(formatDateDMY(r.date))}</strong></div></td><td><div class="evtClientBlock"><strong class="evtClientName">${esc(r.client)}</strong><small class="evtClientCompany">${esc(r.company)}</small><span class="commercialBadge ${statusBadgeClass(r.status)}">${esc(commercialStatusLabel(r.status))}</span>${operationalBadgeHtml(r,op)}</div></td><td><div class="evtTextBlock"><strong>${esc(r.project)}</strong></div></td><td><div class="evtMiniData">${esc(r.pax||"")}</div></td><td><div class="evtMiniData">${esc(r.service_hours||"")}</div></td><td><div class="evtTextBlock">${esc(r.setup_type||"")}</div></td><td><div class="recordMoneyBox recordMoneyAmount"><strong>${money(r.amount)}</strong><small>Recibido</small><small class="moneySubValue">${money(paid)}</small></div></td><td><div class="recordMoneyBox recordMoneyBalance"><strong>${money(bal(r))}</strong></div></td><td><div class="evtSyncBlock"><span class="evtSyncBadge ${r._dirty?"syncPending":"syncOk"}">${r._dirty?"PENDIENTE":"OK"}</span>${fileCount?`<small class="evtFileCount">📎 ${fileCount} archivo${fileCount===1?"":"s"}</small>`:""}<small class="evtUpdatedBy">${esc(r.updated_by||"—")}</small><small class="evtUpdatedAt">${esc(fmtAuditDate(r.updated_at||""))}</small></div></td><td><div class="recordActions"><button class="actionBtn actionViewBtn" onclick="showRecord('${r.local_id}')">👁️ VER</button><button class="actionBtn expensesBtn" onclick="showExpensesOnly('${r.local_id}')">💸 GASTOS</button><button class="actionBtn uploadFileBtn" onclick="openFilePicker('${r.local_id}')">📎 ARCHIVO</button><button class="actionBtn editBtn" onclick="editRecord('${r.local_id}')">✏️ EDITAR</button><button class="actionBtn quotePdfBtn" onclick="generateClientQuotePdf('${r.local_id}')">📄 COTIZACIÓN PDF</button><button class="actionBtn warehouseBtn" onclick="generateWarehouseOrderPdf('${r.local_id}')">📦 PEDIDO BODEGA</button><button class="actionBtn payBtn" onclick="addPayment('${r.local_id}')">💳 REGISTRAR PAGO</button><button class="actionBtn delete" onclick="delRecord('${r.local_id}')">🗑️ BORRAR</button></div></td>`;
+    tr.innerHTML=`<td><div class="evtDateCell"><strong>${esc(formatDateDMY(r.date))}</strong></div></td><td><div class="evtClientBlock"><strong class="evtClientName">${esc(r.client)}</strong><small class="evtClientCompany">${esc(r.company)}</small><span class="commercialBadge ${statusBadgeClass(r.status)}">${esc(commercialStatusLabel(r.status))}</span>${operationalBadgeHtml(r,op)}</div></td><td><div class="evtTextBlock"><strong>${esc(r.project)}</strong></div></td><td><div class="evtMiniData">${esc(r.pax||"")}</div></td><td><div class="evtMiniData">${esc(r.service_hours||"")}</div></td><td><div class="evtTextBlock">${esc(r.setup_type||"")}</div></td><td><div class="recordMoneyBox recordMoneyAmount"><strong>${money(r.amount)}</strong><small>Recibido</small><small class="moneySubValue">${money(paid)}</small></div></td><td><div class="recordMoneyBox recordMoneyBalance"><strong>${money(bal(r))}</strong></div></td><td><div class="evtSyncBlock"><span class="evtSyncBadge ${r._dirty?"syncPending":"syncOk"}">${r._dirty?"PENDIENTE":"OK"}</span>${fileCount?`<small class="evtFileCount">📎 ${fileCount} archivo${fileCount===1?"":"s"}</small>`:""}<small class="evtUpdatedBy">${esc(r.updated_by||"—")}</small><small class="evtUpdatedAt">${esc(fmtAuditDate(r.updated_at||""))}</small></div></td><td><div class="recordActions"><button class="actionBtn actionViewBtn" onclick="showRecord('${r.local_id}')">👁️ VER</button><button class="actionBtn expensesBtn" onclick="showExpensesOnly('${r.local_id}')">💸 GASTOS</button><button class="actionBtn uploadFileBtn" onclick="openFilePicker('${r.local_id}')">📎 ARCHIVO</button><button class="actionBtn editBtn" onclick="editRecord('${r.local_id}')">✏️ EDITAR</button><button class="actionBtn warehouseBtn" onclick="generateWarehouseOrderPdf('${r.local_id}')">📦 PEDIDO BODEGA</button><button class="actionBtn quotePdfBtn" onclick="generateClientQuotePdf('${r.local_id}')">🧾 PDF CLIENTE</button><button class="actionBtn quotePdfBtn" onclick="generateClientQuotePdf('${r.local_id}','en')">🇺🇸 PDF INGLÉS</button><button class="actionBtn payBtn" onclick="addPayment('${r.local_id}')">💳 REGISTRAR PAGO</button><button class="actionBtn delete" onclick="delRecord('${r.local_id}')">🗑️ BORRAR</button></div></td>`;
     tb.appendChild(tr);
   });
   const quotedOpen=visible.filter(r=>normalizeCommercialStatus(r.status)==="COTIZADO");
@@ -1242,7 +1338,7 @@ function showRecord(local_id){
   const r=normalizeRecord(records.find(x=>x.local_id===local_id));if(!r)return;
   currentFileRecordId=local_id;
   $("modalTitle").textContent=r.client;
-  $("modalBody").innerHTML=`<h3>📋 INFORMACIÓN DEL EVENTO</h3><p><strong>📅 FECHA:</strong> ${esc(r.date)}</p><p><strong>🎉 PROYECTO:</strong> ${esc(r.project)}</p><p><strong>🎯 TIPO:</strong> ${esc(r.event_type)}</p><p><strong>📍 LUGAR:</strong> ${esc(r.venue)}</p><p><strong>👥 PAX:</strong> ${esc(r.pax||"")}</p><p><strong>⏰ HORAS DE SERVICIO:</strong> ${esc(r.service_hours||"")}</p><p><strong>🔧 MONTAJE:</strong> ${esc(r.setup_type||"")} · ${esc(r.setup_hours||"")} HRS · ${esc(r.setup_time||"")}</p><p><strong>🎬 INICIO:</strong> ${esc(r.start_time||"")} · <strong>🏁 TÉRMINO:</strong> ${esc(r.end_time||"")}</p><p><strong>📌 ESTADO:</strong> ${esc(commercialStatusLabel(r.status))}</p><p><strong>💰 MONTO:</strong> ${money(r.amount)} | <strong>💳 RECIBIDO:</strong> ${money(paidForRecord(r))} | <strong>💸 SALDO:</strong> ${money(bal(r))}</p><p>${r.phone?`<a class="button whatsapp" href="${wa(r.phone,"Hola, te contacto de TopDJs sobre "+(r.project||"tu evento"))}" target="_blank">WHATSAPP</a> <a class="button call" href="${tel(r.phone)}">LLAMAR</a>`:""} <button class="editBtn" onclick="$('modal').classList.add('hidden');document.body.classList.remove('modal-open');editRecord('${r.local_id}')">EDITAR EVENTO</button> <button class="fileBtn" onclick="generateWarehouseOrderPdf('${r.local_id}')">PEDIDO BODEGA PDF</button></p>${paymentsHtml(local_id)}${auditHtml(r)}${catalogHtml(r.quote_catalog)}<h3>📝 OBSERVACIONES GENERALES</h3><p>${esc(r.notes)}</p>${filesHtml(local_id)}`;
+  $("modalBody").innerHTML=`<h3>📋 INFORMACIÓN DEL EVENTO</h3><p><strong>📅 FECHA:</strong> ${esc(r.date)}</p><p><strong>🎉 PROYECTO:</strong> ${esc(r.project)}</p><p><strong>🎯 TIPO:</strong> ${esc(r.event_type)}</p><p><strong>📍 LUGAR:</strong> ${esc(r.venue)}</p><p><strong>👥 PAX:</strong> ${esc(r.pax||"")}</p><p><strong>⏰ HORAS DE SERVICIO:</strong> ${esc(r.service_hours||"")}</p><p><strong>🔧 MONTAJE:</strong> ${esc(r.setup_type||"")} · ${esc(r.setup_hours||"")} HRS · ${esc(r.setup_time||"")}</p><p><strong>🎬 INICIO:</strong> ${esc(r.start_time||"")} · <strong>🏁 TÉRMINO:</strong> ${esc(r.end_time||"")}</p><p><strong>📌 ESTADO:</strong> ${esc(commercialStatusLabel(r.status))}</p><p><strong>💰 MONTO:</strong> ${money(r.amount)} | <strong>💳 RECIBIDO:</strong> ${money(paidForRecord(r))} | <strong>💸 SALDO:</strong> ${money(bal(r))}</p><p>${r.phone?`<a class="button whatsapp" href="${wa(r.phone,"Hola, te contacto de TopDJs sobre "+(r.project||"tu evento"))}" target="_blank">WHATSAPP</a> <a class="button call" href="${tel(r.phone)}">LLAMAR</a>`:""} <button class="editBtn" onclick="$('modal').classList.add('hidden');document.body.classList.remove('modal-open');editRecord('${r.local_id}')">EDITAR EVENTO</button> <button class="fileBtn" onclick="generateWarehouseOrderPdf('${r.local_id}')">PEDIDO BODEGA PDF</button> <button class="quotePdfBtn" onclick="generateClientQuotePdf('${r.local_id}')">PDF CLIENTE</button> <button class="quotePdfBtn" onclick="generateClientQuotePdf('${r.local_id}','en')">PDF INGLÉS</button></p>${paymentsHtml(local_id)}${auditHtml(r)}${catalogHtml(r.quote_catalog)}<h3>📝 OBSERVACIONES GENERALES</h3><p>${esc(r.notes)}</p>${filesHtml(local_id)}`;
   $("modal").classList.remove("hidden");setTimeout(()=>loadHistoryIntoModal(r.local_id),300)
 }
 $("closeModal").onclick=()=>$("modal").classList.add("hidden");
@@ -1667,5 +1763,5 @@ renderCatalog();save();renderAll();syncAll();setInterval(syncAll,30000);
 if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js").catch(()=>{})}
 
 
-// TOPDJS CRM v11.4.19 - Fecha de anticipo
+// TOPDJS CRM v11.4.42 - Fecha de anticipo
 if($("quotePaidDate") && !$("quotePaidDate").value){$("quotePaidDate").value=todayISO()}

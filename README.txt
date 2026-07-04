@@ -1,17 +1,24 @@
-TOPDJS CRM v11.4.40 - CSX 118 ORDENADO EN CATÁLOGO
+TOPDJS CRM v11.4.42 - Inventario agregado sobre versión PDF cliente ES/EN
 
-Cambio:
-- MARTIN SUB CSX 118 ahora queda inmediatamente debajo de MARTIN SUB SXP218 en el rubro AUDIO.
+Base:
+- Versión correcta subida por el usuario con PDF para cliente en español e inglés.
+
+Inventario agregado al catálogo:
+AUDIO:
+- MARTIN SUB CSX 118 colocado inmediatamente debajo de MARTIN SUB SXP218.
+
+ADICIONALES:
+- GRAVITY STAND.
 
 Se mantiene:
-- GRAVITY STAND en ADICIONALES.
-- Cotización PDF premium cliente.
-- Cotizar desde clientes.
-- Estados comerciales.
-- Calendario, cobranza, gastos y pedido de bodega.
+- Botón PDF PARA CLIENTE.
+- Botón PDF CLIENTE INGLÉS.
+- PDF en inglés con formato aprobado.
+- Flujo de Producción sin IVA y casilla Solicita factura (+ IVA 16%).
+- Dashboard, calendario, clientes, cobranza, gastos y pedido de bodega.
 
 Instalación:
-1. Subir los archivos a GitHub.
-2. Commit: TopDJs CRM v11.4.40 - CSX 118 ordenado bajo SXP218
+1. Subir los 7 archivos a GitHub: index.html, app.js, style.css, manifest.json, sw.js, README.txt, topdjs-logo.png.
+2. Commit: TopDJs CRM v11.4.42 - Inventario CSX Gravity sobre PDF inglés
 3. Deploy to Production en Vercel.
 4. Recarga fuerte: Option + Command + R.
