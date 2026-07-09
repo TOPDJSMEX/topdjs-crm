@@ -639,7 +639,7 @@ ${rowsHtml}
 }
 
 
-/* TOPDJS CRM v11.4.42 - PDF cliente español / inglés desde cotizador */
+/* TOPDJS CRM v11.4.43 - PDF cliente español / inglés desde cotizador */
 function quotePdfCleanSectionTitle(rub,lang="es"){
   const key=normalizeCatalogKey(rub);
   let es="Rubro";
@@ -1449,6 +1449,156 @@ if($("yearViewBtn"))$("yearViewBtn").onclick=()=>renderYearOverview();
 if($("calendarMonthSelect"))$("calendarMonthSelect").onchange=()=>setCalendarDateFromControls();
 if($("calendarYearInput"))$("calendarYearInput").onkeydown=e=>{if(e.key==="Enter")setCalendarDateFromControls()};
 
+if($("georgeCalendarBtn"))$("georgeCalendarBtn").onclick=()=>openGeorgeCalendarModal();
+if($("georgePrintBtn"))$("georgePrintBtn").onclick=()=>openGeorgeCalendarPrint();
+
+
+// TOPDJS CRM v11.4.43 - Calendario operativo para George sin costos
+function stripEmojiLabel(label=""){
+  return String(label||"").replace(/^[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9]+\s*/g,"").trim();
+}
+function isGeorgeCalendarEvent(record){
+  const r=normalizeRecord(record||{});
+  if(r._deleted||!r.date)return false;
+  const s=normalizeCommercialStatus(r.status);
+  return ["COTIZADO","CONFIRMADO SIN ANTICIPO","CONFIRMADO CON ANTICIPO","LIQUIDADO"].includes(s);
+}
+function georgeStatusLabel(status){
+  const s=normalizeCommercialStatus(status);
+  if(s==="COTIZADO")return "PENDIENTE";
+  if(["CONFIRMADO SIN ANTICIPO","CONFIRMADO CON ANTICIPO","LIQUIDADO"].includes(s))return "CONFIRMADO";
+  return s;
+}
+function georgeDateLabel(dateStr){
+  if(!dateStr)return "SIN FECHA";
+  try{
+    const d=new Date(String(dateStr)+"T12:00:00");
+    return d.toLocaleDateString("es-MX",{weekday:"short",day:"2-digit",month:"short",year:"numeric"}).replace(/\./g,"");
+  }catch(e){return dateStr}
+}
+function georgePeriodLabel(){
+  const y=visibleDate.getFullYear(), m=visibleDate.getMonth();
+  return calendarViewMode==="year" ? `AÑO ${y}` : `${CALENDAR_MONTH_NAMES[m]} ${y}`;
+}
+function georgeEventsForCurrentCalendar(){
+  const y=visibleDate.getFullYear(), m=visibleDate.getMonth();
+  return records.map(x=>normalizeRecord(x)).filter(isGeorgeCalendarEvent).filter(r=>{
+    const d=new Date(String(r.date)+"T00:00:00");
+    if(calendarViewMode==="year")return d.getFullYear()===y;
+    return d.getFullYear()===y && d.getMonth()===m;
+  }).sort((a,b)=>String(a.date||"").localeCompare(String(b.date||"")) || String(a.start_time||"").localeCompare(String(b.start_time||"")) || String(a.client||"").localeCompare(String(b.client||"")));
+}
+function georgeEquipmentLines(qc){
+  const sections=getSelectedCatalogSections(parseMaybeJson(qc));
+  if(!sections.length)return [];
+  const lines=[];
+  sections.forEach(sec=>{
+    const items=(sec.items||[]).map(i=>`${i.qty} ${displayCatalogItemName(i.item)}`).join(", ");
+    if(items)lines.push(`${stripEmojiLabel(sec.rub)}: ${items}`);
+    if(sec.notes)lines.push(`Obs. ${stripEmojiLabel(sec.rub)}: ${sec.notes}`);
+  });
+  return lines;
+}
+function buildGeorgeCalendarText(){
+  const events=georgeEventsForCurrentCalendar();
+  const confirmed=events.filter(r=>georgeStatusLabel(r.status)==="CONFIRMADO").length;
+  const pending=events.filter(r=>georgeStatusLabel(r.status)==="PENDIENTE").length;
+  const lines=[
+    `CALENDARIO OPERATIVO TOPDJS · ${georgePeriodLabel()}`,
+    `Eventos: ${events.length} · Confirmados: ${confirmed} · Pendientes: ${pending}`,
+    `Sin costos / solo operación y bodega`,
+    ``
+  ];
+  if(!events.length){
+    lines.push("Sin eventos confirmados o pendientes en este periodo.");
+    return lines.join("\n");
+  }
+  events.forEach((r,idx)=>{
+    lines.push(`${idx+1}. ${georgeDateLabel(r.date)} · ${georgeStatusLabel(r.status)}`);
+    lines.push(`Cliente: ${r.client||""}`);
+    if(r.project)lines.push(`Evento: ${r.project}`);
+    if(r.event_type)lines.push(`Tipo: ${r.event_type}`);
+    if(r.venue)lines.push(`Lugar: ${r.venue}`);
+    const schedule=[];
+    if(r.pax) schedule.push(`${r.pax} pax`);
+    if(r.service_hours) schedule.push(`${r.service_hours} hrs servicio`);
+    if(r.start_time) schedule.push(`inicio ${r.start_time}`);
+    if(r.end_time) schedule.push(`fin ${r.end_time}`);
+    if(schedule.length)lines.push(`Datos: ${schedule.join(" · ")}`);
+    const setup=[];
+    if(r.setup_type)setup.push(r.setup_type);
+    if(r.setup_hours)setup.push(`${r.setup_hours} hrs montaje`);
+    if(r.setup_time)setup.push(`hora ${r.setup_time}`);
+    if(setup.length)lines.push(`Montaje: ${setup.join(" · ")}`);
+    const equip=georgeEquipmentLines(r.quote_catalog);
+    if(equip.length){
+      lines.push("Equipo:");
+      equip.forEach(line=>lines.push(`- ${line}`));
+    }
+    if(r.notes)lines.push(`Notas: ${r.notes}`);
+    lines.push("");
+  });
+  return lines.join("\n");
+}
+function georgeEventsHtml(){
+  const events=georgeEventsForCurrentCalendar();
+  if(!events.length)return `<p class="hint">Sin eventos confirmados o pendientes en este periodo.</p>`;
+  return events.map(r=>{
+    const equipment=georgeEquipmentLines(r.quote_catalog);
+    return `<article class="georgeEventCard">
+      <div class="georgeEventTop"><strong>${esc(georgeDateLabel(r.date))}</strong><span class="georgeStatus georgeStatus${georgeStatusLabel(r.status)}">${esc(georgeStatusLabel(r.status))}</span></div>
+      <h3>${esc(r.client||"Evento")}</h3>
+      <p><strong>Evento:</strong> ${esc(r.project||r.event_type||"")}</p>
+      <p><strong>Lugar:</strong> ${esc(r.venue||"")}</p>
+      <p><strong>Operación:</strong> ${esc([r.pax?`${r.pax} pax`:"",r.service_hours?`${r.service_hours} hrs`:"",r.start_time?`inicio ${r.start_time}`:"",r.end_time?`fin ${r.end_time}`:""].filter(Boolean).join(" · "))}</p>
+      <p><strong>Montaje:</strong> ${esc([r.setup_type||"",r.setup_hours?`${r.setup_hours} hrs`:"",r.setup_time?`hora ${r.setup_time}`:""].filter(Boolean).join(" · "))}</p>
+      ${equipment.length?`<div class="georgeEquipment"><strong>Equipo seleccionado:</strong><ul>${equipment.map(line=>`<li>${esc(line)}</li>`).join("")}</ul></div>`:""}
+      ${r.notes?`<p><strong>Notas:</strong> ${esc(r.notes)}</p>`:""}
+    </article>`;
+  }).join("");
+}
+function openGeorgeCalendarModal(){
+  const text=buildGeorgeCalendarText();
+  const share=`https://wa.me/?text=${encodeURIComponent(text)}`;
+  const modalTitle=$("modalTitle"), modalBody=$("modalBody");
+  if(!modalTitle||!modalBody)return alert(text);
+  modalTitle.textContent=`📲 Calendario George · ${georgePeriodLabel()}`;
+  modalBody.innerHTML=`
+    <div class="georgeModalIntro">
+      <p><strong>Vista sin costos.</strong> Incluye eventos confirmados y pendientes; excluye cancelados/perdidos.</p>
+      <div class="georgeActions">
+        <a class="button whatsapp" href="${share}" target="_blank">ENVIAR POR WHATSAPP</a>
+        <button class="fileBtn" onclick="copyGeorgeCalendarText()">COPIAR TEXTO</button>
+        <button class="secondary" onclick="openGeorgeCalendarPrint()">PDF / IMPRIMIR</button>
+        <a class="button secondary" href="george.html" target="_blank">ABRIR VISTA GEORGE</a>
+      </div>
+    </div>
+    <textarea class="georgeTextarea" id="georgeCalendarText" rows="14">${esc(text)}</textarea>
+    <h3>Vista previa operativa</h3>
+    <div class="georgeEventsPreview">${georgeEventsHtml()}</div>
+  `;
+  $("modal").classList.remove("hidden");
+}
+async function copyGeorgeCalendarText(){
+  const text=$("georgeCalendarText")?.value || buildGeorgeCalendarText();
+  try{
+    await navigator.clipboard.writeText(text);
+    alert("Calendario operativo copiado sin costos.");
+  }catch(e){
+    prompt("Copia el calendario operativo:", text);
+  }
+}
+function openGeorgeCalendarPrint(){
+  const eventsHtml=georgeEventsHtml();
+  const w=window.open("","_blank");
+  if(!w)return alert("Activa ventanas emergentes para imprimir el calendario operativo.");
+  w.document.open();
+  w.document.write(`<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Calendario George TopDJs</title><style>
+    @page{size:letter;margin:14mm}*{box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;color:#172033;margin:0;background:#fff}.top{border-bottom:3px solid #00a2ff;padding:0 0 14px;margin-bottom:18px;display:flex;justify-content:space-between;gap:16px;align-items:flex-end}.top h1{margin:0;font-size:24px}.top p{margin:4px 0 0;color:#566579}.badge{border:1px solid #00a2ff;border-radius:999px;padding:7px 12px;color:#006db8;font-weight:900}.notice{background:#f2f9ff;border:1px solid #b8dfff;border-radius:12px;padding:10px 12px;margin:12px 0 18px;font-weight:800;color:#17415f}.georgeEventCard{border:1px solid #d8e4ef;border-radius:14px;margin:12px 0;padding:14px;page-break-inside:avoid}.georgeEventTop{display:flex;justify-content:space-between;border-bottom:1px solid #e6eef6;padding-bottom:8px;margin-bottom:8px}.georgeStatus{font-size:12px;font-weight:900;border-radius:999px;padding:4px 9px;background:#f2f9ff;color:#006db8;border:1px solid #9cd4ff}.georgeStatusPENDIENTE{background:#fff8dc;color:#856600;border-color:#f1cd56}.georgeStatusCONFIRMADO{background:#e9fff3;color:#087a44;border-color:#7ee2ac}h3{margin:6px 0 8px;font-size:18px}p{margin:5px 0}.georgeEquipment ul{margin:6px 0 0;padding-left:20px}li{margin:3px 0}.footer{position:fixed;bottom:0;left:0;right:0;border-top:1px solid #d8e4ef;padding-top:6px;color:#718096;font-size:10px;background:#fff}@media print{button{display:none}}
+  </style></head><body><div class="top"><div><h1>Calendario Operativo TopDJs</h1><p>${esc(georgePeriodLabel())} · George / Bodega / Operación</p></div><span class="badge">SIN COSTOS</span></div><div class="notice">Incluye eventos confirmados y pendientes. No muestra montos, anticipos, saldos ni utilidad.</div>${eventsHtml}<div class="footer">TopDJs · Calendario operativo sin costos · Generado desde CRM</div><script>setTimeout(()=>window.print(),500)<\/script></body></html>`);
+  w.document.close();
+}
+
 $("addContactBtn").onclick=()=>{
   const c={local_id:uid(),ig:$("igUser").value,name:$("contactName").value,phone:$("contactPhone").value,email:$("contactEmail").value,segment:$("contactSegment").value,notes:$("contactNotes").value,updated_at:new Date().toISOString(),_dirty:true};
   contacts.push(c);["igUser","contactName","contactPhone","contactEmail","contactNotes"].forEach(id=>$(id).value="");
@@ -1763,5 +1913,5 @@ renderCatalog();save();renderAll();syncAll();setInterval(syncAll,30000);
 if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js").catch(()=>{})}
 
 
-// TOPDJS CRM v11.4.42 - Fecha de anticipo
+// TOPDJS CRM v11.4.43 - Fecha de anticipo
 if($("quotePaidDate") && !$("quotePaidDate").value){$("quotePaidDate").value=todayISO()}
