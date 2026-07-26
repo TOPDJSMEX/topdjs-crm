@@ -639,7 +639,7 @@ ${rowsHtml}
 }
 
 
-/* TOPDJS CRM v11.4.44 - PDF cliente español / inglés desde cotizador */
+/* TOPDJS CRM v11.4.45 - PDF cliente español / inglés desde cotizador */
 function quotePdfCleanSectionTitle(rub,lang="es"){
   const key=normalizeCatalogKey(rub);
   let es="Rubro";
@@ -1454,7 +1454,7 @@ if($("georgePrintBtn"))$("georgePrintBtn").onclick=()=>openGeorgeCalendarPrint()
 
 
 
-// TOPDJS CRM v11.4.44 - Calendario George simple: solo confirmados y pendientes
+// TOPDJS CRM v11.4.45 - Calendario George simple: solo confirmados y pendientes
 function isGeorgeCalendarEvent(record){
   const r=normalizeRecord(record||{});
   if(r._deleted||!r.date)return false;
@@ -1874,5 +1874,5 @@ renderCatalog();save();renderAll();syncAll();setInterval(syncAll,30000);
 if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js").catch(()=>{})}
 
 
-// TOPDJS CRM v11.4.44 - Fecha de anticipo
+// TOPDJS CRM v11.4.45 - Fecha de anticipo
 if($("quotePaidDate") && !$("quotePaidDate").value){$("quotePaidDate").value=todayISO()}

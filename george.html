@@ -33,16 +33,32 @@ select{min-width:210px}
 .dayNum{display:flex;justify-content:space-between;align-items:center;color:#fff;font-weight:950;margin-bottom:8px}
 .todayMark{font-size:10px;color:#8dffc4;border:1px solid rgba(44,255,154,.6);border-radius:999px;padding:2px 6px}
 .eventPill{display:block;width:100%;border:1px solid rgba(0,184,255,.42);border-left-width:4px;border-radius:10px;padding:7px 8px;margin:6px 0;background:rgba(0,184,255,.07);color:#fff;text-align:left;font-size:12px;line-height:1.25}
+.eventPill:hover{filter:brightness(1.16);box-shadow:0 0 14px rgba(0,184,255,.24)}
 .eventPill.confirmed{border-left-color:#2cff9a}.eventPill.pending{border-left-color:#ffe66d}
 .eventPill strong{display:block;font-size:11px;letter-spacing:.04em;text-transform:uppercase}
 .eventPill.confirmed strong{color:#8dffc4}.eventPill.pending strong{color:#ffe66d}
 .eventPill span{display:block;color:#d7e9f5;margin-top:2px;white-space:normal;word-break:break-word}
 .empty{border:1px dashed rgba(0,184,255,.5);border-radius:18px;padding:24px;color:var(--muted);text-align:center;margin-top:18px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.76);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:18px;z-index:9999}
+.modal.hidden{display:none}
+.modalBox{width:min(720px,96vw);max-height:88vh;overflow:auto;border-radius:22px;border:1px solid rgba(0,184,255,.65);background:linear-gradient(180deg,rgba(5,11,24,.98),rgba(0,0,0,.98));box-shadow:0 0 36px rgba(0,184,255,.24);padding:18px;position:relative}
+.closeBtn{position:absolute;top:10px;right:10px;border-radius:12px;padding:8px 12px;background:linear-gradient(180deg,#ff7890,#ff3b62);color:#250008;border-color:#ff8ca0}
+.modalTop{border-bottom:1px solid rgba(0,184,255,.28);padding:0 44px 12px 0;margin-bottom:14px}
+.modalTop h2{margin:0;font-size:22px}
+.modalTop p{margin:6px 0 0;color:#b8c7d9}
+.detailBadge{display:inline-block;border:1px solid rgba(0,184,255,.65);border-radius:999px;padding:5px 9px;margin-top:10px;font-size:11px;font-weight:950}
+.detailBadge.confirmed{border-color:rgba(44,255,154,.8);color:#8dffc4;background:rgba(44,255,154,.08)}
+.detailBadge.pending{border-color:rgba(255,217,61,.8);color:#ffe66d;background:rgba(255,217,61,.08)}
+.equipGroup{border:1px solid rgba(0,184,255,.30);border-radius:16px;background:#00030a;margin:12px 0;padding:13px}
+.equipGroup h3{margin:0 0 8px;color:#7ee7ff;font-size:15px}
+.equipGroup ul{margin:0;padding-left:20px;color:#d7e9f5}
+.equipGroup li{margin:4px 0}
+.detailHint{color:#b8c7d9;margin:10px 0 0}
 @media(max-width:900px){.calendar{grid-template-columns:1fr}.dayHeader{display:none}.summary{grid-template-columns:1fr}.toolbar{display:grid;grid-template-columns:1fr}.toolbar button,.toolbar select{width:100%}}
 @media print{
   @page{size:letter;margin:10mm}
   body{background:#fff;color:#172033}
-  header,.toolbar{display:none}
+  header,.toolbar,.modal{display:none !important}
   main{padding:0;max-width:none}
   .monthTitle{color:#172033;text-shadow:none;border-bottom:2px solid #00a2ff;padding-bottom:8px}
   .summary{grid-template-columns:repeat(3,1fr)}
@@ -84,11 +100,19 @@ select{min-width:210px}
   <div id="calendar" class="calendar"></div>
 </main>
 
+<div id="eventModal" class="modal hidden" role="dialog" aria-modal="true">
+  <div class="modalBox">
+    <button id="closeModal" class="closeBtn">×</button>
+    <div id="eventDetail"></div>
+  </div>
+</div>
+
 <script>
 const SUPABASE_URL="https://xbrsnmbmkbvxyhrtiywy.supabase.co";
 const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhicnNubWJta2J2eHlocnRpeXd5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEyMTUwMzYsImV4cCI6MjA5Njc5MTAzNn0.ULJh4UYoaNLsirKnRQ4TmIbv-L5kzWwWWEFwIsFI02Y";
 const MONTHS=["ENERO","FEBRERO","MARZO","ABRIL","MAYO","JUNIO","JULIO","AGOSTO","SEPTIEMBRE","OCTUBRE","NOVIEMBRE","DICIEMBRE"];
 const DAYS=["LUN","MAR","MIÉ","JUE","VIE","SÁB","DOM"];
+const RUBROS=["🔊 AUDIO","🎧 CABINA Y DJ","💡 ILUMINACIÓN","📺 VIDEO","⚡ ADICIONALES","👷 STAFF","🚚 TRANSPORTE"];
 let visibleDate=new Date();
 let records=[];
 const $=id=>document.getElementById(id);
@@ -99,6 +123,47 @@ function isVisibleEvent(r){const s=normalizeStatus(r.status);return !r._deleted&
 function eventName(r){return [r.client||"",r.project||r.event_type||""].filter(Boolean).join(" · ") || "Evento TopDJs"}
 function dateKey(d){return d.toISOString().slice(0,10)}
 function dateLabel(dateStr){try{const d=new Date(String(dateStr)+"T12:00:00");return d.toLocaleDateString("es-MX",{weekday:"short",day:"2-digit",month:"short",year:"numeric"}).replace(/\./g,"")}catch(e){return dateStr||""}}
+function parseMaybeJson(v){if(!v)return null;if(typeof v==="object")return v;try{return JSON.parse(v)}catch(e){return null}}
+function normalizeCatalogKey(s){return String(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^\w\s]/g,"").replace(/\s+/g," ").trim().toUpperCase()}
+function stripEmojiLabel(label=""){return String(label||"").replace(/^[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9]+\s*/g,"").trim()}
+function displayCatalogItemName(name){const n=normalizeCatalogKey(name);if(n==="ING ILUMINACION"||n==="ING ILUMINACION VIDEO")return "ING ILUMINACION/VIDEO";return name}
+function getCatalogDataForRubro(qc,rub){
+  qc=parseMaybeJson(qc);
+  if(!qc||typeof qc!=="object")return null;
+  if(qc[rub])return qc[rub];
+  const target=normalizeCatalogKey(rub);
+  const foundKey=Object.keys(qc).find(k=>{const nk=normalizeCatalogKey(k);return nk===target||nk.includes(target)||target.includes(nk)});
+  return foundKey?qc[foundKey]:null;
+}
+function normalizeSelectedList(data){
+  if(!data)return [];
+  if(Array.isArray(data))return data;
+  if(Array.isArray(data.selected))return data.selected;
+  if(Array.isArray(data.items))return data.items;
+  if(Array.isArray(data.equipment))return data.equipment;
+  if(typeof data==="object"){
+    return Object.entries(data).filter(([k,v])=>!["notes","observations","observaciones"].includes(k)&&v).map(([k,v])=>{
+      if(typeof v==="object")return {item:v.item||v.name||v.equipo||k,qty:v.qty||v.cantidad||v.quantity||v.cant||1};
+      return {item:k,qty:v===true?1:v};
+    });
+  }
+  return [];
+}
+function selectedEquipmentSections(qc){
+  const obj=parseMaybeJson(qc);
+  if(!obj||typeof obj!=="object")return [];
+  const sections=[];
+  RUBROS.forEach(rub=>{
+    const data=getCatalogDataForRubro(obj,rub);
+    const selected=normalizeSelectedList(data);
+    const items=selected.map(x=>({
+      item:String(x.item||x.name||x.equipo||x.label||"").trim(),
+      qty:Number(x.qty ?? x.cantidad ?? x.quantity ?? x.cant ?? 1)||1
+    })).filter(x=>x.item);
+    if(items.length)sections.push({rub:stripEmojiLabel(rub),items});
+  });
+  return sections;
+}
 async function loadRecords(){
   const res=await fetch(`${SUPABASE_URL}/rest/v1/topdjs_records?select=*&order=date.asc`,{headers:{apikey:SUPABASE_ANON_KEY,Authorization:`Bearer ${SUPABASE_ANON_KEY}`}});
   if(!res.ok)throw new Error(await res.text());
@@ -142,10 +207,29 @@ function render(){
     const key=dateKey(d);
     const outside=d.getMonth()!==m;
     const dayEvents=byDate[key]||[];
-    html+=`<div class="day ${outside?"outside":""} ${key===today?"today":""}"><div class="dayNum"><span>${d.getDate()}</span>${key===today?'<span class="todayMark">HOY</span>':""}</div>${dayEvents.map(r=>{const st=statusLabel(r.status);return `<div class="eventPill ${st==="CONFIRMADO"?"confirmed":"pending"}"><strong>${esc(st)}</strong><span>${esc(eventName(r))}</span></div>`}).join("")}</div>`;
+    html+=`<div class="day ${outside?"outside":""} ${key===today?"today":""}"><div class="dayNum"><span>${d.getDate()}</span>${key===today?'<span class="todayMark">HOY</span>':""}</div>${dayEvents.map(r=>{const st=statusLabel(r.status);return `<button class="eventPill ${st==="CONFIRMADO"?"confirmed":"pending"}" data-id="${esc(r.local_id||"")}"><strong>${esc(st)}</strong><span>${esc(eventName(r))}</span></button>`}).join("")}</div>`;
   }
   $("calendar").innerHTML=html;
+  document.querySelectorAll(".eventPill").forEach(btn=>btn.addEventListener("click",()=>showEventDetail(btn.dataset.id)));
 }
+function showEventDetail(localId){
+  const r=records.find(x=>String(x.local_id||"")===String(localId));
+  if(!r)return;
+  const st=statusLabel(r.status);
+  const sections=selectedEquipmentSections(r.quote_catalog);
+  $("eventDetail").innerHTML=`<div class="modalTop">
+    <h2>${esc(eventName(r))}</h2>
+    <p>${esc(dateLabel(r.date))}</p>
+    <span class="detailBadge ${st==="CONFIRMADO"?"confirmed":"pending"}">${esc(st)}</span>
+  </div>
+  <h3>Equipo seleccionado</h3>
+  ${sections.length?sections.map(sec=>`<section class="equipGroup"><h3>${esc(sec.rub)}</h3><ul>${sec.items.map(i=>`<li>${esc(i.qty)} × ${esc(displayCatalogItemName(i.item))}</li>`).join("")}</ul></section>`).join(""):`<p class="detailHint">Este evento no tiene equipo seleccionado en el cotizador.</p>`}`;
+  $("eventModal").classList.remove("hidden");
+}
+function closeEventModal(){$("eventModal").classList.add("hidden")}
+$("closeModal").onclick=closeEventModal;
+$("eventModal").onclick=e=>{if(e.target.id==="eventModal")closeEventModal()};
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeEventModal()});
 $("prev").onclick=()=>{visibleDate.setMonth(visibleDate.getMonth()-1);render()};
 $("next").onclick=()=>{visibleDate.setMonth(visibleDate.getMonth()+1);render()};
 $("today").onclick=()=>{visibleDate=new Date();render()};
