@@ -578,11 +578,11 @@ function generateWarehouseOrderPdf(key){
   .info{display:grid;grid-template-columns:1fr 1fr;gap:10px 22px;margin-bottom:18px;border:1px solid #cbd5e1;border-radius:12px;padding:14px;background:#f8fafc}
   .info div{font-size:13px}
   .label{font-weight:800;color:#334155;display:block;font-size:11px;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px}
-  .section{page-break-inside:avoid;margin:18px 0}
-  .section h2{background:#0f172a;color:white;font-size:15px;padding:8px 10px;border-radius:8px;margin:0 0 8px;text-transform:uppercase}
-  table{width:100%;border-collapse:collapse;font-size:13px}
-  th{background:#e2e8f0;text-align:left;padding:7px;border:1px solid #cbd5e1;font-size:11px;text-transform:uppercase;color:#334155}
-  td{padding:8px;border:1px solid #cbd5e1;vertical-align:middle}
+  .section{page-break-inside:auto;break-inside:auto;margin:18px 0}
+  .section h2{background:#0f172a;color:white;font-size:15px;padding:8px 10px;border-radius:8px;margin:0 0 8px;text-transform:uppercase;break-after:avoid;page-break-after:avoid}
+  table{width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed}
+  thead{display:table-header-group}th{background:#e2e8f0;text-align:left;padding:7px;border:1px solid #cbd5e1;font-size:11px;text-transform:uppercase;color:#334155}
+  tr{page-break-inside:avoid;break-inside:avoid}td{padding:8px;border:1px solid #cbd5e1;vertical-align:middle;word-break:break-word;overflow-wrap:anywhere}
   .qty{width:70px;text-align:center;font-weight:800}
   .check{width:70px;text-align:center;font-size:20px}
   .notes{border-left:4px solid #0f172a;background:#f8fafc;padding:10px;margin-top:8px;font-size:12px;white-space:pre-wrap}
@@ -593,7 +593,7 @@ function generateWarehouseOrderPdf(key){
   .footer{margin-top:20px;font-size:10px;color:#64748b;text-align:center}
   .noPrint{position:fixed;top:12px;right:12px}
   .noPrint button{padding:10px 14px;border:0;border-radius:8px;background:#0f172a;color:white;font-weight:800;cursor:pointer}
-  @media print{.noPrint{display:none}.section{break-inside:avoid}}
+  @media print{.noPrint{display:none}.section{break-inside:auto;page-break-inside:auto}thead{display:table-header-group}tr{break-inside:avoid;page-break-inside:avoid}}
 </style>
 </head>
 <body>
@@ -639,7 +639,7 @@ ${rowsHtml}
 }
 
 
-/* TOPDJS CRM v11.4.45 - PDF cliente español / inglés desde cotizador */
+/* TOPDJS CRM v11.4.47 - PDF cliente español / inglés desde cotizador */
 function quotePdfCleanSectionTitle(rub,lang="es"){
   const key=normalizeCatalogKey(rub);
   let es="Rubro";
@@ -763,7 +763,7 @@ function quotePdfBuildHtml(r,lang="es"){
 *{box-sizing:border-box}
 html,body{margin:0;padding:0;background:#fff;color:#162234;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 .noPrint{position:fixed;top:12px;right:12px;z-index:50;display:flex;gap:8px}.noPrint button{border:0;border-radius:10px;background:#00a2ff;color:#00111d;font-weight:900;padding:10px 14px;cursor:pointer;box-shadow:0 0 18px rgba(0,162,255,.35)}
-.header{background:#000;color:#fff;text-align:center;padding:22px 54px 12px;border-bottom:2px solid #31d4ff;page-break-inside:avoid}.logo{width:150px;height:70px;object-fit:contain;display:block;margin:0 auto 8px}.legend{font-size:12px;letter-spacing:.14em;color:#5fc2ff;font-weight:950;text-transform:uppercase;margin:0 0 18px}.meta{display:flex;justify-content:space-between;gap:18px;font-size:12px;font-weight:800;color:#eef7ff}.meta span{white-space:nowrap}.sheet{min-height:11in;padding-bottom:.62in}.content{padding:26px 54px 72px}.client-card{position:relative;border:1.4px solid #000;border-radius:19px;padding:38px 24px 24px;margin:0 0 28px;page-break-inside:avoid}.client-title{position:absolute;left:50%;top:-14px;transform:translateX(-50%);background:#000;color:#fff;border-radius:999px;padding:7px 42px;font-size:13px;font-weight:950;letter-spacing:.03em;white-space:nowrap}.client-sub{font-size:11.5px;color:#5e7890;margin:0 0 16px}.client-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px 34px}.client-col{display:grid;grid-template-columns:max-content 1fr;gap:9px 12px;align-items:baseline}.client-col+.client-col{border-left:1px solid #e6eef6;padding-left:28px}.label{color:#65758b;font-size:13px;font-weight:900;white-space:nowrap}.value{font-size:15px;color:#162234}.quote-section{border:1px solid #d9e4ef;border-radius:17px;margin:20px 0 24px;overflow:hidden;page-break-inside:avoid}.quote-section-title{background:#000;color:#00a2ff;font-size:24px;font-weight:950;padding:12px 22px}.quote-section-body{padding:15px 24px 18px}.quote-item{display:grid;grid-template-columns:18px 1fr;gap:6px;font-size:15px;padding:7px 0;border-bottom:1px solid #edf2f7}.quote-item:last-child{border-bottom:0}.dot{color:#00a2ff;font-weight:950}.section-notes{margin-top:12px;border-left:4px solid #00a2ff;background:#f6f9fc;border-radius:8px;padding:10px 12px;font-size:13px;color:#334155;line-height:1.35}.totals{background:#000;border:1.5px solid #00a2ff;border-radius:18px;margin:24px 0 24px;padding:18px 24px;page-break-inside:avoid;color:#fff}.total-row{display:grid;grid-template-columns:1fr auto;gap:18px;align-items:center;padding:8px 0;border-bottom:1px solid #2a4666;font-size:15px}.total-row:last-child{border-bottom:0}.total-row strong{font-weight:950}.total-row.highlight{padding:15px 0;color:#31d4ff;font-size:17px}.total-row.highlight .amount{font-size:25px}.amount{font-weight:950}.bottom-grid{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid #d9e4ef;border-radius:18px;margin:24px 0 0;overflow:hidden;page-break-inside:avoid}.bottom-box{padding:18px 24px;min-height:145px}.bottom-box:first-child{border-right:1px solid #e6eef6}.bottom-box h2{margin:0 0 11px;color:#00a2ff;font-size:18px;letter-spacing:.03em}.bottom-box p,.bottom-box li{font-size:14px;line-height:1.35;margin:0 0 7px}.bottom-box ul{margin:0;padding-left:18px}.bottom-box li::marker{color:#00a2ff}.only-conditions{grid-template-columns:1fr}.only-conditions .bottom-box:first-child{display:none}.only-conditions .bottom-box{border-right:0}.empty{color:#65758b;font-size:14px}.footer{position:fixed;left:0;right:0;bottom:0;height:.48in;background:#000;border-top:2px solid #31d4ff;color:#c9d8e7;display:grid;grid-template-columns:1fr 1fr 1fr 1fr;align-items:center;padding:0 54px;font-size:11px}.footer strong{color:#fff}.footer span{text-align:center}.footer span:first-child{text-align:left}.footer span:last-child{text-align:right}@media print{.noPrint{display:none}.quote-section,.client-card,.totals,.bottom-grid{break-inside:avoid;page-break-inside:avoid}.content{padding-bottom:82px}}
+.header{background:#000;color:#fff;text-align:center;padding:22px 54px 12px;border-bottom:2px solid #31d4ff;page-break-inside:avoid}.logo{width:150px;height:70px;object-fit:contain;display:block;margin:0 auto 8px}.legend{font-size:12px;letter-spacing:.14em;color:#5fc2ff;font-weight:950;text-transform:uppercase;margin:0 0 18px}.meta{display:flex;justify-content:space-between;gap:18px;font-size:12px;font-weight:800;color:#eef7ff}.meta span{white-space:nowrap}.sheet{min-height:11in;padding-bottom:.62in}.content{padding:26px 54px 72px}.client-card{position:relative;border:1.4px solid #000;border-radius:19px;padding:38px 24px 24px;margin:0 0 28px;page-break-inside:avoid}.client-title{position:absolute;left:50%;top:-14px;transform:translateX(-50%);background:#000;color:#fff;border-radius:999px;padding:7px 42px;font-size:13px;font-weight:950;letter-spacing:.03em;white-space:nowrap}.client-sub{font-size:11.5px;color:#5e7890;margin:0 0 16px}.client-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px 34px}.client-col{display:grid;grid-template-columns:max-content 1fr;gap:9px 12px;align-items:baseline}.client-col+.client-col{border-left:1px solid #e6eef6;padding-left:28px}.label{color:#65758b;font-size:13px;font-weight:900;white-space:nowrap}.value{font-size:15px;color:#162234}.quote-section{border:1px solid #d9e4ef;border-radius:17px;margin:20px 0 24px;overflow:visible;page-break-inside:auto;break-inside:auto}.quote-section-title{background:#000;color:#00a2ff;font-size:22px;font-weight:950;padding:11px 22px;break-after:avoid;page-break-after:avoid}.quote-section-body{padding:12px 24px 14px;page-break-inside:auto;break-inside:auto}.quote-item{display:grid;grid-template-columns:18px minmax(0,1fr);gap:6px;font-size:14px;line-height:1.32;padding:6px 0;border-bottom:1px solid #edf2f7;page-break-inside:avoid;break-inside:avoid;overflow-wrap:anywhere;word-break:break-word}.quote-item:last-child{border-bottom:0}.dot{color:#00a2ff;font-weight:950}.section-notes{margin-top:12px;border-left:4px solid #00a2ff;background:#f6f9fc;border-radius:8px;padding:10px 12px;font-size:13px;color:#334155;line-height:1.35}.totals{background:#000;border:1.5px solid #00a2ff;border-radius:18px;margin:24px 0 24px;padding:18px 24px;page-break-inside:avoid;color:#fff}.total-row{display:grid;grid-template-columns:1fr auto;gap:18px;align-items:center;padding:8px 0;border-bottom:1px solid #2a4666;font-size:15px}.total-row:last-child{border-bottom:0}.total-row strong{font-weight:950}.total-row.highlight{padding:15px 0;color:#31d4ff;font-size:17px}.total-row.highlight .amount{font-size:25px}.amount{font-weight:950}.bottom-grid{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid #d9e4ef;border-radius:18px;margin:24px 0 0;overflow:hidden;page-break-inside:avoid}.bottom-box{padding:18px 24px;min-height:145px}.bottom-box:first-child{border-right:1px solid #e6eef6}.bottom-box h2{margin:0 0 11px;color:#00a2ff;font-size:18px;letter-spacing:.03em}.bottom-box p,.bottom-box li{font-size:14px;line-height:1.35;margin:0 0 7px}.bottom-box ul{margin:0;padding-left:18px}.bottom-box li::marker{color:#00a2ff}.only-conditions{grid-template-columns:1fr}.only-conditions .bottom-box:first-child{display:none}.only-conditions .bottom-box{border-right:0}.empty{color:#65758b;font-size:14px}.footer{position:static;background:#000;border-top:2px solid #31d4ff;color:#c9d8e7;display:grid;grid-template-columns:1fr 1fr 1fr 1fr;align-items:center;padding:12px 54px;font-size:11px;margin-top:18px;page-break-inside:avoid}.footer strong{color:#fff}.footer span{text-align:center}.footer span:first-child{text-align:left}.footer span:last-child{text-align:right}@media print{.noPrint{display:none}.client-card,.totals,.bottom-grid{break-inside:avoid;page-break-inside:avoid}.quote-section{break-inside:auto;page-break-inside:auto}.quote-item{break-inside:avoid;page-break-inside:avoid}.content{padding-bottom:30px}}
 </style></head>
 <body>
 <div class="noPrint"><button onclick="window.print()">${quotePdfHtmlEsc(L.print)}</button><button onclick="window.close()">${quotePdfHtmlEsc(L.close)}</button></div>
@@ -810,14 +810,26 @@ html,body{margin:0;padding:0;background:#fff;color:#162234;font-family:-apple-sy
 <script>setTimeout(()=>window.print(),650)</script>
 </body></html>`;
 }
+
+function quotePdfPrepareNoCrmUrlHtml(html){
+  // Evita que el PDF para cliente muestre la URL interna del CRM en el pie del navegador.
+  // Se imprime desde un documento data: y se usa el logo con URL absoluta para que cargue correctamente.
+  const logoUrl=new URL("topdjs-logo.png", window.location.href).href;
+  return String(html||"").replace(/src="topdjs-logo\.png"/g, `src="${logoUrl}"`);
+}
+function openNoCrmUrlPrintWindow(html,popupBlockedMessage){
+  const safeHtml=quotePdfPrepareNoCrmUrlHtml(html);
+  const encoded=btoa(unescape(encodeURIComponent(safeHtml)));
+  const dataUrl=`data:text/html;charset=utf-8;base64,${encoded}`;
+  const w=window.open(dataUrl,"_blank");
+  if(!w)return false;
+  return true;
+}
 function openClientQuotePdfWindow(r,lang="es"){
   const L=quotePdfLabels(lang);
   if(!r || (!r.local_id && !r.client && !r.project))return alert(L.notFound);
-  const w=window.open("","_blank");
-  if(!w)return alert(L.popupBlocked);
-  w.document.open();
-  w.document.write(quotePdfBuildHtml(r,lang));
-  w.document.close();
+  const ok=openNoCrmUrlPrintWindow(quotePdfBuildHtml(r,lang),L.popupBlocked);
+  if(!ok)return alert(L.popupBlocked);
 }
 function generateClientQuotePdfFromCurrent(lang="es"){
   const L=quotePdfLabels(lang);
@@ -1454,7 +1466,7 @@ if($("georgePrintBtn"))$("georgePrintBtn").onclick=()=>openGeorgeCalendarPrint()
 
 
 
-// TOPDJS CRM v11.4.45 - Calendario George simple: solo confirmados y pendientes
+// TOPDJS CRM v11.4.47 - Calendario George simple: solo confirmados y pendientes
 function isGeorgeCalendarEvent(record){
   const r=normalizeRecord(record||{});
   if(r._deleted||!r.date)return false;
@@ -1874,5 +1886,5 @@ renderCatalog();save();renderAll();syncAll();setInterval(syncAll,30000);
 if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js").catch(()=>{})}
 
 
-// TOPDJS CRM v11.4.45 - Fecha de anticipo
+// TOPDJS CRM v11.4.47 - Fecha de anticipo
 if($("quotePaidDate") && !$("quotePaidDate").value){$("quotePaidDate").value=todayISO()}

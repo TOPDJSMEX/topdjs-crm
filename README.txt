@@ -1,25 +1,24 @@
-TOPDJS CRM v11.4.45 - GEORGE EQUIPO AL CLICK
+TOPDJS CRM v11.4.47 - PDF cliente sin URL del CRM
 
 Cambio principal:
-- En george.html el calendario mensual sigue simple.
-- Al dar click en un evento, se abre un modal con el equipo seleccionado desde el cotizador.
-- El modal agrupa el equipo por rubro: Audio, Cabina y DJ, Iluminación, Video, Adicionales, Staff y Transporte.
-- No se muestran costos, anticipos, saldos ni utilidad.
+- El PDF para cliente ya no se imprime desde la ventana directa del CRM.
+- Ahora se abre desde un documento temporal data:, para evitar que aparezca la dirección topdjs-crm.vercel.app en el pie del PDF.
+- Se mantiene el logo original cargado correctamente.
+- Aplica para PDF PARA CLIENTE y PDF CLIENTE INGLÉS.
 
-Se mantiene:
-- Vista George sin botón de regreso al CRM.
-- Sin recuadro verde.
-- Calendario mensual con confirmados y pendientes.
+Importante:
+- Si el navegador todavía muestra encabezados/pies automáticos, ya no debe exponer la URL interna del CRM.
+- Para un PDF totalmente limpio, en el diálogo de impresión conviene dejar desactivados encabezados y pies de página si el navegador lo ofrece.
+
+Mantiene:
+- Fix de PDF iluminación sin encimados.
+- Calendario George con equipo al click.
 - PDF cliente español e inglés.
 - Catálogo actualizado con MARTIN SUB CSX 118 bajo MARTIN SUB SXP218.
 - GRAVITY STAND en adicionales.
-- Estados comerciales, calendario, cobranza, gastos, clientes y pedido de bodega.
-
-Link para George después del deploy:
-https://topdjs-crm.vercel.app/george.html
 
 Instalación:
 1. Subir los archivos a GitHub.
-2. Commit: TopDJs CRM v11.4.45 - George equipo al click
+2. Commit: TopDJs CRM v11.4.47 - PDF cliente sin URL CRM
 3. Deploy to Production en Vercel.
 4. Recarga fuerte: Option + Command + R.
