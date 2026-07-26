@@ -1,24 +1,22 @@
-TOPDJS CRM v11.4.47 - PDF cliente sin URL del CRM
+TOPDJS CRM v11.4.48 - FIX PDF CLIENTE ABRE CORRECTO
 
-Cambio principal:
-- El PDF para cliente ya no se imprime desde la ventana directa del CRM.
-- Ahora se abre desde un documento temporal data:, para evitar que aparezca la dirección topdjs-crm.vercel.app en el pie del PDF.
-- Se mantiene el logo original cargado correctamente.
-- Aplica para PDF PARA CLIENTE y PDF CLIENTE INGLÉS.
-
-Importante:
-- Si el navegador todavía muestra encabezados/pies automáticos, ya no debe exponer la URL interna del CRM.
-- Para un PDF totalmente limpio, en el diálogo de impresión conviene dejar desactivados encabezados y pies de página si el navegador lo ofrece.
+Correccion:
+- Se corrige el problema donde el PDF del cliente abria una ventana en blanco.
+- La causa era la apertura como data URL agregada para ocultar la URL del CRM; Safari puede bloquear o dejar en blanco esa vista.
+- Ahora el PDF cliente vuelve a abrirse correctamente en una ventana generada.
+- Se mantiene el logo con URL absoluta para que cargue bien.
 
 Mantiene:
-- Fix de PDF iluminación sin encimados.
+- PDF cliente español e ingles.
+- Fix de iluminacion sin encimados.
 - Calendario George con equipo al click.
-- PDF cliente español e inglés.
-- Catálogo actualizado con MARTIN SUB CSX 118 bajo MARTIN SUB SXP218.
-- GRAVITY STAND en adicionales.
+- Catalogo CSX118 / Gravity.
 
-Instalación:
+Nota:
+- Si al guardar como PDF el navegador muestra encabezados/pies automáticos, desactiva “Headers and Footers / Encabezados y pies” en el dialogo de impresion. El contenido del PDF no incluye la URL del CRM.
+
+Instalacion:
 1. Subir los archivos a GitHub.
-2. Commit: TopDJs CRM v11.4.47 - PDF cliente sin URL CRM
+2. Commit: TopDJs CRM v11.4.48 - Fix PDF cliente abre correcto
 3. Deploy to Production en Vercel.
 4. Recarga fuerte: Option + Command + R.

@@ -1341,7 +1341,7 @@ header{
 }
 
 
-/* TOPDJS CRM v11.4.47 - Calendario George sin costos */
+/* TOPDJS CRM v11.4.48 - Calendario George sin costos */
 .calendarOpsGeorge{
   display:flex;
   gap:10px;
@@ -1398,7 +1398,7 @@ header{
 @media(max-width:720px){.calendarOpsGeorge,.georgeActions{display:grid;grid-template-columns:1fr}.georgeCalendarLink,.georgeActions .button,.georgeActions button{width:100%;text-align:center}}
 
 
-/* TOPDJS CRM v11.4.47 - Calendario George simple */
+/* TOPDJS CRM v11.4.48 - Calendario George simple */
 .georgeEventSimple h3{
   margin:10px 0 2px !important;
 }

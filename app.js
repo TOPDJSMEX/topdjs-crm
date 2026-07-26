@@ -639,7 +639,7 @@ ${rowsHtml}
 }
 
 
-/* TOPDJS CRM v11.4.47 - PDF cliente español / inglés desde cotizador */
+/* TOPDJS CRM v11.4.48 - PDF cliente español / inglés desde cotizador */
 function quotePdfCleanSectionTitle(rub,lang="es"){
   const key=normalizeCatalogKey(rub);
   let es="Rubro";
@@ -812,18 +812,28 @@ html,body{margin:0;padding:0;background:#fff;color:#162234;font-family:-apple-sy
 }
 
 function quotePdfPrepareNoCrmUrlHtml(html){
-  // Evita que el PDF para cliente muestre la URL interna del CRM en el pie del navegador.
-  // Se imprime desde un documento data: y se usa el logo con URL absoluta para que cargue correctamente.
+  // v11.4.48: Safari puede abrir en blanco los documentos data:.
+  // Mantenemos el logo con URL absoluta y volvemos a imprimir desde una ventana about:blank.
+  // Esto evita romper la carga del PDF cliente y no expone la ruta interna del CRM dentro del contenido del documento.
   const logoUrl=new URL("topdjs-logo.png", window.location.href).href;
   return String(html||"").replace(/src="topdjs-logo\.png"/g, `src="${logoUrl}"`);
 }
 function openNoCrmUrlPrintWindow(html,popupBlockedMessage){
   const safeHtml=quotePdfPrepareNoCrmUrlHtml(html);
-  const encoded=btoa(unescape(encodeURIComponent(safeHtml)));
-  const dataUrl=`data:text/html;charset=utf-8;base64,${encoded}`;
-  const w=window.open(dataUrl,"_blank");
+  const w=window.open("","_blank");
   if(!w)return false;
-  return true;
+  try{
+    w.document.open();
+    w.document.write(safeHtml);
+    w.document.close();
+    setTimeout(()=>{try{w.focus()}catch(e){}},80);
+    return true;
+  }catch(e){
+    try{w.close()}catch(_e){}
+    console.error("No se pudo abrir PDF cliente",e);
+    alert("No se pudo abrir el PDF del cliente. Revisa permisos de ventanas emergentes y vuelve a intentar.");
+    return false;
+  }
 }
 function openClientQuotePdfWindow(r,lang="es"){
   const L=quotePdfLabels(lang);
@@ -1466,7 +1476,7 @@ if($("georgePrintBtn"))$("georgePrintBtn").onclick=()=>openGeorgeCalendarPrint()
 
 
 
-// TOPDJS CRM v11.4.47 - Calendario George simple: solo confirmados y pendientes
+// TOPDJS CRM v11.4.48 - Calendario George simple: solo confirmados y pendientes
 function isGeorgeCalendarEvent(record){
   const r=normalizeRecord(record||{});
   if(r._deleted||!r.date)return false;
@@ -1886,5 +1896,5 @@ renderCatalog();save();renderAll();syncAll();setInterval(syncAll,30000);
 if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js").catch(()=>{})}
 
 
-// TOPDJS CRM v11.4.47 - Fecha de anticipo
+// TOPDJS CRM v11.4.48 - Fecha de anticipo
 if($("quotePaidDate") && !$("quotePaidDate").value){$("quotePaidDate").value=todayISO()}
