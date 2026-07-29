@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#000000">
+<title>TopDJs · Portal Manuel</title>
+<link rel="manifest" href="manifest.json">
+<style>
+:root{--bg:#000;--card:#050b18;--field:#00030a;--text:#fff;--muted:#b8c7d9;--accent:#00b8ff;--green:#2cff9a;--yellow:#ffe66d;--red:#ff5f7c;--border:#008ee6}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(circle at 10% 0%,rgba(0,184,255,.12),transparent 28%),#000;color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+header{display:flex;align-items:center;gap:14px;padding:18px 22px;border-bottom:1px solid rgba(0,184,255,.5);box-shadow:0 0 22px rgba(0,184,255,.15);flex-wrap:wrap}
+header img{width:64px;height:64px;object-fit:contain;filter:drop-shadow(0 0 14px rgba(0,184,255,.55))}
+h1{margin:0;font-size:25px}
+.sub{margin:5px 0 0;color:#35d7ff;font-weight:900;letter-spacing:.08em;text-transform:uppercase}
+main{padding:20px;max-width:1180px;margin:0 auto}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.card{background:linear-gradient(180deg,rgba(5,11,24,.98),rgba(0,0,0,.98));border:1px solid rgba(0,184,255,.55);border-radius:18px;padding:18px;box-shadow:0 0 18px rgba(0,184,255,.16)}
+.wide{grid-column:span 2}
+h2{margin:0 0 12px;font-size:20px}
+label{display:block;margin:12px 0 6px;color:var(--muted);font-weight:800;font-size:13px}
+input,select,textarea{width:100%;background:#00030a;color:#fff;border:1px solid rgba(0,184,255,.55);border-radius:12px;padding:11px;font-size:16px}
+textarea{min-height:90px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+button{padding:12px 16px;border-radius:12px;border:1px solid rgba(0,184,255,.7);background:linear-gradient(180deg,#1fd0ff,#008ee6);color:#00111d;font-weight:950;cursor:pointer;margin-top:12px}
+button.secondary{background:#00030a;color:#fff}
+button.danger{background:linear-gradient(180deg,#ff7890,#ff3b62);color:#250008;border-color:#ff8ca0}
+.status{display:inline-block;padding:7px 10px;border-radius:999px;border:1px solid rgba(0,184,255,.7);color:#7ee7ff;font-size:12px;font-weight:950}
+.status.ok{border-color:rgba(44,255,154,.8);color:#8dffc4;background:rgba(44,255,154,.08)}
+.status.warn{border-color:rgba(255,217,61,.8);color:#ffe66d;background:rgba(255,217,61,.08)}
+.item{display:grid;grid-template-columns:28px 1fr 94px;gap:10px;align-items:center;border-top:1px solid rgba(0,184,255,.20);padding:10px 0}
+.item:first-child{border-top:0}
+.item input[type=checkbox]{width:22px;height:22px}
+.item input[type=number]{padding:8px;text-align:center;font-weight:900}
+.hint{color:var(--muted);font-size:13px;margin:6px 0 0}
+.eventList{display:grid;gap:10px}
+.eventRow{border:1px solid rgba(0,184,255,.35);border-radius:14px;padding:12px;background:#00030a}
+.eventRow strong{color:#fff}
+.eventRow p{margin:4px 0;color:var(--muted)}
+.actions{display:flex;gap:10px;flex-wrap:wrap}
+.notice{border:1px solid rgba(0,184,255,.35);background:rgba(0,184,255,.06);border-radius:14px;padding:12px;color:#d7e9f5;margin-bottom:16px}
+
+.ownerTitle{margin:18px 0 8px;color:#35d7ff;font-size:17px;text-transform:uppercase;letter-spacing:.08em}
+.rubroMini{margin:14px 0 4px;color:#8dffc4;font-size:13px;text-transform:uppercase;letter-spacing:.06em}
+.ownerBox{border:1px solid rgba(0,184,255,.28);border-radius:16px;padding:14px;margin:12px 0;background:rgba(0,184,255,.035)}
+@media(max-width:900px){.grid,.two{grid-template-columns:1fr}.wide{grid-column:span 1}header{display:block}header img{margin-bottom:10px}}
+</style>
+</head>
+<body>
+<header>
+  <img src="topdjs-logo.png" alt="TopDJs">
+  <div>
+    <h1>Portal Manuel</h1>
+    <p class="sub">Captura de eventos · Bodega compartida</p>
+  </div>
+</header>
+
+<main>
+  <div class="notice">
+    Este portal solo sirve para capturar eventos de Manuel. No muestra dashboard, cobranza, anticipos, saldos ni utilidad.
+  </div>
+
+  <div class="grid">
+    <section class="card">
+      <h2>📋 Evento</h2>
+      <label>Cliente / Responsable</label><input id="client" placeholder="Ej. Cliente Manuel">
+      <label>Proyecto / Evento</label><input id="project" placeholder="Ej. Boda / renta / evento">
+      <label>Tipo de evento</label>
+      <select id="eventType">
+        <option>EVENTO MANUEL</option>
+        <option>BODA</option>
+        <option>CORPORATIVO</option>
+        <option>FIESTA PRIVADA</option>
+        <option>DJ RENTAL</option>
+        <option>OTRO</option>
+      </select>
+      <label>Fecha</label><input id="date" type="date">
+      <label>Lugar / Venue</label><input id="venue" placeholder="Opcional">
+      <div class="two">
+        <div><label>PAX</label><input id="pax" type="number" min="0"></div>
+        <div><label>Horas de servicio</label><input id="serviceHours" type="number" min="0" step="0.5"></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>⏰ Operación</h2>
+      <label>Estatus</label>
+      <select id="status">
+        <option value="COTIZADO">Pendiente</option>
+        <option value="CONFIRMADO SIN ANTICIPO">Confirmado</option>
+      </select>
+      <label>Montaje</label>
+      <select id="setupType"><option>MISMO DÍA</option><option>DÍA ANTERIOR</option></select>
+      <div class="two">
+        <div><label>Horas de montaje</label><input id="setupHours" type="number" min="0" step="0.5"></div>
+        <div><label>Hora de montaje</label><input id="setupTime" type="time"></div>
+      </div>
+      <div class="two">
+        <div><label>Inicio evento</label><input id="startTime" type="time"></div>
+        <div><label>Término evento</label><input id="endTime" type="time"></div>
+      </div>
+      <label>Observaciones para bodega / George</label>
+      <textarea id="notes" placeholder="Accesos, horarios, cuidados, etc."></textarea>
+    </section>
+
+    <section class="card wide">
+      <h2>🔊 Equipo Manuel y equipo TopDJs</h2>
+      <p class="hint">Selecciona equipo de Manuel o equipo TopDJs. George lo verá al dar click en el evento, sin costos.</p>
+      <div id="equipment"></div>
+      <label>Equipo adicional no listado</label>
+      <textarea id="extraEquipment" placeholder="Ej. 2 stands, cables especiales, etc."></textarea>
+      <div class="actions">
+        <button id="saveBtn">GUARDAR EVENTO</button>
+        <button id="clearBtn" class="secondary">LIMPIAR</button>
+      </div>
+      <p id="message" class="hint"></p>
+    </section>
+
+    <section class="card wide">
+      <h2>📅 Eventos capturados por Manuel</h2>
+      <p class="hint">Lista de verificación. George los verá en su calendario si están pendientes o confirmados.</p>
+      <div id="eventList" class="eventList"></div>
+    </section>
+  </div>
+</main>
+
+<script>
+const SUPABASE_URL="https://xbrsnmbmkbvxyhrtiywy.supabase.co";
+const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhicnNubWJta2J2eHlocnRpeXd5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEyMTUwMzYsImV4cCI6MjA5Njc5MTAzNn0.ULJh4UYoaNLsirKnRQ4TmIbv-L5kzWwWWEFwIsFI02Y";
+const MANUEL_CATALOG={"🔊 AUDIO": ["AXIOM TOP AX12C", "AXIOM TOP AX6C", "AXIOM SUB SW2100A", "MARTIN SUB CSX 118", "MARTIN FLEXPOINT FP8"], "⚡ ADICIONALES": ["GRAVITY STAND"]};
+const TOPDJS_CATALOG={"🔊 AUDIO": ["MARTIN TORUS T1215", "MARTIN TORUS T1230", "MARTIN SUB SXP218", "MARTIN SUB CSX 118", "MARTIN FLEXPOINT FP8", "AXIOM TOP AX12C", "AXIOM TOP AX6C", "AXIOM SUB SW2100A", "BOSE L1 PRO 8", "HK ELEMENTS", "HK CT108", "CONSOLA YAMAHA DM3", "CONSOLA MIDAS M32", "CONSOLA SOUND MASTER 12CH", "MICRÓFONO INALÁMBRICO", "MICRÓFONO DIADEMA", "MICRÓFONO LAVALIER"], "🎧 CABINA Y DJ": ["DJ", "CONTROLADOR PIONEER XDJ-AZ", "MONITOR HK LUCAS PERFORMER", "MONITOR LD DAVE", "DJ BOOTH"], "💡 ILUMINACIÓN": ["ADJ FOCUS BEAM LED", "MARTIN SPOT MH5", "RUBIK WASH", "ALEDA B-EYE K10 WASH", "DAZE RGB", "ADJ BLINDER", "ADJ IKON PROFILE", "EZ-BAR", "SUNSTAR COLOR SIX", "PIXEL PANEL 5", "SUNSTAR ORACLE LASER RGB", "FOG HAZE MAGMATIC", "CONSOLA MA COMMAND WING", "INTERFASE MA DOT2", "CONSOLA ADJ WOLFMIX"], "📺 VIDEO": ["PANTALLA LED PITCH 3.9 5X3", "PANTALLA LED PITCH 3.9 4X3", "PANTALLA LED PITCH 3.9 3X2", "MÓDULOS LED PITCH 3.9 96 X 96", "PROCESADOR NOVA STAR", "PROCESADOR TAURUS", "SWITCHER ROLAND", "VJ ARENA", "PANTALLA LG 70”"], "⚡ ADICIONALES": ["PLANTA DE LUZ", "TRUSS MK", "STAGE SET SOPORTE", "BAZOOKA CO2", "GRAVITY STAND"], "👷 STAFF": ["ING. AUDIO", "ING ILUMINACION/VIDEO", "STAGE HANDS"], "🚚 TRANSPORTE": ["CDMX", "FORANEO"]};
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]));
+const uid=()=>`manuel_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,8)}`;
+function headers(extra={}){return {apikey:SUPABASE_ANON_KEY,Authorization:`Bearer ${SUPABASE_ANON_KEY}`,"Content-Type":"application/json",...extra}}
+function ownerLabel(owner){return owner==="manuel"?"MANUEL":"TOPDJS"}
+function renderEquipment(){
+  $("equipment").innerHTML=`
+    <div class="ownerBox"><h3 class="ownerTitle">Equipo de Manuel</h3>${renderCatalogBlock("manuel",MANUEL_CATALOG)}</div>
+    <div class="ownerBox"><h3 class="ownerTitle">Equipo TopDJs / Carlos</h3>${renderCatalogBlock("topdjs",TOPDJS_CATALOG)}</div>
+  `;
+}
+function renderCatalogBlock(owner,catalog){
+  return Object.entries(catalog).map(([rub,items])=>`<h4 class="rubroMini">${esc(rub)}</h4>${items.map((item,i)=>itemRow(owner,rub,item,i)).join("")}`).join("");
+}
+function itemRow(owner,rub,item,i){
+  const id=`${owner}-${rub}-${i}`.replace(/[^a-zA-Z0-9_-]/g,"_");
+  return `<div class="item"><input id="${esc(id)}" type="checkbox" data-owner="${esc(owner)}" data-rubro="${esc(rub)}" data-item="${esc(item)}"><span><label for="${esc(id)}" style="display:inline;margin:0;color:#fff;font-weight:700">${esc(item)}</label></span><input type="number" min="1" value="1"></div>`;
+}
+function selectedByRubro(){
+  const out={};
+  document.querySelectorAll('#equipment input[type=checkbox]:checked').forEach(chk=>{
+    const rub=chk.dataset.rubro;
+    const item=`${ownerLabel(chk.dataset.owner)} · ${chk.dataset.item}`;
+    const qtyInput=chk.parentElement.querySelector('input[type=number]');
+    const qty=Number(qtyInput?.value||1)||1;
+    if(!out[rub])out[rub]={selected:[]};
+    out[rub].selected.push({item,qty});
+  });
+  return out;
+}
+function buildQuoteCatalog(){
+  const qc=selectedByRubro();
+  const extra=$("extraEquipment").value.trim();
+  if(extra){
+    if(!qc["⚡ ADICIONALES"])qc["⚡ ADICIONALES"]={selected:[]};
+    extra.split(/\n+/).map(x=>x.trim()).filter(Boolean).forEach(line=>qc["⚡ ADICIONALES"].selected.push({item:`MANUEL · ${line}`,qty:1}));
+  }
+  qc.__meta={source:"MANUEL",portal:"manuel.html",allows_topdjs_equipment:true};
+  return qc;
+}
+function collectRecord(){
+  return {
+    local_id:uid(),
+    type:"EVENTO MANUEL",
+    date:$("date").value||null,
+    client:$("client").value||"MANUEL",
+    company:"MANUEL",
+    phone:null,
+    email:null,
+    instagram:null,
+    event_type:$("eventType").value||"EVENTO MANUEL",
+    project:$("project").value||null,
+    venue:$("venue").value||null,
+    pax:Number($("pax").value||0),
+    service_hours:Number($("serviceHours").value||0),
+    setup_type:$("setupType").value||null,
+    setup_hours:Number($("setupHours").value||0),
+    setup_time:$("setupTime").value||null,
+    start_time:$("startTime").value||null,
+    end_time:$("endTime").value||null,
+    amount:0,
+    paid:0,
+    status:$("status").value,
+    notes:$("notes").value||null,
+    quote_catalog:buildQuoteCatalog(),
+    expenses_jsonb:{},
+    updated_by:"MANUEL",
+    updated_at:new Date().toISOString()
+  };
+}
+async function saveRecord(){
+  if(!$("date").value)return alert("Agrega la fecha del evento.");
+  if(!$("client").value && !$("project").value)return alert("Agrega cliente o proyecto.");
+  const rec=collectRecord();
+  $("message").textContent="Guardando...";
+  const res=await fetch(`${SUPABASE_URL}/rest/v1/topdjs_records`,{method:"POST",headers:headers({"Prefer":"return=minimal"}),body:JSON.stringify(rec)});
+  if(!res.ok){const txt=await res.text();$("message").textContent="Error al guardar.";alert("No se pudo guardar el evento: "+txt);return}
+  $("message").textContent="Evento guardado. Ya aparecerá en el calendario de George.";
+  clearForm(false);
+  loadEvents();
+}
+function clearForm(clearMsg=true){
+  ["client","project","date","venue","pax","serviceHours","setupHours","setupTime","startTime","endTime","notes","extraEquipment"].forEach(id=>$(id).value="");
+  $("eventType").value="EVENTO MANUEL";$("status").value="COTIZADO";$("setupType").value="MISMO DÍA";
+  document.querySelectorAll("input[type=checkbox]").forEach(x=>x.checked=false);
+  document.querySelectorAll(".item input[type=number]").forEach(x=>x.value=1);
+  if(clearMsg)$("message").textContent="";
+}
+function statusLabel(s){return String(s||"").toUpperCase()==="COTIZADO"?"PENDIENTE":"CONFIRMADO"}
+function dateLabel(d){try{return new Date(String(d)+"T12:00:00").toLocaleDateString("es-MX",{day:"2-digit",month:"short",year:"numeric"}).replace(/\./g,"")}catch(e){return d||""}}
+async function loadEvents(){
+  const res=await fetch(`${SUPABASE_URL}/rest/v1/topdjs_records?select=local_id,date,client,project,status,updated_at&type=eq.EVENTO%20MANUEL&order=date.asc`,{headers:headers()});
+  if(!res.ok){$("eventList").innerHTML=`<div class="eventRow">No se pudieron cargar eventos.</div>`;return}
+  const rows=await res.json();
+  $("eventList").innerHTML=rows.length?rows.map(r=>`<div class="eventRow"><strong>${esc(dateLabel(r.date))} · ${esc(statusLabel(r.status))}</strong><p>${esc([r.client,r.project].filter(Boolean).join(" · ")||"Evento Manuel")}</p></div>`).join(""):`<div class="eventRow"><p>No hay eventos capturados todavía.</p></div>`;
+}
+$("saveBtn").addEventListener("click",saveRecord);
+$("clearBtn").addEventListener("click",()=>clearForm(true));
+renderEquipment();
+loadEvents();
+</script>
+</body>
+</html>

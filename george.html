@@ -120,7 +120,8 @@ const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&
 function normalizeStatus(raw){const s=String(raw||"").trim().toUpperCase();if(!s||s==="EN SEGUIMIENTO")return "COTIZADO";if(s==="PAGADO")return "LIQUIDADO";if(s==="ANTICIPO RECIBIDO")return "CONFIRMADO CON ANTICIPO";if(s==="CONFIRMADO")return "CONFIRMADO SIN ANTICIPO";return s}
 function statusLabel(status){const s=normalizeStatus(status);if(s==="COTIZADO")return "PENDIENTE";if(["CONFIRMADO SIN ANTICIPO","CONFIRMADO CON ANTICIPO","LIQUIDADO"].includes(s))return "CONFIRMADO";return s}
 function isVisibleEvent(r){const s=normalizeStatus(r.status);return !r._deleted&&r.date&&["COTIZADO","CONFIRMADO SIN ANTICIPO","CONFIRMADO CON ANTICIPO","LIQUIDADO"].includes(s)}
-function eventName(r){return [r.client||"",r.project||r.event_type||""].filter(Boolean).join(" · ") || "Evento TopDJs"}
+function isManuelEvent(r){return String(r.type||"").toUpperCase().includes("MANUEL")||String(r.company||"").toUpperCase().includes("MANUEL")}
+function eventName(r){const name=[r.client||"",r.project||r.event_type||""].filter(Boolean).join(" · ") || "Evento TopDJs";return isManuelEvent(r)?`MANUEL · ${name}`:name}
 function dateKey(d){return d.toISOString().slice(0,10)}
 function dateLabel(dateStr){try{const d=new Date(String(dateStr)+"T12:00:00");return d.toLocaleDateString("es-MX",{weekday:"short",day:"2-digit",month:"short",year:"numeric"}).replace(/\./g,"")}catch(e){return dateStr||""}}
 function parseMaybeJson(v){if(!v)return null;if(typeof v==="object")return v;try{return JSON.parse(v)}catch(e){return null}}
@@ -220,7 +221,7 @@ function showEventDetail(localId){
   $("eventDetail").innerHTML=`<div class="modalTop">
     <h2>${esc(eventName(r))}</h2>
     <p>${esc(dateLabel(r.date))}</p>
-    <span class="detailBadge ${st==="CONFIRMADO"?"confirmed":"pending"}">${esc(st)}</span>
+    <span class="detailBadge ${st==="CONFIRMADO"?"confirmed":"pending"}">${esc(st)}</span>${isManuelEvent(r)?` <span class="detailBadge pending">MANUEL</span>`:""}
   </div>
   <h3>Equipo seleccionado</h3>
   ${sections.length?sections.map(sec=>`<section class="equipGroup"><h3>${esc(sec.rub)}</h3><ul>${sec.items.map(i=>`<li>${esc(i.qty)} × ${esc(displayCatalogItemName(i.item))}</li>`).join("")}</ul></section>`).join(""):`<p class="detailHint">Este evento no tiene equipo seleccionado en el cotizador.</p>`}`;
