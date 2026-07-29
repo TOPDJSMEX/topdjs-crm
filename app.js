@@ -639,7 +639,7 @@ ${rowsHtml}
 }
 
 
-/* TOPDJS CRM v11.4.51 - PDF cliente español / inglés desde cotizador */
+/* TOPDJS CRM v11.4.52 - PDF cliente español / inglés desde cotizador */
 function quotePdfCleanSectionTitle(rub,lang="es"){
   const key=normalizeCatalogKey(rub);
   let es="Rubro";
@@ -812,7 +812,7 @@ html,body{margin:0;padding:0;background:#fff;color:#162234;font-family:-apple-sy
 }
 
 function quotePdfPrepareNoCrmUrlHtml(html){
-  // v11.4.51: Safari puede abrir en blanco los documentos data:.
+  // v11.4.52: Safari puede abrir en blanco los documentos data:.
   // Mantenemos el logo con URL absoluta y volvemos a imprimir desde una ventana about:blank.
   // Esto evita romper la carga del PDF cliente y no expone la ruta interna del CRM dentro del contenido del documento.
   const logoUrl=new URL("topdjs-logo.png", window.location.href).href;
@@ -1476,7 +1476,7 @@ if($("georgePrintBtn"))$("georgePrintBtn").onclick=()=>openGeorgeCalendarPrint()
 
 
 
-// TOPDJS CRM v11.4.51 - Calendario George simple: solo confirmados y pendientes
+// TOPDJS CRM v11.4.52 - Calendario George simple: solo confirmados y pendientes
 function isGeorgeCalendarEvent(record){
   const r=normalizeRecord(record||{});
   if(r._deleted||!r.date)return false;
@@ -1896,5 +1896,5 @@ renderCatalog();save();renderAll();syncAll();setInterval(syncAll,30000);
 if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js").catch(()=>{})}
 
 
-// TOPDJS CRM v11.4.51 - Fecha de anticipo
+// TOPDJS CRM v11.4.52 - Fecha de anticipo
 if($("quotePaidDate") && !$("quotePaidDate").value){$("quotePaidDate").value=todayISO()}

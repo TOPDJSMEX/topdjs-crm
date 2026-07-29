@@ -1,11 +1,11 @@
-TOPDJS CRM v11.4.51 - PORTAL MANUEL INVENTARIO CORREGIDO
+TOPDJS CRM v11.4.52 - MANUEL ALLEN HEATH Y CANTIDADES EN CERO
 
-Cambio principal:
-- Se corrigió el inventario propio de Manuel en manuel.html.
-- Se quitaron de equipo de Manuel:
-  - MARTIN SUB CSX 118
-  - MARTIN FLEXPOINT FP8
-- Esos equipos pueden seguir disponibles como equipo TopDJs, pero ya no aparecen como inventario propio de Manuel.
+Cambios en portal Manuel:
+- Se agregó CONSOLA ALLEN & HEATH al inventario propio de Manuel en AUDIO.
+- Las cantidades de equipo en manuel.html ahora inician en 0, no en 1.
+- Si Manuel escribe una cantidad mayor a 0, el equipo queda seleccionado automáticamente.
+- Si Manuel marca un checkbox con cantidad 0, se ajusta a 1.
+- Si desmarca un checkbox, la cantidad regresa a 0.
 
 Inventario Manuel actualizado:
 AUDIO:
@@ -13,6 +13,7 @@ AUDIO:
 - AXIOM AX6C
 - AXIOM SUB SW2100A
 - HK POLAR 12
+- CONSOLA ALLEN & HEATH
 
 CABINA Y DJ:
 - PIONEER XDJ XZ
@@ -43,11 +44,8 @@ https://topdjs-crm.vercel.app/manuel.html
 Calendario George después del deploy:
 https://topdjs-crm.vercel.app/george.html
 
-Nota:
-- Esto separa el acceso a nivel interfaz. Para seguridad real por usuario/contraseña se requiere Supabase Auth + RLS.
-
 Instalación:
 1. Subir los archivos a GitHub.
-2. Commit: TopDJs CRM v11.4.51 - Portal Manuel inventario corregido
+2. Commit: TopDJs CRM v11.4.52 - Manuel Allen Heath y cantidades en cero
 3. Deploy to Production en Vercel.
 4. Recarga fuerte: Option + Command + R.

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#000000">
-<title>TopDJs · Portal Manuel v11.4.51</title>
+<title>TopDJs · Portal Manuel v11.4.52</title>
 <link rel="manifest" href="manifest.json">
 <style>
 :root{--bg:#000;--card:#050b18;--field:#00030a;--text:#fff;--muted:#b8c7d9;--accent:#00b8ff;--green:#2cff9a;--yellow:#ffe66d;--red:#ff5f7c;--border:#008ee6}
@@ -128,7 +128,7 @@ button.danger{background:linear-gradient(180deg,#ff7890,#ff3b62);color:#250008;b
 <script>
 const SUPABASE_URL="https://xbrsnmbmkbvxyhrtiywy.supabase.co";
 const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhicnNubWJta2J2eHlocnRpeXd5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEyMTUwMzYsImV4cCI6MjA5Njc5MTAzNn0.ULJh4UYoaNLsirKnRQ4TmIbv-L5kzWwWWEFwIsFI02Y";
-const MANUEL_CATALOG={"🔊 AUDIO": ["AXIOM AX12C", "AXIOM AX6C", "AXIOM SUB SW2100A", "HK POLAR 12"], "🎧 CABINA Y DJ": ["PIONEER XDJ XZ"], "💡 ILUMINACIÓN": ["BEAM STEEL PRO", "SUNSTAR ORACLE LASER 3W"], "📺 VIDEO": ["PANTALLA LED 3X2", "PANTALLA LG 70”", "SWITCHER LIVE PRO"]};
+const MANUEL_CATALOG={"🔊 AUDIO": ["AXIOM AX12C", "AXIOM AX6C", "AXIOM SUB SW2100A", "HK POLAR 12", "CONSOLA ALLEN & HEATH"], "🎧 CABINA Y DJ": ["PIONEER XDJ XZ"], "💡 ILUMINACIÓN": ["BEAM STEEL PRO", "SUNSTAR ORACLE LASER 3W"], "📺 VIDEO": ["PANTALLA LED 3X2", "PANTALLA LG 70”", "SWITCHER LIVE PRO"]};
 const TOPDJS_CATALOG={"🔊 AUDIO": ["MARTIN TORUS T1215", "MARTIN TORUS T1230", "MARTIN SUB SXP218", "MARTIN SUB CSX 118", "MARTIN FLEXPOINT FP8", "AXIOM TOP AX12C", "AXIOM TOP AX6C", "AXIOM SUB SW2100A", "BOSE L1 PRO 8", "HK ELEMENTS", "HK CT108", "CONSOLA YAMAHA DM3", "CONSOLA MIDAS M32", "CONSOLA SOUND MASTER 12CH", "MICRÓFONO INALÁMBRICO", "MICRÓFONO DIADEMA", "MICRÓFONO LAVALIER"], "🎧 CABINA Y DJ": ["DJ", "CONTROLADOR PIONEER XDJ-AZ", "MONITOR HK LUCAS PERFORMER", "MONITOR LD DAVE", "DJ BOOTH"], "💡 ILUMINACIÓN": ["ADJ FOCUS BEAM LED", "MARTIN SPOT MH5", "RUBIK WASH", "ALEDA B-EYE K10 WASH", "DAZE RGB", "ADJ BLINDER", "ADJ IKON PROFILE", "EZ-BAR", "SUNSTAR COLOR SIX", "PIXEL PANEL 5", "SUNSTAR ORACLE LASER RGB", "FOG HAZE MAGMATIC", "CONSOLA MA COMMAND WING", "INTERFASE MA DOT2", "CONSOLA ADJ WOLFMIX"], "📺 VIDEO": ["PANTALLA LED PITCH 3.9 5X3", "PANTALLA LED PITCH 3.9 4X3", "PANTALLA LED PITCH 3.9 3X2", "MÓDULOS LED PITCH 3.9 96 X 96", "PROCESADOR NOVA STAR", "PROCESADOR TAURUS", "SWITCHER ROLAND", "VJ ARENA", "PANTALLA LG 70”"], "⚡ ADICIONALES": ["PLANTA DE LUZ", "TRUSS MK", "STAGE SET SOPORTE", "BAZOOKA CO2", "GRAVITY STAND"], "👷 STAFF": ["ING. AUDIO", "ING ILUMINACION/VIDEO", "STAGE HANDS"], "🚚 TRANSPORTE": ["CDMX", "FORANEO"]};
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]));
@@ -146,15 +146,18 @@ function renderCatalogBlock(owner,catalog){
 }
 function itemRow(owner,rub,item,i){
   const id=`${owner}-${rub}-${i}`.replace(/[^a-zA-Z0-9_-]/g,"_");
-  return `<div class="item"><input id="${esc(id)}" type="checkbox" data-owner="${esc(owner)}" data-rubro="${esc(rub)}" data-item="${esc(item)}"><span><label for="${esc(id)}" style="display:inline;margin:0;color:#fff;font-weight:700">${esc(item)}</label></span><input type="number" min="1" value="1"></div>`;
+  return `<div class="item"><input id="${esc(id)}" type="checkbox" data-owner="${esc(owner)}" data-rubro="${esc(rub)}" data-item="${esc(item)}"><span><label for="${esc(id)}" style="display:inline;margin:0;color:#fff;font-weight:700">${esc(item)}</label></span><input type="number" min="0" value="0" step="1" aria-label="Cantidad"></div>`;
 }
 function selectedByRubro(){
   const out={};
-  document.querySelectorAll('#equipment input[type=checkbox]:checked').forEach(chk=>{
+  document.querySelectorAll('#equipment .item').forEach(row=>{
+    const chk=row.querySelector('input[type=checkbox]');
+    const qtyInput=row.querySelector('input[type=number]');
+    const qty=Number(qtyInput?.value||0)||0;
+    if(!chk || qty<=0)return;
+    if(!chk.checked)chk.checked=true;
     const rub=chk.dataset.rubro;
     const item=`${ownerLabel(chk.dataset.owner)} · ${chk.dataset.item}`;
-    const qtyInput=chk.parentElement.querySelector('input[type=number]');
-    const qty=Number(qtyInput?.value||1)||1;
     if(!out[rub])out[rub]={selected:[]};
     out[rub].selected.push({item,qty});
   });
@@ -215,7 +218,7 @@ function clearForm(clearMsg=true){
   ["client","project","date","venue","pax","serviceHours","setupHours","setupTime","startTime","endTime","notes","extraEquipment"].forEach(id=>$(id).value="");
   $("eventType").value="EVENTO MANUEL";$("status").value="COTIZADO";$("setupType").value="MISMO DÍA";
   document.querySelectorAll("input[type=checkbox]").forEach(x=>x.checked=false);
-  document.querySelectorAll(".item input[type=number]").forEach(x=>x.value=1);
+  document.querySelectorAll(".item input[type=number]").forEach(x=>x.value=0);
   if(clearMsg)$("message").textContent="";
 }
 function statusLabel(s){return String(s||"").toUpperCase()==="COTIZADO"?"PENDIENTE":"CONFIRMADO"}
@@ -229,6 +232,20 @@ async function loadEvents(){
 $("saveBtn").addEventListener("click",saveRecord);
 $("clearBtn").addEventListener("click",()=>clearForm(true));
 renderEquipment();
+document.querySelectorAll('#equipment input[type=number]').forEach(input=>{
+  input.addEventListener('input',()=>{
+    const chk=input.parentElement.querySelector('input[type=checkbox]');
+    const qty=Number(input.value||0)||0;
+    if(chk)chk.checked=qty>0;
+  });
+});
+document.querySelectorAll('#equipment input[type=checkbox]').forEach(chk=>{
+  chk.addEventListener('change',()=>{
+    const qty=chk.parentElement.querySelector('input[type=number]');
+    if(qty && chk.checked && Number(qty.value||0)<=0)qty.value=1;
+    if(qty && !chk.checked)qty.value=0;
+  });
+});
 loadEvents();
 </script>
 </body>
