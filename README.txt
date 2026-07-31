@@ -1,40 +1,24 @@
-TOPDJS CRM v11.4.52 - MANUEL ALLEN HEATH Y CANTIDADES EN CERO
+TOPDJS CRM v11.4.53 - PDF CLIENTE DESCARGABLE SIN URL
 
-Cambios en portal Manuel:
-- Se agregó CONSOLA ALLEN & HEATH al inventario propio de Manuel en AUDIO.
-- Las cantidades de equipo en manuel.html ahora inician en 0, no en 1.
-- Si Manuel escribe una cantidad mayor a 0, el equipo queda seleccionado automáticamente.
-- Si Manuel marca un checkbox con cantidad 0, se ajusta a 1.
-- Si desmarca un checkbox, la cantidad regresa a 0.
+Cambio principal:
+- El botón DESCARGAR PDF CLIENTE ya no usa impresión del navegador.
+- El botón DESCARGAR PDF INGLÉS ya no usa impresión del navegador.
+- Ahora se genera un archivo PDF real en el navegador mediante Blob PDF.
+- El navegador ya no puede agregar el pie automático con topdjs-crm.vercel.app dentro del PDF.
+- El archivo se descarga con nombre tipo:
+  TopDJs_Cotizacion_Cliente_TDJ-2026-XXXXXX.pdf
 
-Inventario Manuel actualizado:
-AUDIO:
-- AXIOM AX12C
-- AXIOM AX6C
-- AXIOM SUB SW2100A
-- HK POLAR 12
-- CONSOLA ALLEN & HEATH
-
-CABINA Y DJ:
-- PIONEER XDJ XZ
-
-ILUMINACIÓN:
-- BEAM STEEL PRO
-- SUNSTAR ORACLE LASER 3W
-
-VIDEO:
-- PANTALLA LED 3X2
-- PANTALLA LG 70”
-- SWITCHER LIVE PRO
+Importante:
+- El PDF cliente queda pensado para descargar/enviar, no para imprimir desde navegador.
+- En iPhone/Safari puede abrir una vista previa del PDF o guardarlo en Archivos, pero ya no debe incrustar la URL del CRM como pie de página.
 
 Mantiene:
-- Portal Manuel sin dashboard de cobranza.
-- Manuel puede seleccionar equipo propio y equipo TopDJs.
-- George ve los eventos de Manuel en george.html.
-- George puede dar click al evento y ver equipo seleccionado.
-- PDF cliente español e inglés corregido.
-- Fix PDF cliente abre correcto.
+- PDF cliente español e inglés.
 - Fix PDF iluminación sin encimados.
+- Portal Manuel sin dashboard de cobranza.
+- Inventario Manuel con CONSOLA ALLEN & HEATH.
+- Cantidades de Manuel iniciando en 0.
+- George ve eventos TopDJs y Manuel con equipo al click.
 - Catálogo TopDJs con MARTIN SUB CSX 118 bajo MARTIN SUB SXP218.
 - GRAVITY STAND en adicionales.
 
@@ -46,6 +30,6 @@ https://topdjs-crm.vercel.app/george.html
 
 Instalación:
 1. Subir los archivos a GitHub.
-2. Commit: TopDJs CRM v11.4.52 - Manuel Allen Heath y cantidades en cero
+2. Commit: TopDJs CRM v11.4.53 - PDF cliente descargable sin URL
 3. Deploy to Production en Vercel.
 4. Recarga fuerte: Option + Command + R.

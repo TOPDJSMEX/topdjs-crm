@@ -639,7 +639,7 @@ ${rowsHtml}
 }
 
 
-/* TOPDJS CRM v11.4.52 - PDF cliente español / inglés desde cotizador */
+/* TOPDJS CRM v11.4.53 - PDF cliente español / inglés desde cotizador */
 function quotePdfCleanSectionTitle(rub,lang="es"){
   const key=normalizeCatalogKey(rub);
   let es="Rubro";
@@ -812,7 +812,7 @@ html,body{margin:0;padding:0;background:#fff;color:#162234;font-family:-apple-sy
 }
 
 function quotePdfPrepareNoCrmUrlHtml(html){
-  // v11.4.52: Safari puede abrir en blanco los documentos data:.
+  // v11.4.53: Safari puede abrir en blanco los documentos data:.
   // Mantenemos el logo con URL absoluta y volvemos a imprimir desde una ventana about:blank.
   // Esto evita romper la carga del PDF cliente y no expone la ruta interna del CRM dentro del contenido del documento.
   const logoUrl=new URL("topdjs-logo.png", window.location.href).href;
@@ -835,11 +835,278 @@ function openNoCrmUrlPrintWindow(html,popupBlockedMessage){
     return false;
   }
 }
+
+function quotePdfWinAnsiCode(ch){
+  const map={
+    "€":128,"‚":130,"ƒ":131,"„":132,"…":133,"†":134,"‡":135,"ˆ":136,"‰":137,"Š":138,"‹":139,"Œ":140,"Ž":142,
+    "‘":145,"’":146,"“":147,"”":148,"•":149,"–":45,"—":45,"˜":152,"™":153,"š":154,"›":155,"œ":156,"ž":158,"Ÿ":159,
+    "¡":161,"¢":162,"£":163,"¤":164,"¥":165,"¦":166,"§":167,"¨":34,"©":169,"ª":170,"«":171,"¬":172,"®":174,"¯":175,
+    "°":176,"±":177,"²":178,"³":179,"´":180,"µ":181,"¶":182,"·":183,"¸":184,"¹":185,"º":186,"»":187,"¼":188,"½":189,"¾":190,"¿":191,
+    "À":192,"Á":193,"Â":194,"Ã":195,"Ä":196,"Å":197,"Æ":198,"Ç":199,"È":200,"É":201,"Ê":202,"Ë":203,"Ì":204,"Í":205,"Î":206,"Ï":207,
+    "Ð":208,"Ñ":209,"Ò":210,"Ó":211,"Ô":212,"Õ":213,"Ö":214,"×":120,"Ø":216,"Ù":217,"Ú":218,"Û":219,"Ü":220,"Ý":221,"Þ":222,"ß":223,
+    "à":224,"á":225,"â":226,"ã":227,"ä":228,"å":229,"æ":230,"ç":231,"è":232,"é":233,"ê":234,"ë":235,"ì":236,"í":237,"î":238,"ï":239,
+    "ð":240,"ñ":241,"ò":242,"ó":243,"ô":244,"õ":245,"ö":246,"÷":247,"ø":248,"ù":249,"ú":250,"û":251,"ü":252,"ý":253,"þ":254,"ÿ":255
+  };
+  if(map[ch]!==undefined)return map[ch];
+  const code=ch.charCodeAt(0);
+  if(code>=32&&code<=126)return code;
+  const plain=String(ch).normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+  if(plain&&plain.charCodeAt(0)>=32&&plain.charCodeAt(0)<=126)return plain.charCodeAt(0);
+  return 63;
+}
+function quotePdfLiteral(s){
+  s=String(s??"").replace(/\r?\n/g," ");
+  let out="";
+  for(const ch of s){
+    const code=quotePdfWinAnsiCode(ch);
+    if(code===40||code===41||code===92)out+="\\"+String.fromCharCode(code);
+    else if(code>=32&&code<=126)out+=String.fromCharCode(code);
+    else out+="\\"+code.toString(8).padStart(3,"0");
+  }
+  return "("+out+")";
+}
+function quotePdfSafeFilePart(s){
+  return String(s||"TopDJs").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/gi,"_").replace(/^_+|_+$/g,"").slice(0,42)||"Cotizacion";
+}
+function quotePdfFileName(r,lang="es"){
+  const name=quotePdfSafeFilePart([r.client,r.project].filter(Boolean).join("_"));
+  return `TopDJs_Cotizacion_${name}_${quotePdfFolio(r)}${lang==="en"?"_EN":""}.pdf`;
+}
+function quotePdfApproxWidth(text,size,bold=false){
+  text=String(text??"");
+  let w=0;
+  for(const ch of text){
+    if(ch===" ")w+=size*.28;
+    else if("ilI.,:;|'!".includes(ch))w+=size*.24;
+    else if("mwMW@#%".includes(ch))w+=size*.78;
+    else w+=size*(bold?.56:.50);
+  }
+  return w;
+}
+function quotePdfWrapText(text,maxWidth,size=10,bold=false){
+  text=String(text??"").replace(/\s+/g," ").trim();
+  if(!text)return [""];
+  const words=text.split(" ");
+  const lines=[];
+  let line="";
+  const pushLong=(word)=>{
+    let part="";
+    for(const ch of word){
+      const test=part+ch;
+      if(part && quotePdfApproxWidth(test,size,bold)>maxWidth){lines.push(part);part=ch}else part=test;
+    }
+    line=part;
+  };
+  for(const word of words){
+    const test=line?line+" "+word:word;
+    if(quotePdfApproxWidth(test,size,bold)<=maxWidth)line=test;
+    else{
+      if(line)lines.push(line);
+      if(quotePdfApproxWidth(word,size,bold)>maxWidth)pushLong(word);else line=word;
+    }
+  }
+  if(line)lines.push(line);
+  return lines.length?lines:[""];
+}
+function quotePdfBuildDocument(pageStreams){
+  const n=pageStreams.length;
+  const objects=[];
+  const pageObjNums=[];
+  const contentObjNums=[];
+  for(let i=0;i<n;i++){pageObjNums.push(5+i*2);contentObjNums.push(6+i*2)}
+  objects[1]="<< /Type /Catalog /Pages 2 0 R >>";
+  objects[2]="<< /Type /Pages /Kids ["+pageObjNums.map(x=>x+" 0 R").join(" ")+"] /Count "+n+" >>";
+  objects[3]="<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>";
+  objects[4]="<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>";
+  for(let i=0;i<n;i++){
+    const stream=pageStreams[i];
+    objects[pageObjNums[i]]="<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents "+contentObjNums[i]+" 0 R >>";
+    objects[contentObjNums[i]]="<< /Length "+stream.length+" >>\nstream\n"+stream+"endstream";
+  }
+  let body="%PDF-1.4\n%TopDJs CRM generated PDF\n";
+  const offsets=[0];
+  for(let i=1;i<objects.length;i++){
+    offsets[i]=body.length;
+    body+=i+" 0 obj\n"+objects[i]+"\nendobj\n";
+  }
+  const xref=body.length;
+  body+="xref\n0 "+objects.length+"\n0000000000 65535 f \n";
+  for(let i=1;i<objects.length;i++)body+=String(offsets[i]).padStart(10,"0")+" 00000 n \n";
+  body+="trailer\n<< /Size "+objects.length+" /Root 1 0 R >>\nstartxref\n"+xref+"\n%%EOF";
+  return body;
+}
+function quotePdfBuildBinary(r,lang="es"){
+  r=normalizeRecord(r||{});
+  const L=quotePdfLabels(lang);
+  const sections=quotePdfSectionsFromRecord(r,lang);
+  const totals=quotePdfTotals(r);
+  const folio=quotePdfFolio(r);
+  const issued=quotePdfTodayLong(lang);
+  const schedule=quotePdfEventSchedule(r,lang);
+  const pageW=612,pageH=792,margin=44,usable=pageW-margin*2;
+  const pages=[];
+  let y=0,cmds=[];
+  function n(v){return Number(v||0).toFixed(2)}
+  function pdfY(topY){return pageH-topY}
+  function c(s){cmds.push(s)}
+  function rgb(r,g,b,stroke=false){c(`${n(r)} ${n(g)} ${n(b)} ${stroke?"RG":"rg"}`)}
+  function rect(x,top,w,h,fill=[1,1,1],stroke=null){
+    if(fill){rgb(fill[0],fill[1],fill[2],false);c(`${n(x)} ${n(pageH-top-h)} ${n(w)} ${n(h)} re f`)}
+    if(stroke){rgb(stroke[0],stroke[1],stroke[2],true);c(`${n(x)} ${n(pageH-top-h)} ${n(w)} ${n(h)} re S`)}
+  }
+  function line(x1,top1,x2,top2,color=[.84,.88,.93]){rgb(color[0],color[1],color[2],true);c(`${n(x1)} ${n(pdfY(top1))} m ${n(x2)} ${n(pdfY(top2))} l S`)}
+  function text(s,x,top,size=10,bold=false,color=[0,0,0]){rgb(color[0],color[1],color[2],false);c(`BT /${bold?"F2":"F1"} ${n(size)} Tf 1 0 0 1 ${n(x)} ${n(pdfY(top))} Tm ${quotePdfLiteral(s)} Tj ET`)}
+  function addPage(){if(cmds.length)pages.push(cmds.join("\n")+"\n");cmds=[];y=34;drawHeader()}
+  function ensure(h){if(y+h>742)addPage()}
+  function drawHeader(){
+    rect(0,0,pageW,82,[0,0,0]);
+    rgb(.15,.82,1,true);c(`0 ${n(pageH-82)} m ${pageW} ${n(pageH-82)} l S`);
+    text("TOPDJS",margin,34,23,true,[1,1,1]);
+    text(L.legend,margin,55,9,true,[.25,.78,1]);
+    text(folio,pageW-margin-150,35,10,true,[1,1,1]);
+    text(`${L.issued}: ${issued}`,pageW-margin-150,52,8,false,[.86,.94,1]);
+    text(`${L.validity}: ${L.validityDays}`,pageW-margin-150,66,8,false,[.86,.94,1]);
+    y=110;
+  }
+  function drawLabelValue(label,value,x,top,w){
+    text(label,x,top,8.5,true,[.38,.46,.55]);
+    const lines=quotePdfWrapText(value||"-",w,10,false).slice(0,3);
+    lines.forEach((ln,i)=>text(ln,x,top+13+i*12,10,false,[.08,.13,.20]));
+    return 15+lines.length*12;
+  }
+  function drawClientCard(){
+    const leftX=margin+18,rightX=margin+usable/2+16,colW=usable/2-34;
+    const rows=[
+      [{label:L.client,value:r.client||""},{label:L.event,value:r.project||r.event_type||""}],
+      [{label:L.phone,value:r.phone||""},{label:L.email,value:r.email||""}],
+      [{label:L.eventDate,value:quotePdfDateLong(r.date,lang)||""},{label:L.schedule,value:schedule||""}],
+      [{label:L.venue,value:r.venue||""},{label:L.executive,value:"TopDJs"}]
+    ];
+    const rowHeights=rows.map(pair=>Math.max(...pair.map(p=>13+quotePdfWrapText(p.value||"-",colW,10,false).slice(0,3).length*12),28));
+    const h=42+rowHeights.reduce((a,b)=>a+b,0)+12;
+    ensure(h+10);
+    const start=y;
+    rect(margin,start,usable,h,[1,1,1],[0,0,0]);
+    rect(margin+120,start-11,usable-240,22,[0,0,0]);
+    text(L.clientTitle,margin+142,start+3,10,true,[1,1,1]);
+    text(L.clientSub,margin+18,start+24,8.2,false,[.38,.46,.55]);
+    let yy=start+45;
+    rows.forEach((pair,idx)=>{
+      drawLabelValue(pair[0].label,pair[0].value,leftX,yy,colW);
+      drawLabelValue(pair[1].label,pair[1].value,rightX,yy,colW);
+      yy+=rowHeights[idx];
+      if(idx<rows.length-1)line(margin+18,yy-4,margin+usable-18,yy-4,[.90,.93,.96]);
+    });
+    y=start+h+22;
+  }
+  function drawSection(sec){
+    ensure(44);
+    rect(margin,y,usable,28,[0,0,0]);
+    text(sec.title,margin+14,y+19,15,true,[0,.64,1]);
+    y+=36;
+    if(!sec.items.length){text(L.noItems,margin+10,y+12,10,false,[.42,.48,.56]);y+=26;return}
+    sec.items.forEach(item=>{
+      const prefix=`${item.qty} x `;
+      const lines=quotePdfWrapText(prefix+item.item,usable-34,10.5,false);
+      const h=Math.max(22,lines.length*12+10);
+      ensure(h+8);
+      rect(margin,y,usable,h,[1,1,1],[.86,.90,.94]);
+      text("-",margin+12,y+15,10,true,[0,.64,1]);
+      lines.forEach((ln,i)=>text(ln,margin+28,y+15+i*12,10.5,false,[.08,.13,.20]));
+      y+=h+3;
+    });
+    if(sec.notes){
+      const lines=quotePdfWrapText(`${L.sectionNotes} ${sec.notes}`,usable-30,9.5,false);
+      const h=lines.length*11+16;
+      ensure(h+6);
+      rect(margin,y,usable,h,[.96,.98,1],[.80,.90,1]);
+      lines.forEach((ln,i)=>text(ln,margin+13,y+14+i*11,9.5,false,[.20,.28,.36]));
+      y+=h+5;
+    }
+    y+=13;
+  }
+  function drawEmptySections(){
+    ensure(34);
+    text(L.noItems,margin,y+15,10,false,[.42,.48,.56]);
+    y+=34;
+  }
+  function drawTotals(){
+    const vatLabel=totals.factura?L.vat16:L.vat;
+    const rows=[
+      [L.production,quotePdfMoney(totals.subtotal),false],
+      [vatLabel,quotePdfMoney(totals.iva),false],
+      [L.total,quotePdfMoney(totals.total),true],
+      [L.paid,quotePdfMoney(totals.paid),false],
+      [L.balance,quotePdfMoney(totals.balance),true]
+    ];
+    const h=146;
+    ensure(h+18);
+    rect(margin,y,usable,h,[0,0,0],[0,.64,1]);
+    let yy=y+22;
+    rows.forEach((row,idx)=>{
+      text(row[0],margin+18,yy,row[2]?12:10.5,true,row[2]?[.19,.83,1]:[1,1,1]);
+      text(row[1],pageW-margin-142,yy,row[2]?15:11,true,row[2]?[.19,.83,1]:[1,1,1]);
+      if(idx<rows.length-1)line(margin+16,yy+11,pageW-margin-16,yy+11,[.16,.27,.40]);
+      yy+=26;
+    });
+    y+=h+22;
+  }
+  function drawBottom(){
+    const notes=String(r.notes||"").trim();
+    const cond=[L.conditionDeposit,L.conditionBalance,L.conditionAvailability,totals.factura?L.conditionVatYes:L.conditionVatNo];
+    const notesLines=quotePdfWrapText(notes||"-",usable/2-34,9.5,false).slice(0,8);
+    const condLines=cond.flatMap(x=>quotePdfWrapText("- "+x,usable/2-34,9.5,false)).slice(0,10);
+    const h=Math.max(notesLines.length,condLines.length)*12+48;
+    ensure(h+12);
+    rect(margin,y,usable,h,[1,1,1],[.86,.90,.94]);
+    const mid=margin+usable/2;
+    line(mid,y,mid,y+h,[.86,.90,.94]);
+    text(L.generalNotes,margin+16,y+21,12,true,[0,.64,1]);
+    notesLines.forEach((ln,i)=>text(ln,margin+16,y+39+i*12,9.5,false,[.08,.13,.20]));
+    text(L.conditions,mid+16,y+21,12,true,[0,.64,1]);
+    condLines.forEach((ln,i)=>text(ln,mid+16,y+39+i*12,9.5,false,[.08,.13,.20]));
+    y+=h+12;
+  }
+  addPage();
+  drawClientCard();
+  if(sections.length)sections.forEach(drawSection);else drawEmptySections();
+  drawTotals();
+  drawBottom();
+  pages.push(cmds.join("\n")+"\n");
+  const totalPages=pages.length;
+  const stamped=pages.map((stream,i)=>{
+    const footer=[];
+    function fc(s){footer.push(s)}
+    function ft(s,x,top,size=8,bold=false,color=[.38,.46,.55]){fc(`${Number(color[0]).toFixed(2)} ${Number(color[1]).toFixed(2)} ${Number(color[2]).toFixed(2)} rg`);fc(`BT /${bold?"F2":"F1"} ${Number(size).toFixed(2)} Tf 1 0 0 1 ${Number(x).toFixed(2)} ${Number(pageH-top).toFixed(2)} Tm ${quotePdfLiteral(s)} Tj ET`)}
+    fc(`0.84 0.88 0.93 RG ${margin} 34 m ${pageW-margin} 34 l S`);
+    ft("TopDJs - Audio Iluminacion Video DJ",margin,769,8,false,[.38,.46,.55]);
+    ft(`${i+1} / ${totalPages}`,pageW-margin-28,769,8,true,[.38,.46,.55]);
+    return stream+footer.join("\n")+"\n";
+  });
+  return quotePdfBuildDocument(stamped);
+}
+function downloadClientQuotePdfFile(r,lang="es"){
+  const pdf=quotePdfBuildBinary(r,lang);
+  const blob=new Blob([pdf],{type:"application/pdf"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;
+  a.download=quotePdfFileName(r,lang);
+  a.rel="noopener";
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(()=>{try{URL.revokeObjectURL(url);a.remove()}catch(e){}},1500);
+}
+
 function openClientQuotePdfWindow(r,lang="es"){
   const L=quotePdfLabels(lang);
   if(!r || (!r.local_id && !r.client && !r.project))return alert(L.notFound);
-  const ok=openNoCrmUrlPrintWindow(quotePdfBuildHtml(r,lang),L.popupBlocked);
-  if(!ok)return alert(L.popupBlocked);
+  try{
+    downloadClientQuotePdfFile(r,lang);
+  }catch(e){
+    console.error("No se pudo descargar PDF cliente",e);
+    alert(lang==="en"?"The PDF could not be generated. Try again.":"No se pudo generar el PDF descargable. Intenta de nuevo.");
+  }
 }
 function generateClientQuotePdfFromCurrent(lang="es"){
   const L=quotePdfLabels(lang);
@@ -1476,7 +1743,7 @@ if($("georgePrintBtn"))$("georgePrintBtn").onclick=()=>openGeorgeCalendarPrint()
 
 
 
-// TOPDJS CRM v11.4.52 - Calendario George simple: solo confirmados y pendientes
+// TOPDJS CRM v11.4.53 - Calendario George simple: solo confirmados y pendientes
 function isGeorgeCalendarEvent(record){
   const r=normalizeRecord(record||{});
   if(r._deleted||!r.date)return false;
@@ -1896,5 +2163,5 @@ renderCatalog();save();renderAll();syncAll();setInterval(syncAll,30000);
 if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js").catch(()=>{})}
 
 
-// TOPDJS CRM v11.4.52 - Fecha de anticipo
+// TOPDJS CRM v11.4.53 - Fecha de anticipo
 if($("quotePaidDate") && !$("quotePaidDate").value){$("quotePaidDate").value=todayISO()}
