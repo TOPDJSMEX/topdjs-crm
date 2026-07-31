@@ -1,35 +1,31 @@
-TOPDJS CRM v11.4.53 - PDF CLIENTE DESCARGABLE SIN URL
+TOPDJS CRM v11.4.54 - PDF CLIENTE CON LOGO Y SIN LINEAS EN DATOS
 
-Cambio principal:
-- El botón DESCARGAR PDF CLIENTE ya no usa impresión del navegador.
-- El botón DESCARGAR PDF INGLÉS ya no usa impresión del navegador.
-- Ahora se genera un archivo PDF real en el navegador mediante Blob PDF.
-- El navegador ya no puede agregar el pie automático con topdjs-crm.vercel.app dentro del PDF.
-- El archivo se descarga con nombre tipo:
-  TopDJs_Cotizacion_Cliente_TDJ-2026-XXXXXX.pdf
-
-Importante:
-- El PDF cliente queda pensado para descargar/enviar, no para imprimir desde navegador.
-- En iPhone/Safari puede abrir una vista previa del PDF o guardarlo en Archivos, pero ya no debe incrustar la URL del CRM como pie de página.
+Cambios:
+- Se restauró el logo original de TopDJs dentro del PDF descargable del cliente.
+- El PDF descargable ya no sustituye el logo por texto TOPDJS.
+- Se quitaron las líneas horizontales internas en Datos del cliente y evento.
+- Se mantiene el PDF real descargable, sin depender de impresión del navegador y sin URL del CRM en pie de página.
+- Aplica para PDF cliente español e inglés.
 
 Mantiene:
-- PDF cliente español e inglés.
-- Fix PDF iluminación sin encimados.
 - Portal Manuel sin dashboard de cobranza.
 - Inventario Manuel con CONSOLA ALLEN & HEATH.
-- Cantidades de Manuel iniciando en 0.
-- George ve eventos TopDJs y Manuel con equipo al click.
+- Cantidades de equipo en 0 por default.
+- Manuel puede seleccionar equipo propio y equipo TopDJs.
+- George ve eventos de TopDJs y Manuel en george.html.
+- George puede abrir evento y ver equipo seleccionado.
+- Fix PDF iluminación sin encimados.
 - Catálogo TopDJs con MARTIN SUB CSX 118 bajo MARTIN SUB SXP218.
 - GRAVITY STAND en adicionales.
 
-Portal Manuel después del deploy:
+Portal Manuel:
 https://topdjs-crm.vercel.app/manuel.html
 
-Calendario George después del deploy:
+Calendario George:
 https://topdjs-crm.vercel.app/george.html
 
 Instalación:
-1. Subir los archivos a GitHub.
-2. Commit: TopDJs CRM v11.4.53 - PDF cliente descargable sin URL
+1. Subir archivos a GitHub.
+2. Commit: TopDJs CRM v11.4.54 - PDF cliente con logo y sin lineas
 3. Deploy to Production en Vercel.
 4. Recarga fuerte: Option + Command + R.
