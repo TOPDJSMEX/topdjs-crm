@@ -1,31 +1,30 @@
-TOPDJS CRM v11.4.54 - PDF CLIENTE CON LOGO Y SIN LINEAS EN DATOS
+TOPDJS CRM v11.4.55 - CATÁLOGO EQUIPO NUEVO
 
-Cambios:
-- Se restauró el logo original de TopDJs dentro del PDF descargable del cliente.
-- El PDF descargable ya no sustituye el logo por texto TOPDJS.
-- Se quitaron las líneas horizontales internas en Datos del cliente y evento.
-- Se mantiene el PDF real descargable, sin depender de impresión del navegador y sin URL del CRM en pie de página.
-- Aplica para PDF cliente español e inglés.
+CAMBIOS - NUEVO EQUIPO TOPDJS (EN MAYÚSCULAS)
+AUDIO:
+- MARTIN FP4
 
-Mantiene:
-- Portal Manuel sin dashboard de cobranza.
-- Inventario Manuel con CONSOLA ALLEN & HEATH.
-- Cantidades de equipo en 0 por default.
-- Manuel puede seleccionar equipo propio y equipo TopDJs.
-- George ve eventos de TopDJs y Manuel en george.html.
-- George puede abrir evento y ver equipo seleccionado.
-- Fix PDF iluminación sin encimados.
-- Catálogo TopDJs con MARTIN SUB CSX 118 bajo MARTIN SUB SXP218.
-- GRAVITY STAND en adicionales.
+ILUMINACIÓN:
+- SL CURTAIN BAR
+- SUNSTAR SPOT LINE
 
-Portal Manuel:
-https://topdjs-crm.vercel.app/manuel.html
+Se agregaron en:
+- Cotizador principal (index.html)
+- Selector de equipo TopDJs dentro del Portal Manuel (manuel.html)
 
-Calendario George:
-https://topdjs-crm.vercel.app/george.html
+No se eliminó ningún producto existente, ni se alteró el inventario propio de Manuel.
+Las bajas del catálogo quedan pendientes de recibir.
 
-Instalación:
-1. Subir archivos a GitHub.
-2. Commit: TopDJs CRM v11.4.54 - PDF cliente con logo y sin lineas
-3. Deploy to Production en Vercel.
-4. Recarga fuerte: Option + Command + R.
+Mantiene las funciones de v11.4.54:
+- PDF descargable cliente ES/EN, con logo y sin URL del CRM.
+- Portal Manuel y cantidades desde 0.
+- Calendario George con eventos y equipo de TopDJs y Manuel.
+- DASHBOARD CRM, cobranza, cotizaciones y demás funciones.
+
+ENLACES DESPUÉS DEL DEPLOY
+CRM: https://topdjs-crm.vercel.app
+MANUEL: https://topdjs-crm.vercel.app/manuel.html
+GEORGE: https://topdjs-crm.vercel.app/george.html
+
+SUBIR A GITHUB Y HACER DEPLOY TO PRODUCTION.
+COMMIT: TopDJs CRM v11.4.55 - Nuevos equipos FP4 Curtain Bar Spot Line
