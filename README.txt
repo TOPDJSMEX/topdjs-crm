@@ -1,30 +1,23 @@
-TOPDJS CRM v11.4.55 - CATÁLOGO EQUIPO NUEVO
+TOPDJS CRM v11.4.56 - QUITAR HK ELEMENTS
 
-CAMBIOS - NUEVO EQUIPO TOPDJS (EN MAYÚSCULAS)
-AUDIO:
-- MARTIN FP4
+CATÁLOGO TOPDJS / AUDIO
+- Se eliminó HK ELEMENTS.
+- Se conserva HK CT108 y el resto del equipo de AUDIO.
+- Se conserva MARTIN FP4, SL CURTAIN BAR y SUNSTAR SPOT LINE de v11.4.55.
 
-ILUMINACIÓN:
-- SL CURTAIN BAR
-- SUNSTAR SPOT LINE
+Cambios aplicados en:
+- Catálogo del cotizador principal (index.html).
+- Catálogo de equipo TopDJs del portal Manuel (manuel.html).
 
-Se agregaron en:
-- Cotizador principal (index.html)
-- Selector de equipo TopDJs dentro del Portal Manuel (manuel.html)
+No se modifica el inventario propio de Manuel.
+No se modifican cotizaciones ni eventos históricos ya guardados.
+Se mantiene la funcionalidad de PDFs cliente ES/EN, calendario George,
+portal Manuel, dashboard y demás funciones de v11.4.55.
 
-No se eliminó ningún producto existente, ni se alteró el inventario propio de Manuel.
-Las bajas del catálogo quedan pendientes de recibir.
-
-Mantiene las funciones de v11.4.54:
-- PDF descargable cliente ES/EN, con logo y sin URL del CRM.
-- Portal Manuel y cantidades desde 0.
-- Calendario George con eventos y equipo de TopDJs y Manuel.
-- DASHBOARD CRM, cobranza, cotizaciones y demás funciones.
-
-ENLACES DESPUÉS DEL DEPLOY
+Enlaces después del deploy:
 CRM: https://topdjs-crm.vercel.app
 MANUEL: https://topdjs-crm.vercel.app/manuel.html
 GEORGE: https://topdjs-crm.vercel.app/george.html
 
-SUBIR A GITHUB Y HACER DEPLOY TO PRODUCTION.
-COMMIT: TopDJs CRM v11.4.55 - Nuevos equipos FP4 Curtain Bar Spot Line
+Commit: TopDJs CRM v11.4.56 - Quitar HK Elements del catalogo
+Deploy to Production, luego actualizar con Option + Command + R.
